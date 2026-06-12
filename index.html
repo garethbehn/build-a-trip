@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contiki — Go Wander</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            go:          { DEFAULT: '#FF5900', alt: '#FF7300' },
+            wander:      { DEFAULT: '#1C4A3D', alt: '#1C6348' },
+            burst:       '#FFE100',
+            dusk:        '#0A0C0A',
+            dawn:        '#FFFAF2',
+            'ui-grey80': '#6B6B6B',
+            'ui-border': '#E5E0D8',
+            'card-dark': '#1C1C1C',
+          },
+          fontFamily: {
+            hero:    ['"Playfair Display"', 'Georgia', 'serif'],
+            display: ['"Inter"', 'system-ui', 'sans-serif'],
+            body:    ['"Inter"', 'system-ui', 'sans-serif'],
+          },
+          borderRadius: { card: '16px', media: '12px', pill: '100px' },
+        },
+      },
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px; line-height: 1; vertical-align: middle;
+    }
+    /* Nav glass */
+    #site-nav { transition: background-color .2s ease, backdrop-filter .2s ease, box-shadow .2s ease; }
+    #site-nav.scrolled {
+      background-color: rgba(255,250,242,.78);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 1px 24px rgba(0,0,0,.07);
+    }
+    /* Search modal */
+    #search-overlay { opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+    #search-overlay.open { opacity: 1; pointer-events: all; }
+    #search-panel {
+      transform: translateY(-100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+    }
+    #search-panel.open { transform: translateY(0); }
+    /* Loading dots */
+    .dot-pulse span { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #FF5900;
+      animation: dotpulse 1.2s ease-in-out infinite; }
+    .dot-pulse span:nth-child(2) { animation-delay: .2s; }
+    .dot-pulse span:nth-child(3) { animation-delay: .4s; }
+    @keyframes dotpulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+    /* Card animations */
+    .card-enter { opacity: 0; transform: translateY(14px); animation: cardRise .35s ease forwards; }
+    @keyframes cardRise { to { opacity: 1; transform: translateY(0); } }
+    .trip-card { transition: transform .2s ease, box-shadow .2s ease; }
+    .trip-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px rgba(0,0,0,.18); }
+    .trip-card.selected { outline: 2px solid #FF5900; }
+  </style>
+</head>
+<body class="bg-dawn font-body text-dusk">
+
+<!-- =====================================================
+     08 — PASSWORD GATE
+     ===================================================== -->
+<div id="password-gate" class="fixed inset-0 z-[9999] bg-dusk flex items-center justify-center">
+  <div style="background:#1a1a1a; border-radius:16px; padding:48px 40px; width:360px; max-width:90vw;">
+    <div class="text-go font-hero italic font-extrabold leading-none mb-2" style="font-size:2rem;">contiki</div>
+    <p class="text-white/40 mb-8" style="font-size:.8rem;">Preview access only</p>
+    <input
+      id="gate-input"
+      type="password"
+      placeholder="Enter password"
+      class="w-full text-white text-sm mb-3 px-4 py-3 rounded-xl outline-none transition-colors"
+      style="background:#111; border:1px solid #333; font-family:inherit;"
+      onfocus="this.style.borderColor='#FF5900'"
+      onblur="this.style.borderColor='#333'"
+      onkeydown="if(event.key==='Enter')checkGate()"
+    />
+    <p id="gate-error" class="mb-3 hidden" style="color:#ff6b6b; font-size:.8rem;">Incorrect password. Try again.</p>
+    <button onclick="checkGate()"
+      class="w-full text-white font-bold py-3 rounded-xl transition-colors"
+      style="background:#FF5900; font-family:inherit; font-size:.95rem;"
+      onmouseover="this.style.background='#FF7300'"
+      onmouseout="this.style.background='#FF5900'">
+      Enter
+    </button>
+  </div>
+</div>
+
+<!-- =====================================================
+     01 — NAV HEADER
+     ===================================================== -->
+<header id="site-nav" class="sticky top-0 z-[200] bg-dawn border-b border-ui-border">
+  <div class="relative flex items-center justify-between h-16 px-6 md:px-8">
+
+    <nav class="hidden md:flex items-center gap-1">
+      <button class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem; font-weight:600; font-family:inherit;">
+        Explore Trips
+        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
+      </button>
+      <a href="build-trip.html" class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem; font-weight:600; font-family:inherit; text-decoration:none;">
+        Build Trip
+        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
+      </a>
+      <button class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem; font-weight:600; font-family:inherit;">
+        About
+        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
+      </button>
+    </nav>
+
+    <a href="/" class="absolute left-1/2 -translate-x-1/2 text-go font-hero italic font-extrabold hover:opacity-80 transition-opacity" style="font-size:1.6rem; line-height:1; text-decoration:none;">
+      contiki
+    </a>
+
+    <div class="flex items-center gap-2 ml-auto">
+      <button onclick="openSearch()"
+        class="hidden sm:flex items-center gap-1.5 px-4 py-2 text-go hover:bg-go/[.06] transition-colors"
+        style="border-radius:100px; border:1.5px solid #FF5900; background:transparent; font-size:.85rem; font-weight:600; font-family:inherit; cursor:pointer;">
+        <span class="material-symbols-outlined" style="font-size:18px; color:#FF5900;">search</span>
+        Search
+      </button>
+      <button onclick="openSearch()"
+        class="sm:hidden flex items-center justify-center w-9 h-9 hover:bg-go/[.06] transition-colors"
+        style="border-radius:100px; border:1.5px solid #FF5900; background:transparent; cursor:pointer;">
+        <span class="material-symbols-outlined" style="font-size:20px; color:#FF5900;">search</span>
+      </button>
+      <button class="hidden md:flex items-center gap-1 px-3 py-2 hover:bg-black/5 transition-colors"
+        style="border-radius:100px; border:1.5px solid #E5E0D8; background:transparent; font-family:inherit; cursor:pointer;">
+        <span class="material-symbols-outlined opacity-60" style="font-size:18px;">person</span>
+        <span class="material-symbols-outlined opacity-40" style="font-size:16px;">expand_more</span>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+<!-- =====================================================
+     02 — HERO
+     ===================================================== -->
+<section class="relative flex items-end bg-dusk overflow-hidden" style="min-height:90vh;">
+  <img
+    src="https://www.contiki.com/media/idcjq05g/two-males-rowing-on-river.jpg"
+    alt="" role="presentation"
+    class="absolute inset-0 w-full h-full object-cover"
+    onerror="this.style.display='none'"
+  />
+  <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.35) 55%,rgba(0,0,0,.18));"></div>
+  <div class="relative z-10" style="padding:0 60px 60px;">
+    <h1 class="font-hero font-extrabold uppercase text-go"
+        style="font-size:clamp(4rem,12vw,10rem); letter-spacing:.05em; line-height:.75;">
+      GO<br>WANDER
+    </h1>
+    <div style="margin-top:2rem;">
+      <button onclick="openSearch()"
+        class="inline-flex items-center gap-2 text-dawn hover:bg-go transition-colors group"
+        style="background:#1C4A3D; border-radius:100px; padding:14px 28px; font-size:.95rem; font-weight:600; font-family:inherit; border:none; cursor:pointer;">
+        Start exploring
+        <span class="material-symbols-outlined" style="font-size:20px;">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- =====================================================
+     06 — REGION EXPLORER
+     ===================================================== -->
+<section class="py-16 md:py-20 text-center bg-dawn px-6">
+  <h2 class="font-display italic font-bold text-go mb-2" style="font-size:clamp(1.3rem,3vw,2rem);">
+    Where will you wander next?
+  </h2>
+  <p class="text-ui-grey80 mb-8" style="font-size:.85rem;">Choose a region to start exploring Contiki tours</p>
+  <div id="region-links" class="flex flex-wrap justify-center items-center gap-y-2 max-w-3xl mx-auto" style="font-size:1.4rem; font-weight:700; color:#1C4A3D; line-height:1.8;"></div>
+</section>
+
+<!-- =====================================================
+     FEATURED TRIPS (03 — Trip Card, default variant)
+     ===================================================== -->
+<section class="py-12 md:py-16 px-6" style="background:#f0ebe1;">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="font-display font-bold text-dusk" style="font-size:1.4rem;">Popular right now</h2>
+      <button onclick="openSearch()" class="flex items-center gap-1 text-go hover:underline" style="font-size:.85rem; font-weight:600; background:none; border:none; cursor:pointer; font-family:inherit;">
+        View all <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span>
+      </button>
+    </div>
+    <div id="featured-grid" class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));"></div>
+  </div>
+</section>
+
+<!-- =====================================================
+     07 — FOOTER
+     ===================================================== -->
+<footer style="background:#0A0C0A; color:white; padding:48px 32px 24px;">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid gap-8 mb-10" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
+      <div>
+        <div class="font-hero italic font-extrabold text-go mb-3" style="font-size:1.8rem; line-height:1;">contiki</div>
+        <p style="color:rgba(255,255,255,.4); font-size:.82rem; line-height:1.6; max-width:200px;">
+          The world's leading travel company for 18–35s.
+        </p>
+      </div>
+      <div>
+        <p style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:16px;">About Contiki</p>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
+          <li><a href="#" class="footer-link">Who We Are</a></li>
+          <li><a href="#" class="footer-link">Meet the Team</a></li>
+          <li><a href="#" class="footer-link">Reviews</a></li>
+          <li><a href="#" class="footer-link">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:16px;">Travelling with us</p>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
+          <li><a href="#" class="footer-link">My Contiki</a></li>
+          <li><a href="#" class="footer-link">FAQs</a></li>
+          <li><a href="#" class="footer-link">Travel Updates</a></li>
+          <li><a href="#" class="footer-link">Payment Plans</a></li>
+          <li><a href="#" class="footer-link">Visa Guide</a></li>
+          <li><a href="#" class="footer-link">Booking Conditions</a></li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:16px;">Resources</p>
+        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
+          <li><a href="#" class="footer-link">six-two magazine</a></li>
+          <li><a href="#" class="footer-link">Affiliates &amp; Reps</a></li>
+          <li><a href="#" class="footer-link">Press Room</a></li>
+          <li><a href="#" class="footer-link">Make Travel Matter</a></li>
+          <li><a href="#" class="footer-link">Brochure</a></li>
+        </ul>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.1); padding-top:24px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
+      <p style="color:rgba(255,255,255,.3); font-size:.75rem;">© 2026 Contiki Holidays Ltd. All rights reserved.</p>
+      <div style="display:flex; gap:20px;">
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms &amp; Conditions</a>
+        <a href="#" class="footer-link">Cookie Policy</a>
+      </div>
+    </div>
+  </div>
+</footer>
+<style>
+  .footer-link { color:rgba(255,255,255,.45); font-size:.82rem; text-decoration:none; transition:color .15s; }
+  .footer-link:hover { color:white; }
+</style>
+
+<!-- =====================================================
+     04 — SEARCH MODAL
+     ===================================================== -->
+<!-- Backdrop -->
+<div id="search-overlay"
+     class="fixed inset-0 z-[300]"
+     style="background:rgba(0,0,0,.45); backdrop-filter:blur(2px);"
+     onclick="closeSearch()"></div>
+
+<!-- Panel slides from top -->
+<div id="search-panel"
+     class="fixed top-0 left-0 right-0 z-[301] bg-dawn overflow-y-auto"
+     style="max-height:100vh;">
+  <div style="padding:40px 60px 48px; max-width:1200px; margin:0 auto;">
+
+    <!-- Header row -->
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="font-display font-bold text-wander" style="font-size:1.6rem;">Search</h2>
+      <button onclick="closeSearch()" class="flex items-center justify-center rounded-full hover:bg-black/5 transition-colors" style="width:36px;height:36px;border:none;background:transparent;cursor:pointer;">
+        <span class="material-symbols-outlined text-dusk" style="font-size:24px;">close</span>
+      </button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="flex items-center gap-3 rounded-xl border-2 border-ui-border px-4 py-3 bg-white mb-4 transition-colors" id="search-bar" style="focus-within:border-go;">
+      <span class="material-symbols-outlined text-go" style="font-size:20px;">location_on</span>
+      <div class="flex flex-col flex-1 min-w-0">
+        <span style="font-size:.65rem; font-weight:700; color:#FF5900; letter-spacing:.08em; text-transform:uppercase;">WHERE</span>
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Describe your dream trip…"
+          class="w-full outline-none text-dusk bg-transparent"
+          style="font-size:.95rem; font-family:inherit;"
+          onkeydown="if(event.key==='Enter')doSearch()"
+          oninput="document.getElementById('search-bar').style.borderColor=this.value?'#FF5900':'#E5E0D8'"
+        />
+      </div>
+      <button onclick="doSearch()"
+        class="text-white px-5 py-2 hover:opacity-90 transition-opacity"
+        style="background:#FF5900; border-radius:100px; border:none; font-size:.85rem; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap;">
+        Search
+      </button>
+    </div>
+
+    <!-- Suggestion chips -->
+    <div id="search-chips" class="flex flex-wrap gap-2 mb-6">
+      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
+        Europe this summer
+      </button>
+      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
+        Southeast Asia under 3 weeks
+      </button>
+      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
+        Adventure in New Zealand
+      </button>
+      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
+        Japan in autumn
+      </button>
+    </div>
+
+    <!-- AI understood strip (hidden until search) -->
+    <div id="ai-understood" class="hidden rounded-xl px-4 py-3 mb-5 flex items-start gap-2" style="background:rgba(255,89,0,.07); border:1px solid rgba(255,89,0,.15);">
+      <span style="color:#FF5900; font-size:.85rem;">✦</span>
+      <div>
+        <span class="font-semibold text-go" style="font-size:.8rem;">AI understood</span>
+        <span id="ai-summary" class="text-dusk" style="font-size:.82rem; margin-left:.4rem;"></span>
+      </div>
+    </div>
+
+    <!-- Status (loading) -->
+    <div id="search-status" class="hidden flex items-center gap-3 mb-5 text-ui-grey80" style="font-size:.88rem;">
+      <div class="dot-pulse flex gap-1">
+        <span></span><span></span><span></span>
+      </div>
+      Finding your perfect trips…
+    </div>
+
+    <!-- Results count -->
+    <div id="results-header" class="hidden flex items-center justify-between mb-4">
+      <p style="font-size:.88rem; font-weight:600;">
+        <span id="results-count" class="text-go"></span>
+        <span class="text-dusk"> trips matched</span>
+      </p>
+    </div>
+
+    <!-- Results grid (dark container) -->
+    <div id="results-container" class="hidden rounded-xl p-4" style="background:#161616;">
+      <div id="results-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));"></div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden py-16 text-center text-ui-grey80">
+      <div style="font-size:2rem; margin-bottom:12px;">🌍</div>
+      <p style="font-size:.95rem;">No trips matched — try a different description</p>
+    </div>
+
+    <!-- Popular trips (shown when modal first opens) -->
+    <div id="popular-section">
+      <p class="font-semibold text-dusk mb-4" style="font-size:.88rem;">Popular trips</p>
+      <div id="popular-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── MOCK DATA ──────────────────────────────────────────────────────────────
+const TRIPS = [
+  {
+    id: 'eur-highlights-14',
+    name: 'European Highlights',
+    geography: 'Europe',
+    destinations: ['Paris','Amsterdam','Berlin','Prague','Vienna'],
+    duration_days: 14,
+    departure_date: '2026-07-05',
+    end_date: '2026-07-19',
+    from_price: 2900,
+    currency: 'USD',
+    was_price: 3225,
+    image: 'https://picsum.photos/seed/european-highlights/600/400',
+    tags: ['hot'],
+    is_original: true,
+  },
+  {
+    id: 'italy-greece-12',
+    name: 'Italian Greek Adventure',
+    geography: 'Europe',
+    destinations: ['Rome','Florence','Athens','Santorini'],
+    duration_days: 12,
+    departure_date: '2026-07-12',
+    end_date: '2026-07-24',
+    from_price: 3100,
+    currency: 'USD',
+    was_price: null,
+    image: 'https://picsum.photos/seed/italy-greece/600/400',
+    tags: ['new'],
+    is_original: false,
+  },
+  {
+    id: 'japan-discovery-10',
+    name: 'Japan Discovery',
+    geography: 'Asia',
+    destinations: ['Tokyo','Kyoto','Osaka','Hiroshima'],
+    duration_days: 10,
+    departure_date: '2026-08-02',
+    end_date: '2026-08-12',
+    from_price: 3400,
+    currency: 'USD',
+    was_price: null,
+    image: 'https://picsum.photos/seed/japan-discovery/600/400',
+    tags: ['bestseller'],
+    is_original: true,
+  },
+  {
+    id: 'se-asia-18',
+    name: 'Southeast Asia Explorer',
+    geography: 'Asia',
+    destinations: ['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'],
+    duration_days: 18,
+    departure_date: '2026-09-01',
+    end_date: '2026-09-19',
+    from_price: 2650,
+    currency: 'USD',
+    was_price: 2950,
+    image: 'https://picsum.photos/seed/southeast-asia/600/400',
+    tags: ['hot','sale'],
+    is_original: false,
+  },
+  {
+    id: 'nz-adventure-8',
+    name: 'New Zealand Adventure',
+    geography: 'Australasia',
+    destinations: ['Auckland','Rotorua','Queenstown','Milford Sound'],
+    duration_days: 8,
+    departure_date: '2026-10-05',
+    end_date: '2026-10-13',
+    from_price: 2200,
+    currency: 'USD',
+    was_price: null,
+    image: 'https://picsum.photos/seed/new-zealand/600/400',
+    tags: ['new'],
+    is_original: false,
+  },
+  {
+    id: 'bali-7',
+    name: 'Bali Breeze',
+    geography: 'Asia',
+    destinations: ['Seminyak','Ubud','Nusa Penida','Canggu'],
+    duration_days: 7,
+    departure_date: '2026-08-15',
+    end_date: '2026-08-22',
+    from_price: 1850,
+    currency: 'USD',
+    was_price: 2100,
+    image: 'https://picsum.photos/seed/bali/600/400',
+    tags: ['sale'],
+    is_original: false,
+  },
+  {
+    id: 'morocco-10',
+    name: 'Morocco Magic',
+    geography: 'Africa',
+    destinations: ['Casablanca','Fes','Merzouga','Marrakech'],
+    duration_days: 10,
+    departure_date: '2026-07-20',
+    end_date: '2026-07-30',
+    from_price: 2400,
+    currency: 'USD',
+    was_price: null,
+    image: 'https://picsum.photos/seed/morocco/600/400',
+    tags: [],
+    is_original: true,
+  },
+  {
+    id: 'peru-9',
+    name: 'Peruvian Wonders',
+    geography: 'Latin America',
+    destinations: ['Lima','Cusco','Machu Picchu','Sacred Valley'],
+    duration_days: 9,
+    departure_date: '2026-09-15',
+    end_date: '2026-09-24',
+    from_price: 2750,
+    currency: 'USD',
+    was_price: null,
+    image: 'https://picsum.photos/seed/peru/600/400',
+    tags: ['bestseller'],
+    is_original: false,
+  },
+];
+
+// ─── TRIP CARD RENDERER ─────────────────────────────────────────────────────
+function renderTripCard(trip, opts = {}) {
+  const { aiReason, delay = 0, selectable = false, selected = false, compact = false } = opts;
+  const words = trip.name.split(' ');
+  const line1 = words[0].toLowerCase();
+  const line2 = words.slice(1).join(' ').toUpperCase();
+
+  const tagHtml = trip.tags.map(t => {
+    if (t === 'sale') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Black Friday</span>`;
+    if (t === 'hot') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Hot NR</span>`;
+    if (t === 'bestseller') return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.6rem;padding:2px 8px;border-radius:4px;">Bestseller</span>`;
+    if (t === 'new') return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.6rem;padding:2px 8px;border-radius:4px;">New Trip</span>`;
+    return '';
+  }).join('');
+
+  const wasHtml = trip.was_price
+    ? `<span style="text-decoration:line-through;color:rgba(255,255,255,.32);font-size:.82rem;margin-left:6px;">Was $${trip.was_price.toLocaleString()} pp</span>`
+    : '';
+
+  const selectedStyle = selected ? 'outline:2px solid #FF5900;' : '';
+
+  return `
+    <div class="trip-card card-enter rounded-card overflow-hidden cursor-pointer ${selectable ? 'selectable-card' : ''}"
+         style="background:#1C1C1C; animation-delay:${delay}ms; ${selectedStyle}"
+         data-id="${trip.id}"
+         onclick="${selectable ? `selectTrip('${trip.id}',this)` : ''}">
+      <div class="relative mx-[7px] mt-[7px] overflow-hidden" style="border-radius:12px; height:210px;">
+        <img src="${trip.image}" alt="${trip.name}"
+             class="w-full h-full object-cover"
+             onerror="this.parentElement.style.background='#2a2a2a'; this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.78),transparent 60%);"></div>
+        ${trip.is_original ? `
+        <div class="absolute top-3 left-1/2 -translate-x-1/2 font-hero italic font-extrabold text-white"
+             style="background:#FF5900;font-size:.65rem;padding:4px 14px;border-radius:6px;letter-spacing:.05em;white-space:nowrap;">
+          originals
+        </div>` : ''}
+        <div class="absolute bottom-3 left-4 right-4">
+          <div class="font-hero font-extrabold text-white" style="font-size:1.55rem;line-height:.95;">${line1}</div>
+          <div class="font-display font-bold text-white/75 uppercase" style="font-size:.58rem;letter-spacing:.22em;margin-top:2px;">${line2}</div>
+        </div>
+      </div>
+      <div style="padding:12px 14px 16px;">
+        ${trip.tags.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${tagHtml}</div>` : ''}
+        <p class="font-display font-bold text-white" style="font-size:.95rem;margin-bottom:8px;">${trip.name}</p>
+        <div class="flex items-center gap-4 text-white/55" style="font-size:.75rem;margin-bottom:10px;">
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size:14px;color:#FF5900;">calendar_today</span>
+            <span style="text-decoration:underline;text-underline-offset:2px;">${trip.duration_days} days</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size:14px;color:#FF5900;">public</span>
+            <span style="text-decoration:underline;text-underline-offset:2px;">${trip.destinations.length} Countries</span>
+          </span>
+        </div>
+        <div class="flex items-baseline flex-wrap" style="gap:4px;">
+          <span class="text-white/45" style="font-size:.78rem;">From</span>
+          <span class="font-display font-extrabold text-white" style="font-size:1.35rem;">$${trip.from_price.toLocaleString()}</span>
+          <span class="text-white/45" style="font-size:.78rem;">pp</span>
+          ${wasHtml}
+        </div>
+        ${aiReason ? `
+        <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#1A0800;color:#FFB380;font-size:.72rem;display:flex;gap:6px;align-items:flex-start;">
+          <span>✦</span><span>${aiReason}</span>
+        </div>` : ''}
+        ${selectable ? `
+        <button class="add-btn w-full mt-3 py-2 font-semibold transition-all"
+                style="border-radius:100px;font-size:.82rem;font-family:inherit;cursor:pointer;${selected?'background:#FF5900;color:white;border:none;':'background:transparent;color:#FF5900;border:1.5px solid #FF5900;'}"
+                onclick="event.stopPropagation();selectTrip('${trip.id}',this.closest('.trip-card'))">
+          ${selected ? '✓ Added' : '+ Add to package'}
+        </button>` : ''}
+      </div>
+    </div>`;
+}
+
+// ─── PASSWORD GATE ──────────────────────────────────────────────────────────
+function checkGate() {
+  const val = document.getElementById('gate-input').value;
+  if (val === 'Go-Wander-2026') {
+    document.getElementById('password-gate').style.display = 'none';
+    localStorage.setItem('contiki-auth', '1');
+  } else {
+    document.getElementById('gate-error').classList.remove('hidden');
+    document.getElementById('gate-input').value = '';
+    document.getElementById('gate-input').focus();
+  }
+}
+if (localStorage.getItem('contiki-auth') === '1') {
+  document.getElementById('password-gate').style.display = 'none';
+}
+
+// ─── NAV SCROLL GLASS ───────────────────────────────────────────────────────
+const nav = document.getElementById('site-nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 10);
+}, { passive: true });
+
+// ─── SEARCH MODAL ───────────────────────────────────────────────────────────
+function openSearch() {
+  document.getElementById('search-overlay').classList.add('open');
+  document.getElementById('search-panel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('search-input').focus(), 320);
+}
+function closeSearch() {
+  document.getElementById('search-overlay').classList.remove('open');
+  document.getElementById('search-panel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+
+function chipSearch(el) {
+  document.getElementById('search-input').value = el.textContent.trim();
+  doSearch();
+}
+
+async function doSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+
+  document.getElementById('popular-section').style.display = 'none';
+  document.getElementById('ai-understood').classList.add('hidden');
+  document.getElementById('results-container').classList.add('hidden');
+  document.getElementById('results-header').classList.add('hidden');
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('search-status').classList.remove('hidden');
+
+  let result;
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, trips: TRIPS }),
+    });
+    if (!res.ok) throw new Error('API unavailable');
+    result = await res.json();
+  } catch {
+    result = mockSearch(query);
+  }
+
+  document.getElementById('search-status').classList.add('hidden');
+
+  if (!result.matches || result.matches.length === 0) {
+    document.getElementById('empty-state').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('ai-summary').textContent = result.summary;
+  document.getElementById('ai-understood').classList.remove('hidden');
+  document.getElementById('results-count').textContent = result.matches.length;
+  document.getElementById('results-header').classList.remove('hidden');
+
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = result.matches.map((m, i) => {
+    const trip = TRIPS.find(t => t.id === m.id);
+    if (!trip) return '';
+    return renderTripCard(trip, { aiReason: m.reason, delay: i * 40 });
+  }).join('');
+  document.getElementById('results-container').classList.remove('hidden');
+}
+
+function mockSearch(query) {
+  const q = query.toLowerCase();
+  const keywords = {
+    europe: ['eur-highlights-14','italy-greece-12'],
+    italy: ['italy-greece-12'],
+    greece: ['italy-greece-12'],
+    paris: ['eur-highlights-14'],
+    japan: ['japan-discovery-10'],
+    asia: ['japan-discovery-10','se-asia-18','bali-7'],
+    bali: ['bali-7'],
+    'new zealand': ['nz-adventure-8'],
+    nz: ['nz-adventure-8'],
+    morocco: ['morocco-10'],
+    africa: ['morocco-10'],
+    peru: ['peru-9'],
+    'latin america': ['peru-9'],
+    beach: ['bali-7','italy-greece-12'],
+    adventure: ['nz-adventure-8','peru-9'],
+    culture: ['japan-discovery-10','morocco-10','italy-greece-12'],
+    cheap: ['bali-7','nz-adventure-8'],
+    short: ['bali-7','nz-adventure-8'],
+    long: ['se-asia-18','eur-highlights-14'],
+  };
+
+  const matchedIds = new Set();
+  for (const [kw, ids] of Object.entries(keywords)) {
+    if (q.includes(kw)) ids.forEach(id => matchedIds.add(id));
+  }
+
+  let matches = [...matchedIds].map(id => ({
+    id,
+    reason: reasonFor(id, query),
+    score: 0.9 - Math.random() * 0.2,
+  }));
+
+  if (!matches.length) {
+    matches = TRIPS.slice(0, 4).map(t => ({
+      id: t.id,
+      reason: `A great pick for travellers looking for ${t.geography} adventures`,
+      score: 0.7,
+    }));
+  }
+
+  return {
+    summary: `Looking for "${query}" — showing ${matches.length} best matches`,
+    matches: matches.slice(0, 6),
+  };
+}
+
+function reasonFor(id, query) {
+  const reasons = {
+    'eur-highlights-14': 'Covers Europe\'s must-see cities in one epic 2-week loop',
+    'italy-greece-12': 'Italian history meets Greek island beauty — ideal combo',
+    'japan-discovery-10': 'Seamlessly blends ancient temples with neon-lit modern cities',
+    'se-asia-18': 'The best of Southeast Asia at a pace that feels immersive, not rushed',
+    'nz-adventure-8': 'Short but action-packed — perfect if time is tight',
+    'bali-7': 'Affordable island escape with surf, rice terraces and yoga retreats',
+    'morocco-10': 'Sahara sunsets, medina souks and genuine off-the-beaten-path vibes',
+    'peru-9': 'Machu Picchu and Sacred Valley — a bucket-list landmark done properly',
+  };
+  return reasons[id] || `A strong match for your search: "${query}"`;
+}
+
+// ─── REGION EXPLORER ────────────────────────────────────────────────────────
+const REGIONS = ['Europe','Asia','New Zealand','Australia','Latin America','North America','Africa & Middle East'];
+document.getElementById('region-links').innerHTML = REGIONS.map((r, i) =>
+  `<a href="#" onclick="event.preventDefault();regionSearch('${r}')"
+      style="color:#1C4A3D;font-size:1.4rem;font-weight:700;text-decoration:none;transition:color .15s;"
+      onmouseover="this.style.color='#FF5900'" onmouseout="this.style.color='#1C4A3D'">${r}</a>`
+  + (i < REGIONS.length - 1 ? `<span style="color:#E5E0D8;margin:0 10px;">/</span>` : '')
+).join('');
+
+function regionSearch(region) {
+  document.getElementById('search-input').value = `${region} tours`;
+  openSearch();
+  doSearch();
+}
+
+// ─── FEATURED TRIPS ─────────────────────────────────────────────────────────
+document.getElementById('featured-grid').innerHTML =
+  TRIPS.slice(0, 4).map((t, i) => renderTripCard(t, { delay: i * 60 })).join('');
+
+// ─── POPULAR TRIPS (in modal) ────────────────────────────────────────────────
+document.getElementById('popular-grid').innerHTML =
+  TRIPS.slice(0, 4).map((t, i) => renderTripCard(t, { delay: i * 60 })).join('');
+</script>
+</body>
+</html>

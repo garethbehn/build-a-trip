@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contiki — Build Trip</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            go:          { DEFAULT: '#FF5900', alt: '#FF7300' },
+            wander:      { DEFAULT: '#1C4A3D', alt: '#1C6348' },
+            burst:       '#FFE100',
+            dusk:        '#0A0C0A',
+            dawn:        '#FFFAF2',
+            'ui-grey80': '#6B6B6B',
+            'ui-border': '#E5E0D8',
+            'card-dark': '#1C1C1C',
+          },
+          fontFamily: {
+            hero:    ['"Playfair Display"', 'Georgia', 'serif'],
+            display: ['"Inter"', 'system-ui', 'sans-serif'],
+            body:    ['"Inter"', 'system-ui', 'sans-serif'],
+          },
+          borderRadius: { card: '16px', media: '12px', pill: '100px' },
+        },
+      },
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px; line-height: 1; vertical-align: middle;
+    }
+    #site-nav { transition: background-color .2s ease, backdrop-filter .2s ease, box-shadow .2s ease; }
+    #site-nav.scrolled {
+      background-color: rgba(255,250,242,.78);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 1px 24px rgba(0,0,0,.07);
+    }
+    .dot-pulse span { display:inline-block; width:7px; height:7px; border-radius:50%; background:#FF5900;
+      animation:dotpulse 1.2s ease-in-out infinite; }
+    .dot-pulse span:nth-child(2){animation-delay:.2s}
+    .dot-pulse span:nth-child(3){animation-delay:.4s}
+    @keyframes dotpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+    .card-enter{opacity:0;transform:translateY(14px);animation:cardRise .35s ease forwards;}
+    @keyframes cardRise{to{opacity:1;transform:translateY(0);}}
+    .trip-card{transition:transform .2s ease,box-shadow .2s ease;}
+    .trip-card:hover{transform:translateY(-3px);box-shadow:0 20px 25px rgba(0,0,0,.18);}
+
+    /* Timeline */
+    #timeline-track { border-left: 2px solid; border-image: linear-gradient(to bottom,#FF5900,#3B82F6,#FF5900) 1; }
+    #sticky-footer { transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); }
+    #sticky-footer.visible { transform: translateY(0); }
+
+    /* Package modal */
+    #package-overlay { opacity:0; pointer-events:none; transition:opacity .3s ease; }
+    #package-overlay.open { opacity:1; pointer-events:all; }
+    #package-modal { transform:scale(.96) translateY(20px); opacity:0; transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s ease; }
+    #package-modal.open { transform:scale(1) translateY(0); opacity:1; }
+  </style>
+</head>
+<body class="bg-dawn font-body text-dusk">
+
+<!-- =====================================================
+     08 — PASSWORD GATE
+     ===================================================== -->
+<div id="password-gate" class="fixed inset-0 z-[9999] bg-dusk flex items-center justify-center">
+  <div style="background:#1a1a1a;border-radius:16px;padding:48px 40px;width:360px;max-width:90vw;">
+    <div class="text-go font-hero italic font-extrabold leading-none mb-2" style="font-size:2rem;">contiki</div>
+    <p class="text-white/40 mb-8" style="font-size:.8rem;">Preview access only</p>
+    <input id="gate-input" type="password" placeholder="Enter password"
+      class="w-full text-white text-sm mb-3 px-4 py-3 rounded-xl outline-none transition-colors"
+      style="background:#111;border:1px solid #333;font-family:inherit;"
+      onfocus="this.style.borderColor='#FF5900'" onblur="this.style.borderColor='#333'"
+      onkeydown="if(event.key==='Enter')checkGate()" />
+    <p id="gate-error" class="mb-3 hidden" style="color:#ff6b6b;font-size:.8rem;">Incorrect password. Try again.</p>
+    <button onclick="checkGate()" class="w-full text-white font-bold py-3 rounded-xl transition-colors"
+      style="background:#FF5900;font-family:inherit;font-size:.95rem;border:none;cursor:pointer;"
+      onmouseover="this.style.background='#FF7300'" onmouseout="this.style.background='#FF5900'">
+      Enter
+    </button>
+  </div>
+</div>
+
+<!-- =====================================================
+     01 — NAV HEADER
+     ===================================================== -->
+<header id="site-nav" class="sticky top-0 z-[200] bg-dawn border-b border-ui-border">
+  <div class="relative flex items-center justify-between h-16 px-6 md:px-8">
+    <nav class="hidden md:flex items-center gap-1">
+      <a href="index.html" class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem;font-weight:600;font-family:inherit;text-decoration:none;">
+        Explore Trips
+        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
+      </a>
+      <a href="build-trip.html" class="group flex items-center gap-0.5 px-3 py-2 rounded-lg hover:bg-black/5 transition-colors" style="font-size:.85rem;font-weight:600;font-family:inherit;text-decoration:none;color:#FF5900;">
+        Build Trip
+        <span class="material-symbols-outlined" style="font-size:18px;opacity:.5;">expand_more</span>
+      </a>
+      <button class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem;font-weight:600;font-family:inherit;">
+        About
+        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
+      </button>
+    </nav>
+    <a href="index.html" class="absolute left-1/2 -translate-x-1/2 text-go font-hero italic font-extrabold hover:opacity-80 transition-opacity" style="font-size:1.6rem;line-height:1;text-decoration:none;">
+      contiki
+    </a>
+    <div class="flex items-center gap-2 ml-auto">
+      <button class="hidden md:flex items-center gap-1 px-3 py-2 hover:bg-black/5 transition-colors"
+        style="border-radius:100px;border:1.5px solid #E5E0D8;background:transparent;font-family:inherit;cursor:pointer;">
+        <span class="material-symbols-outlined opacity-60" style="font-size:18px;">person</span>
+        <span class="material-symbols-outlined opacity-40" style="font-size:16px;">expand_more</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- =====================================================
+     09 — BUILD-TRIP SEARCH (entry view)
+     ===================================================== -->
+<div id="search-view">
+
+  <!-- Hero band -->
+  <div class="py-14 px-6 text-center" style="background:#1C4A3D;">
+    <p style="color:rgba(255,255,255,.4);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">
+      Multi-Trip Builder
+    </p>
+    <h1 class="font-hero font-extrabold italic text-go mb-4"
+        style="font-size:clamp(2.2rem,5vw,3.5rem);line-height:1;">
+      Build your adventure
+    </h1>
+    <p style="color:rgba(255,255,255,.55);font-size:.95rem;margin-bottom:32px;">
+      Find 2+ Contiki tours, combine them into one seamless package
+    </p>
+
+    <!-- Search bar -->
+    <div class="max-w-2xl mx-auto">
+      <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-3 mb-4" id="bt-search-bar"
+           style="box-shadow:0 25px 50px rgba(0,0,0,.25);">
+        <span class="material-symbols-outlined text-go" style="font-size:20px;">search</span>
+        <input id="bt-input" type="text" placeholder="Where and when? e.g. Europe in July then Southeast Asia in September…"
+          class="flex-1 outline-none text-dusk bg-transparent"
+          style="font-size:.92rem;font-family:inherit;min-width:0;"
+          onfocus="document.getElementById('bt-search-bar').style.outline='2px solid #FF5900'"
+          onblur="document.getElementById('bt-search-bar').style.outline='none'"
+          onkeydown="if(event.key==='Enter')btSearch()" />
+        <button onclick="btSearch()"
+          class="text-white px-5 py-2 hover:opacity-90 transition-opacity whitespace-nowrap"
+          style="background:#FF5900;border-radius:100px;border:none;font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer;">
+          Find trips
+        </button>
+      </div>
+      <!-- Chips -->
+      <div class="flex flex-wrap justify-center gap-2">
+        <button onclick="btChip(this)" class="chip-btn px-4 py-1.5 rounded-pill hover:bg-white/15 transition-colors" style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:.8rem;font-family:inherit;background:rgba(255,255,255,.08);cursor:pointer;">
+          Europe in July + Asia in September
+        </button>
+        <button onclick="btChip(this)" class="chip-btn px-4 py-1.5 rounded-pill hover:bg-white/15 transition-colors" style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:.8rem;font-family:inherit;background:rgba(255,255,255,.08);cursor:pointer;">
+          Japan then Bali
+        </button>
+        <button onclick="btChip(this)" class="chip-btn px-4 py-1.5 rounded-pill hover:bg-white/15 transition-colors" style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:.8rem;font-family:inherit;background:rgba(255,255,255,.08);cursor:pointer;">
+          Morocco then Peru in autumn
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI understood strip -->
+  <div id="bt-ai-strip" class="hidden px-6 py-3 flex items-center gap-2" style="background:rgba(255,89,0,.07);border-bottom:1px solid rgba(255,89,0,.12);">
+    <span style="color:#FF5900;">✦</span>
+    <span class="font-semibold text-go" style="font-size:.8rem;">AI understood</span>
+    <span id="bt-summary" class="text-dusk" style="font-size:.82rem;margin-left:4px;"></span>
+  </div>
+
+  <!-- Status -->
+  <div id="bt-status" class="hidden px-6 py-4 flex items-center gap-3 text-ui-grey80" style="font-size:.88rem;background:#f0ebe1;">
+    <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
+    Finding your perfect tours…
+  </div>
+
+  <!-- Results -->
+  <div id="bt-results" class="hidden py-10 px-6" style="background:#f0ebe1;">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <p style="font-size:.88rem;font-weight:600;">
+          <span id="bt-count" class="text-go"></span>
+          <span class="text-dusk"> tours matched — select 2 or more</span>
+        </p>
+        <button id="build-pkg-btn" onclick="goToTimeline()" disabled
+          class="flex items-center gap-2 px-6 py-2.5 text-white font-semibold transition-all"
+          style="background:#E5E0D8;color:#aaa;border-radius:100px;border:none;font-family:inherit;font-size:.9rem;cursor:not-allowed;">
+          Build package
+          <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+        </button>
+      </div>
+      <div id="bt-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
+    </div>
+  </div>
+
+</div><!-- /search-view -->
+
+<!-- =====================================================
+     10 — BUILD-TRIP TIMELINE
+     ===================================================== -->
+<div id="timeline-view" class="hidden">
+
+  <!-- Top bar -->
+  <div class="py-4 px-6 flex items-center gap-4" style="background:#1C4A3D;">
+    <button onclick="backToSearch()" class="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-white/10" style="color:rgba(255,255,255,.7);font-size:.85rem;font-family:inherit;background:rgba(255,255,255,.08);border:none;cursor:pointer;">
+      <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
+      Back
+    </button>
+    <div>
+      <h2 id="tl-title" class="font-hero italic font-extrabold text-go" style="font-size:1.5rem;line-height:1.1;"></h2>
+      <p id="tl-dates" class="text-white/50" style="font-size:.8rem;"></p>
+    </div>
+    <div class="ml-auto">
+      <button onclick="openPackageModal()" class="flex items-center gap-2 px-5 py-2 text-wander font-semibold hover:opacity-90 transition-opacity" style="background:#FFFAF2;border-radius:100px;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
+        View package
+        <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Timeline body -->
+  <div class="max-w-3xl mx-auto px-6 py-10">
+    <div id="timeline-list" class="relative pl-14" style="border-left:2px solid;border-image:linear-gradient(to bottom,#FF5900 0%,#3B82F6 50%,#FF5900 100%) 1;margin-left:16px;"></div>
+  </div>
+
+  <!-- Sticky footer -->
+  <div id="sticky-footer" class="fixed bottom-0 left-0 right-0 z-[100] px-6 py-4 flex items-center justify-between gap-4 flex-wrap" style="background:#1C4A3D;">
+    <div class="flex gap-6">
+      <div class="text-center">
+        <div id="footer-tours" class="text-white font-extrabold" style="font-size:1.3rem;"></div>
+        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Tours</div>
+      </div>
+      <div class="text-center">
+        <div id="footer-days" class="text-white font-extrabold" style="font-size:1.3rem;"></div>
+        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Total days</div>
+      </div>
+      <div class="text-center">
+        <div id="footer-cost" class="text-go font-extrabold" style="font-size:1.3rem;"></div>
+        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Est. cost</div>
+      </div>
+    </div>
+    <button onclick="openPackageModal()" class="flex items-center gap-2 px-6 py-3 text-wander font-bold hover:opacity-90 transition-opacity" style="background:#FFFAF2;border-radius:100px;border:none;font-family:inherit;font-size:.92rem;cursor:pointer;">
+      View package
+      <span class="material-symbols-outlined" style="font-size:20px;">arrow_forward</span>
+    </button>
+  </div>
+
+</div><!-- /timeline-view -->
+
+<!-- =====================================================
+     12 — PACKAGE MODAL
+     ===================================================== -->
+<div id="package-overlay" class="fixed inset-0 z-[400] flex items-center justify-center px-4" style="background:rgba(0,0,0,.6);backdrop-filter:blur(3px);">
+  <div id="package-modal" class="bg-white rounded-[20px] w-full overflow-y-auto" style="max-width:620px;max-height:90vh;">
+
+    <!-- Hero band -->
+    <div class="relative p-8" style="background:#1C4A3D;border-radius:20px 20px 0 0;">
+      <h2 class="font-hero italic font-extrabold text-go mb-1" style="font-size:2rem;line-height:1;">Your package</h2>
+      <p id="pkg-sub" class="text-white/60" style="font-size:.88rem;"></p>
+      <div class="flex gap-8 mt-5">
+        <div class="text-center">
+          <div id="pkg-days" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
+          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Total days</div>
+        </div>
+        <div class="text-center">
+          <div id="pkg-tours-count" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
+          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Tours</div>
+        </div>
+        <div class="text-center">
+          <div id="pkg-total-top" class="text-go font-extrabold" style="font-size:1.6rem;"></div>
+          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Est. cost pp</div>
+        </div>
+      </div>
+      <button onclick="closePackageModal()" class="absolute top-5 right-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" style="width:32px;height:32px;background:rgba(255,255,255,.1);border:none;cursor:pointer;">
+        <span class="material-symbols-outlined text-white" style="font-size:20px;">close</span>
+      </button>
+    </div>
+
+    <!-- Line items -->
+    <div id="pkg-items" class="divide-y divide-gray-100 px-6 py-2"></div>
+
+    <!-- Total row -->
+    <div class="mx-6 my-4 px-5 py-4 rounded-xl flex items-center justify-between" style="background:#f5f0e8;">
+      <p class="font-semibold text-dusk" style="font-size:.9rem;">Estimated total per person</p>
+      <p id="pkg-total" class="font-extrabold text-go" style="font-size:1.4rem;"></p>
+    </div>
+
+    <!-- Disclaimer -->
+    <p class="px-6 pb-2 text-ui-grey80" style="font-size:.72rem;line-height:1.5;">
+      Prices shown are indicative from-prices. Flights and hotels are for illustration; final pricing subject to availability at time of booking.
+    </p>
+
+    <!-- CTAs -->
+    <div class="px-6 pb-8 flex flex-col gap-3 mt-2">
+      <button class="w-full py-3.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity" style="background:#FF5900;border:none;font-family:inherit;font-size:.95rem;cursor:pointer;">
+        Enquire &amp; book →
+      </button>
+      <button onclick="closePackageModal()" class="w-full py-3 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill" style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.9rem;cursor:pointer;">
+        Back to editing
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- =====================================================
+     07 — FOOTER
+     ===================================================== -->
+<footer style="background:#0A0C0A;color:white;padding:48px 32px 24px;">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid gap-8 mb-10" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
+      <div>
+        <a href="index.html" class="font-hero italic font-extrabold text-go block mb-3" style="font-size:1.8rem;line-height:1;text-decoration:none;">contiki</a>
+        <p style="color:rgba(255,255,255,.4);font-size:.82rem;line-height:1.6;max-width:200px;">The world's leading travel company for 18–35s.</p>
+      </div>
+      <div>
+        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">About Contiki</p>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+          <li><a href="#" class="footer-link">Who We Are</a></li>
+          <li><a href="#" class="footer-link">Meet the Team</a></li>
+          <li><a href="#" class="footer-link">Reviews</a></li>
+          <li><a href="#" class="footer-link">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Travelling with us</p>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+          <li><a href="#" class="footer-link">My Contiki</a></li>
+          <li><a href="#" class="footer-link">FAQs</a></li>
+          <li><a href="#" class="footer-link">Payment Plans</a></li>
+          <li><a href="#" class="footer-link">Visa Guide</a></li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Resources</p>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
+          <li><a href="#" class="footer-link">six-two magazine</a></li>
+          <li><a href="#" class="footer-link">Press Room</a></li>
+          <li><a href="#" class="footer-link">Make Travel Matter</a></li>
+        </ul>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;">
+      <p style="color:rgba(255,255,255,.3);font-size:.75rem;">© 2026 Contiki Holidays Ltd. All rights reserved.</p>
+      <div style="display:flex;gap:20px;">
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms &amp; Conditions</a>
+      </div>
+    </div>
+  </div>
+</footer>
+<style>
+  .footer-link{color:rgba(255,255,255,.45);font-size:.82rem;text-decoration:none;transition:color .15s;}
+  .footer-link:hover{color:white;}
+</style>
+
+<script>
+// ─── MOCK DATA ──────────────────────────────────────────────────────────────
+const TRIPS = [
+  { id:'eur-highlights-14', name:'European Highlights', geography:'Europe',
+    destinations:['Paris','Amsterdam','Berlin','Prague','Vienna'],
+    duration_days:14, departure_date:'2026-07-05', end_date:'2026-07-19',
+    from_price:2900, currency:'USD', was_price:3225,
+    image:'https://picsum.photos/seed/european-highlights/600/400', tags:['hot'], is_original:true },
+  { id:'italy-greece-12', name:'Italian Greek Adventure', geography:'Europe',
+    destinations:['Rome','Florence','Athens','Santorini'],
+    duration_days:12, departure_date:'2026-07-12', end_date:'2026-07-24',
+    from_price:3100, currency:'USD', was_price:null,
+    image:'https://picsum.photos/seed/italy-greece/600/400', tags:['new'], is_original:false },
+  { id:'japan-discovery-10', name:'Japan Discovery', geography:'Asia',
+    destinations:['Tokyo','Kyoto','Osaka','Hiroshima'],
+    duration_days:10, departure_date:'2026-08-02', end_date:'2026-08-12',
+    from_price:3400, currency:'USD', was_price:null,
+    image:'https://picsum.photos/seed/japan-discovery/600/400', tags:['bestseller'], is_original:true },
+  { id:'se-asia-18', name:'Southeast Asia Explorer', geography:'Asia',
+    destinations:['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'],
+    duration_days:18, departure_date:'2026-09-01', end_date:'2026-09-19',
+    from_price:2650, currency:'USD', was_price:2950,
+    image:'https://picsum.photos/seed/southeast-asia/600/400', tags:['hot','sale'], is_original:false },
+  { id:'nz-adventure-8', name:'New Zealand Adventure', geography:'Australasia',
+    destinations:['Auckland','Rotorua','Queenstown','Milford Sound'],
+    duration_days:8, departure_date:'2026-10-05', end_date:'2026-10-13',
+    from_price:2200, currency:'USD', was_price:null,
+    image:'https://picsum.photos/seed/new-zealand/600/400', tags:['new'], is_original:false },
+  { id:'bali-7', name:'Bali Breeze', geography:'Asia',
+    destinations:['Seminyak','Ubud','Nusa Penida','Canggu'],
+    duration_days:7, departure_date:'2026-08-15', end_date:'2026-08-22',
+    from_price:1850, currency:'USD', was_price:2100,
+    image:'https://picsum.photos/seed/bali/600/400', tags:['sale'], is_original:false },
+  { id:'morocco-10', name:'Morocco Magic', geography:'Africa',
+    destinations:['Casablanca','Fes','Merzouga','Marrakech'],
+    duration_days:10, departure_date:'2026-07-20', end_date:'2026-07-30',
+    from_price:2400, currency:'USD', was_price:null,
+    image:'https://picsum.photos/seed/morocco/600/400', tags:[], is_original:true },
+  { id:'peru-9', name:'Peruvian Wonders', geography:'Latin America',
+    destinations:['Lima','Cusco','Machu Picchu','Sacred Valley'],
+    duration_days:9, departure_date:'2026-09-15', end_date:'2026-09-24',
+    from_price:2750, currency:'USD', was_price:null,
+    image:'https://picsum.photos/seed/peru/600/400', tags:['bestseller'], is_original:false },
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let selectedTours = []; // { ...trip }
+let gaps = {};           // { gapKey: { selectedFlight, selectedHotel, stayCity } }
+
+// ─── PASSWORD GATE ──────────────────────────────────────────────────────────
+function checkGate() {
+  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
+    document.getElementById('password-gate').style.display = 'none';
+    localStorage.setItem('contiki-auth', '1');
+  } else {
+    document.getElementById('gate-error').classList.remove('hidden');
+    document.getElementById('gate-input').value = '';
+  }
+}
+if (localStorage.getItem('contiki-auth') === '1') {
+  document.getElementById('password-gate').style.display = 'none';
+}
+
+// ─── NAV SCROLL GLASS ───────────────────────────────────────────────────────
+const nav = document.getElementById('site-nav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 10), { passive:true });
+
+// ─── TRIP CARD RENDERER (selectable variant) ─────────────────────────────────
+function renderSelectableCard(trip, delay = 0) {
+  const selected = selectedTours.some(t => t.id === trip.id);
+  const words = trip.name.split(' ');
+  const line1 = words[0].toLowerCase();
+  const line2 = words.slice(1).join(' ').toUpperCase();
+  const tagHtml = trip.tags.map(t => {
+    if (t==='sale') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Sale</span>`;
+    if (t==='hot') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Hot NR</span>`;
+    return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.6rem;padding:2px 8px;border-radius:4px;">${t==='new'?'New Trip':t==='bestseller'?'Bestseller':t}</span>`;
+  }).join('');
+  return `
+    <div class="trip-card card-enter rounded-card overflow-hidden cursor-pointer"
+         id="card-${trip.id}"
+         style="background:#1C1C1C;animation-delay:${delay}ms;${selected?'outline:2px solid #FF5900;':''}"
+         onclick="selectTrip('${trip.id}')">
+      <div class="relative mx-[7px] mt-[7px] overflow-hidden" style="border-radius:12px;height:190px;">
+        <img src="${trip.image}" alt="${trip.name}" class="w-full h-full object-cover"
+             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.78),transparent 60%);"></div>
+        ${trip.is_original?`<div class="absolute top-3 left-1/2 -translate-x-1/2 font-hero italic font-extrabold text-white" style="background:#FF5900;font-size:.65rem;padding:4px 14px;border-radius:6px;white-space:nowrap;">originals</div>`:''}
+        <div class="absolute bottom-3 left-4 right-4">
+          <div class="font-hero font-extrabold text-white" style="font-size:1.4rem;line-height:.95;">${line1}</div>
+          <div class="font-display font-bold text-white/75 uppercase" style="font-size:.55rem;letter-spacing:.22em;margin-top:2px;">${line2}</div>
+        </div>
+        <!-- Date badge -->
+        <div class="absolute top-3 right-3 px-2 py-1 rounded-lg text-white font-semibold" style="background:rgba(0,0,0,.6);font-size:.7rem;">
+          ${formatDate(trip.departure_date)}
+        </div>
+      </div>
+      <div style="padding:10px 14px 14px;">
+        ${trip.tags.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${tagHtml}</div>`:''}
+        <p class="font-display font-bold text-white" style="font-size:.9rem;margin-bottom:6px;">${trip.name}</p>
+        <div class="flex items-center gap-3 text-white/55" style="font-size:.72rem;margin-bottom:8px;">
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size:13px;color:#FF5900;">calendar_today</span>
+            ${trip.duration_days} days
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size:13px;color:#FF5900;">public</span>
+            ${trip.destinations.length} countries
+          </span>
+        </div>
+        <div class="flex items-baseline" style="gap:4px;margin-bottom:10px;">
+          <span class="text-white/45" style="font-size:.75rem;">From</span>
+          <span class="font-extrabold text-white" style="font-size:1.2rem;">$${trip.from_price.toLocaleString()}</span>
+          <span class="text-white/45" style="font-size:.75rem;">pp</span>
+          ${trip.was_price?`<span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-size:.78rem;margin-left:4px;">Was $${trip.was_price.toLocaleString()}</span>`:''}
+        </div>
+        <button id="btn-${trip.id}" onclick="event.stopPropagation();selectTrip('${trip.id}')"
+          class="w-full py-2 font-semibold transition-all"
+          style="border-radius:100px;font-size:.82rem;font-family:inherit;cursor:pointer;${selected?'background:#FF5900;color:white;border:none;':'background:transparent;color:#FF5900;border:1.5px solid #FF5900;'}">
+          ${selected ? '✓ Added' : '+ Add to package'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+// ─── SEARCH LOGIC ────────────────────────────────────────────────────────────
+function btChip(el) {
+  document.getElementById('bt-input').value = el.textContent.trim();
+  btSearch();
+}
+
+async function btSearch() {
+  const query = document.getElementById('bt-input').value.trim();
+  if (!query) return;
+
+  document.getElementById('bt-status').classList.remove('hidden');
+  document.getElementById('bt-results').classList.add('hidden');
+  document.getElementById('bt-ai-strip').classList.add('hidden');
+
+  let result;
+  try {
+    const res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, trips: TRIPS }),
+    });
+    if (!res.ok) throw new Error();
+    result = await res.json();
+  } catch {
+    result = mockSearch(query);
+  }
+
+  document.getElementById('bt-status').classList.add('hidden');
+  document.getElementById('bt-summary').textContent = result.summary;
+  document.getElementById('bt-ai-strip').classList.remove('hidden');
+
+  const matched = result.matches.map(m => TRIPS.find(t => t.id === m.id)).filter(Boolean);
+  document.getElementById('bt-count').textContent = matched.length;
+  document.getElementById('bt-grid').innerHTML = matched.map((t, i) => renderSelectableCard(t, i * 50)).join('');
+  document.getElementById('bt-results').classList.remove('hidden');
+}
+
+function mockSearch(query) {
+  const q = query.toLowerCase();
+  const all = [...TRIPS];
+  let matched = all.filter(t =>
+    q.includes(t.geography.toLowerCase()) ||
+    t.destinations.some(d => q.includes(d.toLowerCase())) ||
+    q.includes(t.name.toLowerCase().split(' ')[0])
+  );
+  if (!matched.length) matched = all;
+  return {
+    summary: `"${query}" — ${matched.length} tours found. Select 2+ to build your package.`,
+    matches: matched.slice(0, 8).map(t => ({ id: t.id })),
+  };
+}
+
+// ─── SELECTION ───────────────────────────────────────────────────────────────
+function selectTrip(id) {
+  const trip = TRIPS.find(t => t.id === id);
+  if (!trip) return;
+  const idx = selectedTours.findIndex(t => t.id === id);
+  if (idx > -1) {
+    selectedTours.splice(idx, 1);
+  } else {
+    selectedTours.push(trip);
+  }
+  // Re-render card
+  const card = document.getElementById(`card-${id}`);
+  if (card) {
+    const selected = selectedTours.some(t => t.id === id);
+    card.style.outline = selected ? '2px solid #FF5900' : 'none';
+    const btn = document.getElementById(`btn-${id}`);
+    if (btn) {
+      btn.textContent = selected ? '✓ Added' : '+ Add to package';
+      btn.style.background = selected ? '#FF5900' : 'transparent';
+      btn.style.color = selected ? 'white' : '#FF5900';
+      btn.style.border = selected ? 'none' : '1.5px solid #FF5900';
+    }
+  }
+  // Enable/disable build button
+  const btn = document.getElementById('build-pkg-btn');
+  if (selectedTours.length >= 2) {
+    btn.disabled = false;
+    btn.style.background = '#FF5900';
+    btn.style.color = 'white';
+    btn.style.cursor = 'pointer';
+  } else {
+    btn.disabled = true;
+    btn.style.background = '#E5E0D8';
+    btn.style.color = '#aaa';
+    btn.style.cursor = 'not-allowed';
+  }
+}
+
+// ─── TIMELINE ────────────────────────────────────────────────────────────────
+function goToTimeline() {
+  if (selectedTours.length < 2) return;
+  // Sort by departure date
+  selectedTours.sort((a, b) => new Date(a.departure_date) - new Date(b.departure_date));
+  document.getElementById('search-view').classList.add('hidden');
+  document.getElementById('timeline-view').classList.remove('hidden');
+  renderTimeline();
+}
+
+function backToSearch() {
+  document.getElementById('timeline-view').classList.add('hidden');
+  document.getElementById('search-view').classList.remove('hidden');
+  document.getElementById('sticky-footer').classList.remove('visible');
+}
+
+function renderTimeline() {
+  const tours = selectedTours;
+  // Title = combined geographies
+  const geos = [...new Set(tours.map(t => t.geography))];
+  document.getElementById('tl-title').textContent = geos.join(' + ');
+  const startDate = formatDate(tours[0].departure_date);
+  const endDate = formatDate(tours[tours.length - 1].end_date);
+  document.getElementById('tl-dates').textContent = `${startDate} – ${endDate}`;
+
+  let html = '';
+  for (let i = 0; i < tours.length; i++) {
+    const t = tours[i];
+    // Tour dot + card
+    html += `
+      <div class="relative mb-2">
+        <div class="absolute -left-[51px] top-4 w-4 h-4 rounded-full ring-2 ring-dawn" style="background:#FF5900;box-shadow:0 0 8px rgba(255,89,0,.5);"></div>
+        ${renderCompactCard(t)}
+      </div>`;
+    // Gap between this and next tour
+    if (i < tours.length - 1) {
+      const gapKey = `${t.id}__${tours[i+1].id}`;
+      const gapDays = Math.round((new Date(tours[i+1].departure_date) - new Date(t.end_date)) / 86400000);
+      if (gapDays > 0) {
+        html += `
+          <div class="relative mb-2">
+            <div class="absolute -left-[51px] top-5 w-4 h-4 rounded-full ring-2 ring-dawn" style="background:#3B82F6;box-shadow:0 0 8px rgba(59,130,246,.5);"></div>
+            <div id="gap-${gapKey}">${renderGapCard(gapKey, t, tours[i+1], gapDays)}</div>
+          </div>`;
+        loadGapFlights(gapKey, t, tours[i+1]);
+      }
+    }
+  }
+  document.getElementById('timeline-list').innerHTML = html;
+  updateFooter();
+  setTimeout(() => document.getElementById('sticky-footer').classList.add('visible'), 300);
+}
+
+function renderCompactCard(trip) {
+  return `
+    <div class="flex gap-3 rounded-xl overflow-hidden mb-2" style="background:#1C1C1C;padding:8px;">
+      <div class="flex-shrink-0 overflow-hidden" style="width:120px;height:80px;border-radius:10px;">
+        <img src="${trip.image}" alt="${trip.name}" style="width:100%;height:100%;object-fit:cover;"
+             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
+      </div>
+      <div class="flex-1 min-w-0 py-1">
+        <p class="font-display font-bold text-white truncate" style="font-size:.88rem;">${trip.name}</p>
+        <p class="text-white/50" style="font-size:.75rem;">${formatDate(trip.departure_date)} – ${formatDate(trip.end_date)} · ${trip.duration_days} days</p>
+        <p class="text-go font-semibold" style="font-size:.82rem;margin-top:4px;">From $${trip.from_price.toLocaleString()} pp</p>
+      </div>
+      <button onclick="removeTour('${trip.id}')" class="self-start p-1 rounded hover:bg-white/10 transition-colors" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
+    </div>`;
+}
+
+function removeTour(id) {
+  selectedTours = selectedTours.filter(t => t.id !== id);
+  if (selectedTours.length < 2) { backToSearch(); return; }
+  gaps = {};
+  renderTimeline();
+}
+
+// ─── GAP CARD (11) ──────────────────────────────────────────────────────────
+function renderGapCard(key, tourA, tourB, days) {
+  const origin = tourA.destinations[tourA.destinations.length - 1];
+  const dest   = tourB.destinations[0];
+  const fromDate = tourA.end_date;
+  const toDate   = tourB.departure_date;
+  return `
+    <div class="rounded-[14px] p-4" style="border:1.5px dashed #BFDBFE;background:#EFF6FF;">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:#DBEAFE;">
+          <span class="material-symbols-outlined" style="font-size:18px;color:#2563EB;">flight_takeoff</span>
+        </div>
+        <div>
+          <p class="font-semibold" style="font-size:.9rem;color:#1D4ED8;">${days}-day gap · ${origin} → ${dest}</p>
+          <p style="font-size:.75rem;color:#3B82F6;">${formatDate(fromDate)} – ${formatDate(toDate)}</p>
+        </div>
+      </div>
+
+      <!-- Flights -->
+      <p class="font-semibold mb-2" style="font-size:.78rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">Available flights</p>
+      <div id="flights-${key}" class="mb-4">
+        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.83rem;">
+          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
+          Searching flights ${origin} → ${dest}…
+        </div>
+      </div>
+
+      <!-- Stay city picker -->
+      <p class="font-semibold mb-2" style="font-size:.78rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">🏨 Where would you like to stay during the gap?</p>
+      <div class="flex gap-2 mb-4 flex-wrap" id="city-picker-${key}">
+        <button onclick="chooseCity('${key}','${origin}','${dest}')"
+          class="city-btn flex items-center gap-1.5 px-4 py-2 rounded-pill transition-all"
+          data-city="${origin}"
+          style="background:white;border:1.5px solid #BFDBFE;font-size:.82rem;font-family:inherit;cursor:pointer;color:#1D4ED8;">
+          📍 ${origin} (End of tour)
+        </button>
+        <button onclick="chooseCity('${key}','${dest}','${origin}')"
+          class="city-btn flex items-center gap-1.5 px-4 py-2 rounded-pill transition-all"
+          data-city="${dest}"
+          style="background:white;border:1.5px solid #BFDBFE;font-size:.82rem;font-family:inherit;cursor:pointer;color:#1D4ED8;">
+          📍 ${dest} (Start of next tour)
+        </button>
+      </div>
+
+      <!-- Hotels -->
+      <div id="hotels-${key}" class="hidden">
+        <p class="font-semibold mb-2" style="font-size:.78rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">Hotels nearby</p>
+        <div id="hotels-list-${key}"></div>
+      </div>
+    </div>`;
+}
+
+async function loadGapFlights(key, tourA, tourB) {
+  const origin = tourA.destinations[tourA.destinations.length - 1];
+  const dest   = tourB.destinations[0];
+  let flights;
+  try {
+    const res = await fetch('/api/flights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin_city: origin, destination_city: dest,
+        departure_date: tourA.end_date,
+        trip_b_start_iso: tourB.departure_date + 'T00:00:00Z',
+        min_buffer_hours: 4, city_transfer_minutes: 120,
+      }),
+    });
+    if (!res.ok) throw new Error();
+    flights = await res.json();
+  } catch {
+    flights = mockFlights(origin, dest);
+  }
+
+  const container = document.getElementById(`flights-${key}`);
+  if (!container) return;
+  if (!flights.length) {
+    container.innerHTML = `<p style="font-size:.82rem;color:#6B6B6B;">No direct flights found for these dates.</p>`;
+    return;
+  }
+  if (!gaps[key]) gaps[key] = {};
+  if (!gaps[key].selectedFlight) {
+    gaps[key].selectedFlight = flights[0];
+    updateFooter();
+  }
+  container.innerHTML = flights.map((f, i) => {
+    const sel = gaps[key]?.selectedFlight?.offer_id === f.offer_id;
+    return `
+      <div onclick="selectFlight('${key}',${i})" data-idx="${i}"
+        class="flight-opt flex items-center justify-between rounded-xl p-3 mb-2 cursor-pointer transition-all"
+        style="background:white;${sel?'border:1.5px solid #3B82F6;':'border:1.5px solid transparent;'}">
+        <div class="flex items-center gap-3">
+          <span class="font-semibold px-2 py-0.5 rounded" style="background:#EFF6FF;color:#1D4ED8;font-size:.75rem;">${f.airline}</span>
+          <div>
+            <p class="font-semibold text-dusk" style="font-size:.85rem;">${f.flight} <span class="text-green-600 font-semibold" style="font-size:.72rem;">Direct</span></p>
+            <p style="font-size:.75rem;color:#6B6B6B;">${f.departing_at} → ${f.arriving_at}</p>
+          </div>
+        </div>
+        <p class="font-extrabold" style="font-size:.95rem;color:#16A34A;">$${f.price}</p>
+      </div>`;
+  }).join('');
+}
+
+function selectFlight(key, idx) {
+  const container = document.getElementById(`flights-${key}`);
+  const opts = container.querySelectorAll('.flight-opt');
+  opts.forEach((el, i) => {
+    el.style.border = i === idx ? '1.5px solid #3B82F6' : '1.5px solid transparent';
+  });
+  // Store selected flight
+  const priceText = opts[idx].querySelector('[style*="color:#16A34A"]')?.textContent?.replace('$','') || '0';
+  if (!gaps[key]) gaps[key] = {};
+  gaps[key].selectedFlight = { offer_id: `f${idx}`, price: parseFloat(priceText) };
+  updateFooter();
+}
+
+function mockFlights(origin, dest) {
+  return [
+    { offer_id:'f1', flight:'BA204', airline:'BA', departing_at:'09:15', arriving_at:'14:30', price:189, currency:'USD', _mock:true },
+    { offer_id:'f2', flight:'U2447', airline:'EZY', departing_at:'14:00', arriving_at:'19:20', price:124, currency:'USD', _mock:true },
+    { offer_id:'f3', flight:'LH332', airline:'LH', departing_at:'17:45', arriving_at:'23:05', price:215, currency:'USD', _mock:true },
+  ];
+}
+
+async function chooseCity(key, city, other) {
+  // Update button states
+  const picker = document.getElementById(`city-picker-${key}`);
+  picker.querySelectorAll('.city-btn').forEach(btn => {
+    const isSelected = btn.dataset.city === city;
+    btn.style.background = isSelected ? '#2563EB' : 'white';
+    btn.style.color = isSelected ? 'white' : '#1D4ED8';
+  });
+  if (!gaps[key]) gaps[key] = {};
+  gaps[key].stayCity = city;
+
+  const hotelsDiv = document.getElementById(`hotels-${key}`);
+  const listDiv   = document.getElementById(`hotels-list-${key}`);
+  hotelsDiv.classList.remove('hidden');
+  listDiv.innerHTML = `<div class="flex items-center gap-2 text-ui-grey80" style="font-size:.83rem;"><div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div> Finding hotels near ${city}…</div>`;
+
+  let hotels;
+  try {
+    const gapTour = selectedTours.find(t => key.startsWith(t.id));
+    const res = await fetch('/api/hotels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ location: city, check_in: gapTour?.end_date, check_out: gapTour?.end_date }),
+    });
+    if (!res.ok) throw new Error();
+    hotels = await res.json();
+  } catch {
+    hotels = mockHotels(city);
+  }
+
+  if (!hotels.length) {
+    listDiv.innerHTML = `<p style="font-size:.82rem;color:#6B6B6B;">No hotels found. Try the other city.</p>`;
+    return;
+  }
+  if (!gaps[key].selectedHotel) gaps[key].selectedHotel = hotels[0];
+  listDiv.innerHTML = hotels.map((h, i) => {
+    const sel = gaps[key]?.selectedHotel?.id === h.id;
+    return `
+      <div onclick="selectHotel('${key}','${h.id}')"
+        class="hotel-opt flex items-center justify-between rounded-xl p-3 mb-2 cursor-pointer transition-all"
+        style="background:white;${sel?'border:1.5px solid #FF5900;':'border:1.5px solid transparent;'}">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background:#FFF7ED;font-size:1.1rem;">🏨</div>
+          <div>
+            <p class="font-semibold text-dusk" style="font-size:.85rem;">${h.name}</p>
+            <p style="font-size:.75rem;color:#6B6B6B;">${h.address}</p>
+            <p class="flex items-center gap-1" style="font-size:.75rem;color:#D97706;">
+              ★ ${h.rating} <span style="color:#9CA3AF;">(${h.reviews?.toLocaleString()})</span>
+            </p>
+          </div>
+        </div>
+        <a href="${h.maps_url}" target="_blank" class="flex items-center gap-1 text-go font-semibold hover:underline" style="font-size:.8rem;text-decoration:none;" onclick="event.stopPropagation()">
+          View <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
+        </a>
+      </div>`;
+  }).join('');
+}
+
+function selectHotel(key, hotelId) {
+  document.querySelectorAll(`#hotels-list-${key} .hotel-opt`).forEach(el => {
+    el.style.border = '1.5px solid transparent';
+  });
+  event.currentTarget.style.border = '1.5px solid #FF5900';
+  if (!gaps[key]) gaps[key] = {};
+  gaps[key].selectedHotel = { id: hotelId };
+}
+
+function mockHotels(city) {
+  return [
+    { id:'h1', name:`${city} Grand Hotel`, address:`Central ${city}`, rating:4.5, reviews:2134, maps_url:'#', _mock:true },
+    { id:'h2', name:`${city} Boutique Stay`, address:`Old Town, ${city}`, rating:4.3, reviews:876, maps_url:'#', _mock:true },
+    { id:'h3', name:`The ${city} Collection`, address:`${city} City Centre`, rating:4.7, reviews:3210, maps_url:'#', _mock:true },
+  ];
+}
+
+// ─── FOOTER TOTALS ───────────────────────────────────────────────────────────
+function updateFooter() {
+  const tourTotal = selectedTours.reduce((s, t) => s + t.from_price, 0);
+  const flightTotal = Object.values(gaps).reduce((s, g) => s + (g.selectedFlight?.price || 0), 0);
+  const total = tourTotal + flightTotal;
+  const totalDays = selectedTours.reduce((s, t) => s + t.duration_days, 0);
+  document.getElementById('footer-tours').textContent = selectedTours.length;
+  document.getElementById('footer-days').textContent = totalDays;
+  document.getElementById('footer-cost').textContent = `$${total.toLocaleString()}`;
+}
+
+// ─── PACKAGE MODAL ───────────────────────────────────────────────────────────
+function openPackageModal() {
+  const tourTotal = selectedTours.reduce((s, t) => s + t.from_price, 0);
+  const flightTotal = Object.values(gaps).reduce((s, g) => s + (g.selectedFlight?.price || 0), 0);
+  const total = tourTotal + flightTotal;
+  const totalDays = selectedTours.reduce((s, t) => s + t.duration_days, 0);
+
+  document.getElementById('pkg-sub').textContent = `${selectedTours.length} tours · ${Object.keys(gaps).length} flight${Object.keys(gaps).length !== 1 ? 's' : ''} included`;
+  document.getElementById('pkg-days').textContent = totalDays;
+  document.getElementById('pkg-tours-count').textContent = selectedTours.length;
+  document.getElementById('pkg-total-top').textContent = `$${total.toLocaleString()}`;
+  document.getElementById('pkg-total').textContent = `$${total.toLocaleString()} pp`;
+
+  let items = '';
+  for (let i = 0; i < selectedTours.length; i++) {
+    const t = selectedTours[i];
+    items += `
+      <div class="flex items-center justify-between py-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#1C1C1C;font-size:.9rem;">🗺️</div>
+          <div>
+            <p class="font-semibold text-dusk" style="font-size:.88rem;">${t.name}</p>
+            <p style="font-size:.75rem;color:#6B6B6B;">${formatDate(t.departure_date)} – ${formatDate(t.end_date)}</p>
+          </div>
+        </div>
+        <p class="font-bold text-dusk" style="font-size:.9rem;">$${t.from_price.toLocaleString()}</p>
+      </div>`;
+    if (i < selectedTours.length - 1) {
+      const gapKey = `${t.id}__${selectedTours[i+1].id}`;
+      const gap = gaps[gapKey];
+      if (gap?.selectedFlight) {
+        items += `
+          <div class="flex items-center justify-between py-3" style="border-top:1px solid #f3f4f6;">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#EFF6FF;font-size:.9rem;">✈️</div>
+              <div>
+                <p class="font-semibold text-dusk" style="font-size:.88rem;">Flight · ${t.destinations[t.destinations.length-1]} → ${selectedTours[i+1].destinations[0]}</p>
+                <p style="font-size:.75rem;color:#6B6B6B;">Direct · selected offer</p>
+              </div>
+            </div>
+            <p class="font-bold text-dusk" style="font-size:.9rem;">$${gap.selectedFlight.price || '—'}</p>
+          </div>`;
+      }
+      if (gap?.stayCity) {
+        items += `
+          <div class="flex items-center justify-between py-3" style="border-top:1px solid #f3f4f6;">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#FFF7ED;font-size:.9rem;">🏨</div>
+              <div>
+                <p class="font-semibold text-dusk" style="font-size:.88rem;">Hotel · ${gap.stayCity}</p>
+                <p style="font-size:.75rem;color:#6B6B6B;">Indicative — confirm at booking</p>
+              </div>
+            </div>
+            <p style="font-size:.9rem;color:#9CA3AF;">—</p>
+          </div>`;
+      }
+    }
+  }
+  document.getElementById('pkg-items').innerHTML = items;
+
+  document.getElementById('package-overlay').classList.add('open');
+  document.getElementById('package-modal').classList.add('open');
+}
+
+function closePackageModal() {
+  document.getElementById('package-overlay').classList.remove('open');
+  document.getElementById('package-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePackageModal(); });
+</script>
+</body>
+</html>
