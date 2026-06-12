@@ -63,23 +63,61 @@ POST {
 
 ---
 
-## `/api/hotels` — Google Places (New API)
+## `/api/hotels` — LiteAPI (hotel search)
+
+Docs: https://docs.liteapi.travel/reference/overview
+Auth: `X-API-key` header
+Set `LITEAPI_KEY` in Vercel environment variables.
 
 ### Request
 ```json
-POST { "location": "Rome", "check_in": "2026-07-18", "check_out": "2026-07-21" }
+POST {
+  "location": "Rome",
+  "check_in": "2026-07-18",
+  "check_out": "2026-07-21",
+  "country_code": "IT",        // optional, auto-derived if absent
+  "lat": 41.9028,              // optional — use for geo-fenced radius search
+  "lng": 12.4964,
+  "radius_meters": 5000
+}
 ```
 
-### Logic (exact — New Places API)
-1. POST `https://places.googleapis.com/v1/places:searchText`
-   - Headers: `Content-Type: application/json`, `X-Goog-Api-Key: {GOOGLE_PLACES_API_KEY}`,
-     `X-Goog-FieldMask: places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.photos,places.priceLevel,places.id`
-   - Body: `{ "textQuery": "hotels in {location}" }`
-2. Map up to 5: `{ id, name, address, rating, reviews, price_level, photo_name, maps_url }`
-3. `maps_url` = `https://www.google.com/maps/place/?q=place_id:{id}`
-4. No key → mock hotels (`_mock: true`)
+### Logic (two-step)
 
-> Geo-fencing: the textQuery scopes to the chosen city. For tighter geo-fence, can add `locationBias` with the city's lat/lng + radius in a future iteration.
+**Step 1: GET hotel IDs**
+- If `lat`/`lng` provided → geo-fenced radius search (preferred for gap-city use case):
+  `GET /v3.0/data/hotels?latitude={lat}&longitude={lng}&radius={radius_meters}&limit=20`
+- Else city search:
+  `GET /v3.0/data/hotels?countryCode={cc}&cityName={city}&limit=20`
+- Returns hotel IDs to feed into step 2.
+
+**Step 2: POST /hotels/rates** for live availability and pricing
+```json
+POST /v3.0/hotels/rates
+{
+  "hotelIds": ["id1", "id2", ...],
+  "checkin": "2026-07-18",
+  "checkout": "2026-07-21",
+  "occupancies": [{ "adults": 1 }],
+  "currency": "USD",
+  "guestNationality": "GB"
+}
+```
+Returns rates with `offerId` (usable for prebook → book flow), room type, price, cancellation policy.
+
+### Response shape
+```js
+{
+  id, name, address, rating, price_per_night, currency,
+  room_type, cancellation, offer_id, photo, maps_url
+}
+```
+
+### Key upgrade (LiteAPI vs a generic places API)
+- Returns real hotel rates and availability, not just names/addresses
+- `offer_id` enables a full booking flow (prebook → book) in future
+- Geo-fenced lat/lng search scopes exactly to gap city area
+- No key → mock hotels (`_mock: true`)
 
 ---
 
@@ -92,6 +130,6 @@ POST { "location": "Rome", "check_in": "2026-07-18", "check_out": "2026-07-21" }
 - [ ] All keys server-side only; never in client
 - [ ] Each proxy returns realistic mock when key absent
 - [ ] Duffel: single call w/ return_offers, direct-only, feasibility-filtered
-- [ ] Places: New API w/ X-Goog-FieldMask, not legacy textsearch
+- [ ] Hotels: LiteAPI two-step (hotel IDs then rates), X-API-key header, geo-fenced by lat/lng when available
 - [ ] Search: TTC live when token present, keyword fallback when no Anthropic key
 - [ ] CORS + OPTIONS + POST-only on all

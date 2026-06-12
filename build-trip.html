@@ -52,28 +52,31 @@
     .dot-pulse span:nth-child(2){animation-delay:.2s}
     .dot-pulse span:nth-child(3){animation-delay:.4s}
     @keyframes dotpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
-    .card-enter{opacity:0;transform:translateY(14px);animation:cardRise .35s ease forwards;}
-    @keyframes cardRise{to{opacity:1;transform:translateY(0);}}
-    .trip-card{transition:transform .2s ease,box-shadow .2s ease;}
-    .trip-card:hover{transform:translateY(-3px);box-shadow:0 20px 25px rgba(0,0,0,.18);}
 
-    /* Timeline */
-    #timeline-track { border-left: 2px solid; border-image: linear-gradient(to bottom,#FF5900,#3B82F6,#FF5900) 1; }
+    .step-enter { opacity:0; transform:translateY(16px); animation: stepRise .35s ease forwards; }
+    @keyframes stepRise { to { opacity:1; transform:translateY(0); } }
+
+    .trip-card { transition: transform .2s ease, box-shadow .2s ease; }
+    .trip-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px rgba(0,0,0,.18); }
+
     #sticky-footer { transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); }
     #sticky-footer.visible { transform: translateY(0); }
 
-    /* Package modal */
     #package-overlay { opacity:0; pointer-events:none; transition:opacity .3s ease; }
     #package-overlay.open { opacity:1; pointer-events:all; }
     #package-modal { transform:scale(.96) translateY(20px); opacity:0; transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s ease; }
     #package-modal.open { transform:scale(1) translateY(0); opacity:1; }
+
+    .input-focus:focus { outline: 2px solid #FF5900; }
+    .flight-opt { cursor:pointer; transition: border-color .15s, background .15s; }
+    .flight-opt:hover { background: #f9f6f0; }
+    .hotel-opt { cursor:pointer; transition: border-color .15s, background .15s; }
+    .hotel-opt:hover { background: #f9f6f0; }
   </style>
 </head>
 <body class="bg-dawn font-body text-dusk">
 
-<!-- =====================================================
-     08 — PASSWORD GATE
-     ===================================================== -->
+<!-- PASSWORD GATE -->
 <div id="password-gate" class="fixed inset-0 z-[9999] bg-dusk flex items-center justify-center">
   <div style="background:#1a1a1a;border-radius:16px;padding:48px 40px;width:360px;max-width:90vw;">
     <div class="text-go font-hero italic font-extrabold leading-none mb-2" style="font-size:2rem;">contiki</div>
@@ -92,9 +95,7 @@
   </div>
 </div>
 
-<!-- =====================================================
-     01 — NAV HEADER
-     ===================================================== -->
+<!-- NAV -->
 <header id="site-nav" class="sticky top-0 z-[200] bg-dawn border-b border-ui-border">
   <div class="relative flex items-center justify-between h-16 px-6 md:px-8">
     <nav class="hidden md:flex items-center gap-1">
@@ -125,130 +126,107 @@
 </header>
 
 <!-- =====================================================
-     09 — BUILD-TRIP SEARCH (entry view)
+     09 — ENTRY VIEW (Origin + Start Location)
      ===================================================== -->
-<div id="search-view">
-
-  <!-- Hero band -->
+<div id="entry-view">
   <div class="py-14 px-6 text-center" style="background:#1C4A3D;">
     <p style="color:rgba(255,255,255,.4);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">
-      Multi-Trip Builder
+      Trip Builder
     </p>
-    <h1 class="font-hero font-extrabold italic text-go mb-4"
-        style="font-size:clamp(2.2rem,5vw,3.5rem);line-height:1;">
+    <h1 class="font-hero font-extrabold italic text-go mb-10" style="font-size:clamp(2.2rem,5vw,3.5rem);line-height:1;">
       Build your adventure
     </h1>
-    <p style="color:rgba(255,255,255,.55);font-size:.95rem;margin-bottom:32px;">
-      Find 2+ Contiki tours, combine them into one seamless package
-    </p>
 
-    <!-- Search bar -->
-    <div class="max-w-2xl mx-auto">
-      <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-3 mb-4" id="bt-search-bar"
-           style="box-shadow:0 25px 50px rgba(0,0,0,.25);">
-        <span class="material-symbols-outlined text-go" style="font-size:20px;">search</span>
-        <input id="bt-input" type="text" placeholder="Where and when? e.g. Europe in July then Southeast Asia in September…"
-          class="flex-1 outline-none text-dusk bg-transparent"
-          style="font-size:.92rem;font-family:inherit;min-width:0;"
-          onfocus="document.getElementById('bt-search-bar').style.outline='2px solid #FF5900'"
-          onblur="document.getElementById('bt-search-bar').style.outline='none'"
-          onkeydown="if(event.key==='Enter')btSearch()" />
-        <button onclick="btSearch()"
-          class="text-white px-5 py-2 hover:opacity-90 transition-opacity whitespace-nowrap"
-          style="background:#FF5900;border-radius:100px;border:none;font-size:.85rem;font-weight:700;font-family:inherit;cursor:pointer;">
-          Find trips
-        </button>
+    <div class="max-w-xl mx-auto flex flex-col gap-4">
+
+      <!-- Step 1: Origin -->
+      <div id="step1-card" class="bg-white rounded-[14px] p-6 text-left step-enter" style="box-shadow:0 25px 50px rgba(0,0,0,.25);">
+        <p class="font-semibold text-dusk mb-3" style="font-size:.95rem;">Where are you coming from?</p>
+        <div class="flex gap-3">
+          <div class="flex-1 flex items-center gap-2 rounded-xl px-4 py-3 border border-ui-border" id="origin-wrap"
+               style="transition:border-color .15s;">
+            <span class="material-symbols-outlined text-go" style="font-size:18px;">flight_takeoff</span>
+            <input id="origin-input" type="text" placeholder="e.g. London"
+              class="flex-1 outline-none bg-transparent text-dusk input-focus"
+              style="font-size:.92rem;font-family:inherit;min-width:0;border:none;"
+              onfocus="document.getElementById('origin-wrap').style.borderColor='#FF5900'"
+              onblur="document.getElementById('origin-wrap').style.borderColor='#E5E0D8'"
+              onkeydown="if(event.key==='Enter')submitOrigin()" />
+          </div>
+          <button onclick="submitOrigin()"
+            class="text-white px-6 py-2 font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
+            style="background:#FF5900;border-radius:100px;border:none;font-size:.88rem;font-family:inherit;cursor:pointer;">
+            Next
+          </button>
+        </div>
       </div>
-      <!-- Chips -->
-      <div class="flex flex-wrap justify-center gap-2">
-        <button onclick="btChip(this)" class="chip-btn px-4 py-1.5 rounded-pill hover:bg-white/15 transition-colors" style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:.8rem;font-family:inherit;background:rgba(255,255,255,.08);cursor:pointer;">
-          Europe in July + Asia in September
-        </button>
-        <button onclick="btChip(this)" class="chip-btn px-4 py-1.5 rounded-pill hover:bg-white/15 transition-colors" style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:.8rem;font-family:inherit;background:rgba(255,255,255,.08);cursor:pointer;">
-          Japan then Bali
-        </button>
-        <button onclick="btChip(this)" class="chip-btn px-4 py-1.5 rounded-pill hover:bg-white/15 transition-colors" style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);font-size:.8rem;font-family:inherit;background:rgba(255,255,255,.08);cursor:pointer;">
-          Morocco then Peru in autumn
-        </button>
+
+      <!-- Step 2: Start Location (hidden until step 1 done) -->
+      <div id="step2-card" class="bg-white rounded-[14px] p-6 text-left" style="box-shadow:0 25px 50px rgba(0,0,0,.25);display:none;">
+        <p class="font-semibold text-dusk mb-1" style="font-size:.95rem;">Where do you want to start your adventure?</p>
+        <p class="text-ui-grey80 mb-3" style="font-size:.8rem;">This is where you'll join your first Contiki tour.</p>
+        <div class="flex gap-3">
+          <div class="flex-1 flex items-center gap-2 rounded-xl px-4 py-3 border border-ui-border" id="start-wrap"
+               style="transition:border-color .15s;">
+            <span class="material-symbols-outlined text-go" style="font-size:18px;">location_on</span>
+            <input id="start-input" type="text" placeholder="e.g. Bangkok"
+              class="flex-1 outline-none bg-transparent text-dusk"
+              style="font-size:.92rem;font-family:inherit;min-width:0;border:none;"
+              onfocus="document.getElementById('start-wrap').style.borderColor='#FF5900'"
+              onblur="document.getElementById('start-wrap').style.borderColor='#E5E0D8'"
+              onkeydown="if(event.key==='Enter')submitStart()" />
+          </div>
+          <button onclick="submitStart()"
+            class="text-white px-6 py-2 font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
+            style="background:#FF5900;border-radius:100px;border:none;font-size:.88rem;font-family:inherit;cursor:pointer;">
+            Next
+          </button>
+        </div>
       </div>
+
     </div>
   </div>
-
-  <!-- AI understood strip -->
-  <div id="bt-ai-strip" class="hidden px-6 py-3 flex items-center gap-2" style="background:rgba(255,89,0,.07);border-bottom:1px solid rgba(255,89,0,.12);">
-    <span style="color:#FF5900;">✦</span>
-    <span class="font-semibold text-go" style="font-size:.8rem;">AI understood</span>
-    <span id="bt-summary" class="text-dusk" style="font-size:.82rem;margin-left:4px;"></span>
-  </div>
-
-  <!-- Status -->
-  <div id="bt-status" class="hidden px-6 py-4 flex items-center gap-3 text-ui-grey80" style="font-size:.88rem;background:#f0ebe1;">
-    <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
-    Finding your perfect tours…
-  </div>
-
-  <!-- Results -->
-  <div id="bt-results" class="hidden py-10 px-6" style="background:#f0ebe1;">
-    <div class="max-w-7xl mx-auto">
-      <div class="flex items-center justify-between mb-6">
-        <p style="font-size:.88rem;font-weight:600;">
-          <span id="bt-count" class="text-go"></span>
-          <span class="text-dusk"> tours matched — select 2 or more</span>
-        </p>
-        <button id="build-pkg-btn" onclick="goToTimeline()" disabled
-          class="flex items-center gap-2 px-6 py-2.5 text-white font-semibold transition-all"
-          style="background:#E5E0D8;color:#aaa;border-radius:100px;border:none;font-family:inherit;font-size:.9rem;cursor:not-allowed;">
-          Build package
-          <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
-        </button>
-      </div>
-      <div id="bt-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
-    </div>
-  </div>
-
-</div><!-- /search-view -->
+</div>
 
 <!-- =====================================================
-     10 — BUILD-TRIP TIMELINE
+     10 — BUILDER VIEW (Guided Journey)
      ===================================================== -->
-<div id="timeline-view" class="hidden">
+<div id="builder-view" class="hidden">
 
   <!-- Top bar -->
   <div class="py-4 px-6 flex items-center gap-4" style="background:#1C4A3D;">
-    <button onclick="backToSearch()" class="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-white/10" style="color:rgba(255,255,255,.7);font-size:.85rem;font-family:inherit;background:rgba(255,255,255,.08);border:none;cursor:pointer;">
+    <button onclick="backToEntry()" class="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-white/10" style="color:rgba(255,255,255,.7);font-size:.85rem;font-family:inherit;background:rgba(255,255,255,.08);border:none;cursor:pointer;">
       <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
       Back
     </button>
-    <div>
-      <h2 id="tl-title" class="font-hero italic font-extrabold text-go" style="font-size:1.5rem;line-height:1.1;"></h2>
-      <p id="tl-dates" class="text-white/50" style="font-size:.8rem;"></p>
+    <div class="flex-1 min-w-0">
+      <p id="builder-title" class="font-hero italic font-extrabold text-go truncate" style="font-size:1.3rem;line-height:1.1;"></p>
+      <p id="builder-sub" class="text-white/50" style="font-size:.78rem;"></p>
     </div>
-    <div class="ml-auto">
-      <button onclick="openPackageModal()" class="flex items-center gap-2 px-5 py-2 text-wander font-semibold hover:opacity-90 transition-opacity" style="background:#FFFAF2;border-radius:100px;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
-        View package
-        <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
-      </button>
-    </div>
+    <button onclick="openPackageModal()" id="view-pkg-btn"
+      class="flex items-center gap-2 px-5 py-2 text-wander font-semibold hover:opacity-90 transition-opacity"
+      style="background:#FFFAF2;border-radius:100px;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;display:none;">
+      View package
+      <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
+    </button>
   </div>
 
-  <!-- Timeline body -->
-  <div class="max-w-3xl mx-auto px-6 py-10">
-    <div id="timeline-list" class="relative pl-14" style="border-left:2px solid;border-image:linear-gradient(to bottom,#FF5900 0%,#3B82F6 50%,#FF5900 100%) 1;margin-left:16px;"></div>
-  </div>
+  <!-- Steps feed -->
+  <div class="max-w-2xl mx-auto px-4 py-8 pb-32" id="steps-feed"></div>
 
   <!-- Sticky footer -->
   <div id="sticky-footer" class="fixed bottom-0 left-0 right-0 z-[100] px-6 py-4 flex items-center justify-between gap-4 flex-wrap" style="background:#1C4A3D;">
     <div class="flex gap-6">
       <div class="text-center">
-        <div id="footer-tours" class="text-white font-extrabold" style="font-size:1.3rem;"></div>
+        <div id="footer-tours" class="text-white font-extrabold" style="font-size:1.3rem;">0</div>
         <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Tours</div>
       </div>
       <div class="text-center">
-        <div id="footer-days" class="text-white font-extrabold" style="font-size:1.3rem;"></div>
-        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Total days</div>
+        <div id="footer-flights" class="text-white font-extrabold" style="font-size:1.3rem;">0</div>
+        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Flights</div>
       </div>
       <div class="text-center">
-        <div id="footer-cost" class="text-go font-extrabold" style="font-size:1.3rem;"></div>
+        <div id="footer-cost" class="text-go font-extrabold" style="font-size:1.3rem;">$0</div>
         <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Est. cost</div>
       </div>
     </div>
@@ -258,26 +236,29 @@
     </button>
   </div>
 
-</div><!-- /timeline-view -->
+</div>
 
 <!-- =====================================================
      12 — PACKAGE MODAL
      ===================================================== -->
 <div id="package-overlay" class="fixed inset-0 z-[400] flex items-center justify-center px-4" style="background:rgba(0,0,0,.6);backdrop-filter:blur(3px);">
-  <div id="package-modal" class="bg-white rounded-[20px] w-full overflow-y-auto" style="max-width:620px;max-height:90vh;">
+  <div id="package-modal" class="bg-white rounded-[20px] w-full overflow-y-auto" style="max-width:640px;max-height:90vh;">
 
-    <!-- Hero band -->
     <div class="relative p-8" style="background:#1C4A3D;border-radius:20px 20px 0 0;">
-      <h2 class="font-hero italic font-extrabold text-go mb-1" style="font-size:2rem;line-height:1;">Your package</h2>
-      <p id="pkg-sub" class="text-white/60" style="font-size:.88rem;"></p>
+      <h2 class="font-hero italic font-extrabold text-go mb-1" style="font-size:2rem;line-height:1;">Your adventure</h2>
+      <p id="pkg-route" class="text-white/60" style="font-size:.88rem;"></p>
       <div class="flex gap-8 mt-5">
         <div class="text-center">
           <div id="pkg-days" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
-          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Total days</div>
+          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Days</div>
         </div>
         <div class="text-center">
           <div id="pkg-tours-count" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
           <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Tours</div>
+        </div>
+        <div class="text-center">
+          <div id="pkg-flights-count" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
+          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Flights</div>
         </div>
         <div class="text-center">
           <div id="pkg-total-top" class="text-go font-extrabold" style="font-size:1.6rem;"></div>
@@ -289,24 +270,25 @@
       </button>
     </div>
 
-    <!-- Line items -->
     <div id="pkg-items" class="divide-y divide-gray-100 px-6 py-2"></div>
 
-    <!-- Total row -->
     <div class="mx-6 my-4 px-5 py-4 rounded-xl flex items-center justify-between" style="background:#f5f0e8;">
       <p class="font-semibold text-dusk" style="font-size:.9rem;">Estimated total per person</p>
       <p id="pkg-total" class="font-extrabold text-go" style="font-size:1.4rem;"></p>
     </div>
 
-    <!-- Disclaimer -->
-    <p class="px-6 pb-2 text-ui-grey80" style="font-size:.72rem;line-height:1.5;">
-      Prices shown are indicative from-prices. Flights and hotels are for illustration; final pricing subject to availability at time of booking.
+    <p class="px-6 pb-3 flex items-start gap-2 text-ui-grey80" style="font-size:.78rem;line-height:1.5;">
+      <span style="font-size:1rem;">⚠</span>
+      <span>Prices may change until your trip is booked. Tour prices are from-prices; flights and hotels are indicative.</span>
     </p>
 
-    <!-- CTAs -->
-    <div class="px-6 pb-8 flex flex-col gap-3 mt-2">
-      <button class="w-full py-3.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity" style="background:#FF5900;border:none;font-family:inherit;font-size:.95rem;cursor:pointer;">
-        Enquire &amp; book →
+    <div class="px-6 pb-8 flex flex-col gap-3 mt-1">
+      <button id="save-btn" onclick="saveTrip()" class="w-full py-3.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity" style="background:#FF5900;border:none;font-family:inherit;font-size:.95rem;cursor:pointer;">
+        Save my trip
+      </button>
+      <button class="w-full py-3 font-semibold text-ui-grey80 rounded-pill relative" style="background:#f5f0e8;border:none;font-family:inherit;font-size:.9rem;cursor:default;">
+        Book now
+        <span class="ml-2 px-2 py-0.5 rounded text-white font-bold" style="background:#6B6B6B;font-size:.65rem;vertical-align:middle;">coming soon</span>
       </button>
       <button onclick="closePackageModal()" class="w-full py-3 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill" style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.9rem;cursor:pointer;">
         Back to editing
@@ -316,9 +298,7 @@
   </div>
 </div>
 
-<!-- =====================================================
-     07 — FOOTER
-     ===================================================== -->
+<!-- FOOTER -->
 <footer style="background:#0A0C0A;color:white;padding:48px 32px 24px;">
   <div class="max-w-7xl mx-auto">
     <div class="grid gap-8 mb-10" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
@@ -330,7 +310,6 @@
         <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">About Contiki</p>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
           <li><a href="#" class="footer-link">Who We Are</a></li>
-          <li><a href="#" class="footer-link">Meet the Team</a></li>
           <li><a href="#" class="footer-link">Reviews</a></li>
           <li><a href="#" class="footer-link">Careers</a></li>
         </ul>
@@ -341,15 +320,6 @@
           <li><a href="#" class="footer-link">My Contiki</a></li>
           <li><a href="#" class="footer-link">FAQs</a></li>
           <li><a href="#" class="footer-link">Payment Plans</a></li>
-          <li><a href="#" class="footer-link">Visa Guide</a></li>
-        </ul>
-      </div>
-      <div>
-        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Resources</p>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
-          <li><a href="#" class="footer-link">six-two magazine</a></li>
-          <li><a href="#" class="footer-link">Press Room</a></li>
-          <li><a href="#" class="footer-link">Make Travel Matter</a></li>
         </ul>
       </div>
     </div>
@@ -368,55 +338,149 @@
 </style>
 
 <script>
-// ─── MOCK DATA ──────────────────────────────────────────────────────────────
+// ─── CITY DATA (city → IATA + lat/lng) ───────────────────────────────────────
+const CITY_DATA = {
+  'london':       { iata:'LHR', lat:51.5074,  lng:-0.1278,   country:'GB' },
+  'paris':        { iata:'CDG', lat:48.8566,  lng:2.3522,    country:'FR' },
+  'amsterdam':    { iata:'AMS', lat:52.3676,  lng:4.9041,    country:'NL' },
+  'berlin':       { iata:'BER', lat:52.5200,  lng:13.4050,   country:'DE' },
+  'rome':         { iata:'FCO', lat:41.9028,  lng:12.4964,   country:'IT' },
+  'florence':     { iata:'FCO', lat:43.7696,  lng:11.2558,   country:'IT' },
+  'athens':       { iata:'ATH', lat:37.9838,  lng:23.7275,   country:'GR' },
+  'prague':       { iata:'PRG', lat:50.0755,  lng:14.4378,   country:'CZ' },
+  'vienna':       { iata:'VIE', lat:48.2082,  lng:16.3738,   country:'AT' },
+  'budapest':     { iata:'BUD', lat:47.4979,  lng:19.0402,   country:'HU' },
+  'barcelona':    { iata:'BCN', lat:41.3851,  lng:2.1734,    country:'ES' },
+  'madrid':       { iata:'MAD', lat:40.4168,  lng:-3.7038,   country:'ES' },
+  'tokyo':        { iata:'NRT', lat:35.6762,  lng:139.6503,  country:'JP' },
+  'kyoto':        { iata:'KIX', lat:35.0116,  lng:135.7681,  country:'JP' },
+  'osaka':        { iata:'KIX', lat:34.6937,  lng:135.5023,  country:'JP' },
+  'hiroshima':    { iata:'KIX', lat:34.3853,  lng:132.4553,  country:'JP' },
+  'bangkok':      { iata:'BKK', lat:13.7563,  lng:100.5018,  country:'TH' },
+  'chiang mai':   { iata:'CNX', lat:18.7883,  lng:98.9853,   country:'TH' },
+  'hanoi':        { iata:'HAN', lat:21.0285,  lng:105.8542,  country:'VN' },
+  'hoi an':       { iata:'HAN', lat:15.8801,  lng:108.3380,  country:'VN' },
+  'ho chi minh':  { iata:'SGN', lat:10.8231,  lng:106.6297,  country:'VN' },
+  'bali':         { iata:'DPS', lat:-8.3405,  lng:115.0920,  country:'ID' },
+  'seminyak':     { iata:'DPS', lat:-8.6905,  lng:115.1689,  country:'ID' },
+  'singapore':    { iata:'SIN', lat:1.3521,   lng:103.8198,  country:'SG' },
+  'kuala lumpur': { iata:'KUL', lat:3.1390,   lng:101.6869,  country:'MY' },
+  'auckland':     { iata:'AKL', lat:-36.8509, lng:174.7645,  country:'NZ' },
+  'queenstown':   { iata:'ZQN', lat:-45.0312, lng:168.6626,  country:'NZ' },
+  'sydney':       { iata:'SYD', lat:-33.8688, lng:151.2093,  country:'AU' },
+  'melbourne':    { iata:'MEL', lat:-37.8136, lng:144.9631,  country:'AU' },
+  'casablanca':   { iata:'CMN', lat:33.5731,  lng:-7.5898,   country:'MA' },
+  'marrakech':    { iata:'RAK', lat:31.6295,  lng:-7.9811,   country:'MA' },
+  'cairo':        { iata:'CAI', lat:30.0444,  lng:31.2357,   country:'EG' },
+  'nairobi':      { iata:'NBO', lat:-1.2921,  lng:36.8219,   country:'KE' },
+  'cape town':    { iata:'CPT', lat:-33.9249, lng:18.4241,   country:'ZA' },
+  'lima':         { iata:'LIM', lat:-12.0464, lng:-77.0428,  country:'PE' },
+  'cusco':        { iata:'CUZ', lat:-13.5319, lng:-71.9675,  country:'PE' },
+  'new york':     { iata:'JFK', lat:40.7128,  lng:-74.0060,  country:'US' },
+  'los angeles':  { iata:'LAX', lat:34.0522,  lng:-118.2437, country:'US' },
+  'miami':        { iata:'MIA', lat:25.7617,  lng:-80.1918,  country:'US' },
+  'cancun':       { iata:'CUN', lat:21.1619,  lng:-86.8515,  country:'MX' },
+  'dubai':        { iata:'DXB', lat:25.2048,  lng:55.2708,   country:'AE' },
+  'istanbul':     { iata:'IST', lat:41.0082,  lng:28.9784,   country:'TR' },
+  'copenhagen':   { iata:'CPH', lat:55.6761,  lng:12.5683,   country:'DK' },
+  'stockholm':    { iata:'ARN', lat:59.3293,  lng:18.0686,   country:'SE' },
+};
+
+function resolveCity(input) {
+  const key = input.toLowerCase().trim();
+  if (CITY_DATA[key]) return { city: toTitleCase(key), ...CITY_DATA[key] };
+  const partial = Object.entries(CITY_DATA).find(([k]) => k.includes(key) || key.includes(k));
+  if (partial) return { city: toTitleCase(partial[0]), ...partial[1] };
+  return { city: toTitleCase(input), iata: null, lat: null, lng: null };
+}
+
+function toTitleCase(s) {
+  return s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+}
+
+// ─── TRIP DATA ────────────────────────────────────────────────────────────────
 const TRIPS = [
   { id:'eur-highlights-14', name:'European Highlights', geography:'Europe',
     destinations:['Paris','Amsterdam','Berlin','Prague','Vienna'],
+    departure_city:'Paris', departure_iata:'CDG', end_city:'Vienna', end_iata:'VIE',
     duration_days:14, departure_date:'2026-07-05', end_date:'2026-07-19',
     from_price:2900, currency:'USD', was_price:3225,
     image:'https://picsum.photos/seed/european-highlights/600/400', tags:['hot'], is_original:true },
+
   { id:'italy-greece-12', name:'Italian Greek Adventure', geography:'Europe',
     destinations:['Rome','Florence','Athens','Santorini'],
+    departure_city:'Rome', departure_iata:'FCO', end_city:'Athens', end_iata:'ATH',
     duration_days:12, departure_date:'2026-07-12', end_date:'2026-07-24',
     from_price:3100, currency:'USD', was_price:null,
     image:'https://picsum.photos/seed/italy-greece/600/400', tags:['new'], is_original:false },
+
   { id:'japan-discovery-10', name:'Japan Discovery', geography:'Asia',
     destinations:['Tokyo','Kyoto','Osaka','Hiroshima'],
+    departure_city:'Tokyo', departure_iata:'NRT', end_city:'Osaka', end_iata:'KIX',
     duration_days:10, departure_date:'2026-08-02', end_date:'2026-08-12',
     from_price:3400, currency:'USD', was_price:null,
     image:'https://picsum.photos/seed/japan-discovery/600/400', tags:['bestseller'], is_original:true },
+
   { id:'se-asia-18', name:'Southeast Asia Explorer', geography:'Asia',
     destinations:['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'],
+    departure_city:'Bangkok', departure_iata:'BKK', end_city:'Hanoi', end_iata:'HAN',
     duration_days:18, departure_date:'2026-09-01', end_date:'2026-09-19',
     from_price:2650, currency:'USD', was_price:2950,
     image:'https://picsum.photos/seed/southeast-asia/600/400', tags:['hot','sale'], is_original:false },
+
   { id:'nz-adventure-8', name:'New Zealand Adventure', geography:'Australasia',
     destinations:['Auckland','Rotorua','Queenstown','Milford Sound'],
+    departure_city:'Auckland', departure_iata:'AKL', end_city:'Queenstown', end_iata:'ZQN',
     duration_days:8, departure_date:'2026-10-05', end_date:'2026-10-13',
     from_price:2200, currency:'USD', was_price:null,
     image:'https://picsum.photos/seed/new-zealand/600/400', tags:['new'], is_original:false },
+
   { id:'bali-7', name:'Bali Breeze', geography:'Asia',
     destinations:['Seminyak','Ubud','Nusa Penida','Canggu'],
+    departure_city:'Bali', departure_iata:'DPS', end_city:'Bali', end_iata:'DPS',
     duration_days:7, departure_date:'2026-08-15', end_date:'2026-08-22',
     from_price:1850, currency:'USD', was_price:2100,
     image:'https://picsum.photos/seed/bali/600/400', tags:['sale'], is_original:false },
+
   { id:'morocco-10', name:'Morocco Magic', geography:'Africa',
     destinations:['Casablanca','Fes','Merzouga','Marrakech'],
+    departure_city:'Casablanca', departure_iata:'CMN', end_city:'Marrakech', end_iata:'RAK',
     duration_days:10, departure_date:'2026-07-20', end_date:'2026-07-30',
     from_price:2400, currency:'USD', was_price:null,
     image:'https://picsum.photos/seed/morocco/600/400', tags:[], is_original:true },
+
   { id:'peru-9', name:'Peruvian Wonders', geography:'Latin America',
     destinations:['Lima','Cusco','Machu Picchu','Sacred Valley'],
+    departure_city:'Lima', departure_iata:'LIM', end_city:'Lima', end_iata:'LIM',
     duration_days:9, departure_date:'2026-09-15', end_date:'2026-09-24',
     from_price:2750, currency:'USD', was_price:null,
     image:'https://picsum.photos/seed/peru/600/400', tags:['bestseller'], is_original:false },
+
+  { id:'central-europe-8', name:'Central Europe Discovery', geography:'Europe',
+    destinations:['Vienna','Budapest','Krakow','Warsaw'],
+    departure_city:'Vienna', departure_iata:'VIE', end_city:'Warsaw', end_iata:'WAW',
+    duration_days:8, departure_date:'2026-07-22', end_date:'2026-07-30',
+    from_price:2100, currency:'USD', was_price:null,
+    image:'https://picsum.photos/seed/central-europe/600/400', tags:['new'], is_original:false },
+
+  { id:'thailand-islands-7', name:'Thailand Islands', geography:'Asia',
+    destinations:['Bangkok','Koh Samui','Koh Phangan','Phuket'],
+    departure_city:'Bangkok', departure_iata:'BKK', end_city:'Phuket', end_iata:'HKT',
+    duration_days:7, departure_date:'2026-09-22', end_date:'2026-09-29',
+    from_price:1950, currency:'USD', was_price:2200,
+    image:'https://picsum.photos/seed/thailand-islands/600/400', tags:['sale'], is_original:false },
 ];
 
-// ─── STATE ──────────────────────────────────────────────────────────────────
-let selectedTours = []; // { ...trip }
-let gaps = {};           // { gapKey: { selectedFlight, selectedHotel, stayCity } }
+// ─── JOURNEY STATE ────────────────────────────────────────────────────────────
+const journey = {
+  origin: null,          // { city, iata, lat, lng }
+  startLocation: null,   // { city, iata, lat, lng }
+  outboundFlight: null,  // offer | { skipped: true }
+  segments: [],          // [ {type:'trip', tour} | {type:'gap', ...} ]
+  returnFlight: null,    // offer | { skipped: true }
+};
 
-// ─── PASSWORD GATE ──────────────────────────────────────────────────────────
+// ─── PASSWORD GATE ────────────────────────────────────────────────────────────
 function checkGate() {
   if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
     document.getElementById('password-gate').style.display = 'none';
@@ -430,518 +494,832 @@ if (localStorage.getItem('contiki-auth') === '1') {
   document.getElementById('password-gate').style.display = 'none';
 }
 
-// ─── NAV SCROLL GLASS ───────────────────────────────────────────────────────
+// ─── NAV SCROLL ───────────────────────────────────────────────────────────────
 const nav = document.getElementById('site-nav');
 window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 10), { passive:true });
 
-// ─── TRIP CARD RENDERER (selectable variant) ─────────────────────────────────
-function renderSelectableCard(trip, delay = 0) {
-  const selected = selectedTours.some(t => t.id === trip.id);
-  const words = trip.name.split(' ');
-  const line1 = words[0].toLowerCase();
-  const line2 = words.slice(1).join(' ').toUpperCase();
-  const tagHtml = trip.tags.map(t => {
-    if (t==='sale') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Sale</span>`;
-    if (t==='hot') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Hot NR</span>`;
-    return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.6rem;padding:2px 8px;border-radius:4px;">${t==='new'?'New Trip':t==='bestseller'?'Bestseller':t}</span>`;
-  }).join('');
+// ─── ENTRY FLOW (09) ──────────────────────────────────────────────────────────
+function submitOrigin() {
+  const val = document.getElementById('origin-input').value.trim();
+  if (!val) { document.getElementById('origin-input').focus(); return; }
+  journey.origin = resolveCity(val);
+
+  // Lock step 1
+  const card = document.getElementById('step1-card');
+  card.style.opacity = '.6';
+  card.querySelector('input').disabled = true;
+  card.querySelector('button').disabled = true;
+
+  // Reveal step 2
+  const s2 = document.getElementById('step2-card');
+  s2.style.display = 'block';
+  s2.classList.add('step-enter');
+  setTimeout(() => document.getElementById('start-input').focus(), 50);
+}
+
+function submitStart() {
+  const val = document.getElementById('start-input').value.trim();
+  if (!val) { document.getElementById('start-input').focus(); return; }
+  journey.startLocation = resolveCity(val);
+
+  // Transition to builder
+  document.getElementById('entry-view').classList.add('hidden');
+  document.getElementById('builder-view').classList.remove('hidden');
+  initBuilder();
+}
+
+function backToEntry() {
+  document.getElementById('builder-view').classList.add('hidden');
+  document.getElementById('entry-view').classList.remove('hidden');
+  document.getElementById('sticky-footer').classList.remove('visible');
+  // Reset journey
+  journey.outboundFlight = null;
+  journey.segments = [];
+  journey.returnFlight = null;
+  document.getElementById('steps-feed').innerHTML = '';
+  // Re-enable step 1
+  const card = document.getElementById('step1-card');
+  card.style.opacity = '1';
+  card.querySelector('input').disabled = false;
+  card.querySelector('button').disabled = false;
+  document.getElementById('step2-card').style.display = 'none';
+  document.getElementById('origin-input').value = '';
+  document.getElementById('start-input').value = '';
+}
+
+// ─── BUILDER INIT (10) ───────────────────────────────────────────────────────
+function initBuilder() {
+  const o = journey.origin.city;
+  const s = journey.startLocation.city;
+  document.getElementById('builder-title').textContent = `${o} → ${s} and beyond`;
+  document.getElementById('builder-sub').textContent = 'Building your adventure step by step';
+  document.getElementById('sticky-footer').classList.add('visible');
+  updateFooter();
+
+  // Step 3: outbound flight if different cities
+  const sameCity = o.toLowerCase() === s.toLowerCase();
+  if (!sameCity && journey.origin.iata && journey.startLocation.iata) {
+    appendStep(renderFlightStep('outbound'));
+    loadFlights('outbound', journey.origin.iata, journey.startLocation.iata,
+      '2026-07-01', null, 'outbound-flights-list');
+  } else {
+    // Same city — skip straight to first trip
+    journey.outboundFlight = { skipped: true };
+    appendStep(renderTripSelectionStep(journey.startLocation.city, 'first'));
+  }
+}
+
+// ─── STEP RENDERING HELPERS ───────────────────────────────────────────────────
+function appendStep(html, delay = 0) {
+  const feed = document.getElementById('steps-feed');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'step-enter mb-4';
+  wrapper.style.animationDelay = delay + 'ms';
+  wrapper.innerHTML = html;
+  feed.appendChild(wrapper);
+  setTimeout(() => wrapper.scrollIntoView({ behavior:'smooth', block:'nearest' }), 100);
+}
+
+function removeActiveStep(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.transition = 'opacity .2s ease, transform .2s ease';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    setTimeout(() => el.remove(), 220);
+  }
+}
+
+// ─── RESOLVED SEGMENT CARDS ──────────────────────────────────────────────────
+function resolvedFlight(label, from, to, flight, price, isReturn = false) {
   return `
-    <div class="trip-card card-enter rounded-card overflow-hidden cursor-pointer"
-         id="card-${trip.id}"
-         style="background:#1C1C1C;animation-delay:${delay}ms;${selected?'outline:2px solid #FF5900;':''}"
-         onclick="selectTrip('${trip.id}')">
-      <div class="relative mx-[7px] mt-[7px] overflow-hidden" style="border-radius:12px;height:190px;">
-        <img src="${trip.image}" alt="${trip.name}" class="w-full h-full object-cover"
-             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
-        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.78),transparent 60%);"></div>
-        ${trip.is_original?`<div class="absolute top-3 left-1/2 -translate-x-1/2 font-hero italic font-extrabold text-white" style="background:#FF5900;font-size:.65rem;padding:4px 14px;border-radius:6px;white-space:nowrap;">originals</div>`:''}
-        <div class="absolute bottom-3 left-4 right-4">
-          <div class="font-hero font-extrabold text-white" style="font-size:1.4rem;line-height:.95;">${line1}</div>
-          <div class="font-display font-bold text-white/75 uppercase" style="font-size:.55rem;letter-spacing:.22em;margin-top:2px;">${line2}</div>
-        </div>
-        <!-- Date badge -->
-        <div class="absolute top-3 right-3 px-2 py-1 rounded-lg text-white font-semibold" style="background:rgba(0,0,0,.6);font-size:.7rem;">
-          ${formatDate(trip.departure_date)}
-        </div>
+    <div class="flex items-center gap-3 rounded-xl px-4 py-3 mb-2" style="background:#EFF6FF;border:1px solid #BFDBFE;">
+      <div class="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style="background:#2563EB;">
+        <span class="material-symbols-outlined text-white" style="font-size:16px;">${isReturn ? 'flight_land' : 'flight_takeoff'}</span>
       </div>
-      <div style="padding:10px 14px 14px;">
-        ${trip.tags.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${tagHtml}</div>`:''}
-        <p class="font-display font-bold text-white" style="font-size:.9rem;margin-bottom:6px;">${trip.name}</p>
-        <div class="flex items-center gap-3 text-white/55" style="font-size:.72rem;margin-bottom:8px;">
-          <span class="flex items-center gap-1">
-            <span class="material-symbols-outlined" style="font-size:13px;color:#FF5900;">calendar_today</span>
-            ${trip.duration_days} days
-          </span>
-          <span class="flex items-center gap-1">
-            <span class="material-symbols-outlined" style="font-size:13px;color:#FF5900;">public</span>
-            ${trip.destinations.length} countries
-          </span>
-        </div>
-        <div class="flex items-baseline" style="gap:4px;margin-bottom:10px;">
-          <span class="text-white/45" style="font-size:.75rem;">From</span>
-          <span class="font-extrabold text-white" style="font-size:1.2rem;">$${trip.from_price.toLocaleString()}</span>
-          <span class="text-white/45" style="font-size:.75rem;">pp</span>
-          ${trip.was_price?`<span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-size:.78rem;margin-left:4px;">Was $${trip.was_price.toLocaleString()}</span>`:''}
-        </div>
-        <button id="btn-${trip.id}" onclick="event.stopPropagation();selectTrip('${trip.id}')"
-          class="w-full py-2 font-semibold transition-all"
-          style="border-radius:100px;font-size:.82rem;font-family:inherit;cursor:pointer;${selected?'background:#FF5900;color:white;border:none;':'background:transparent;color:#FF5900;border:1.5px solid #FF5900;'}">
-          ${selected ? '✓ Added' : '+ Add to package'}
-        </button>
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-dusk" style="font-size:.85rem;">${label}</p>
+        <p style="font-size:.75rem;color:#3B82F6;">${from} → ${to} · ${flight}</p>
+      </div>
+      <p class="font-bold" style="color:#16A34A;font-size:.9rem;">$${price}</p>
+    </div>`;
+}
+
+function resolvedTripCard(tour) {
+  return `
+    <div class="flex gap-3 rounded-xl overflow-hidden mb-2" style="background:#1C1C1C;padding:8px;">
+      <div class="flex-shrink-0 overflow-hidden" style="width:110px;height:74px;border-radius:10px;">
+        <img src="${tour.image}" alt="${tour.name}" style="width:100%;height:100%;object-fit:cover;"
+             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
+      </div>
+      <div class="flex-1 min-w-0 py-1">
+        <p class="font-display font-bold text-white truncate" style="font-size:.88rem;">${tour.name}</p>
+        <p class="text-white/50" style="font-size:.72rem;">${fmtDate(tour.departure_date)} – ${fmtDate(tour.end_date)} · ${tour.duration_days} days</p>
+        <p class="text-go font-semibold" style="font-size:.8rem;margin-top:2px;">From $${tour.from_price.toLocaleString()} pp</p>
+      </div>
+      <div class="self-start p-1 rounded" style="background:rgba(255,89,0,.15);">
+        <span class="material-symbols-outlined text-go" style="font-size:16px;">check_circle</span>
       </div>
     </div>`;
 }
 
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' });
-}
-
-// ─── SEARCH LOGIC ────────────────────────────────────────────────────────────
-function btChip(el) {
-  document.getElementById('bt-input').value = el.textContent.trim();
-  btSearch();
-}
-
-async function btSearch() {
-  const query = document.getElementById('bt-input').value.trim();
-  if (!query) return;
-
-  document.getElementById('bt-status').classList.remove('hidden');
-  document.getElementById('bt-results').classList.add('hidden');
-  document.getElementById('bt-ai-strip').classList.add('hidden');
-
-  let result;
-  try {
-    const res = await fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, trips: TRIPS }),
-    });
-    if (!res.ok) throw new Error();
-    result = await res.json();
-  } catch {
-    result = mockSearch(query);
-  }
-
-  document.getElementById('bt-status').classList.add('hidden');
-  document.getElementById('bt-summary').textContent = result.summary;
-  document.getElementById('bt-ai-strip').classList.remove('hidden');
-
-  const matched = result.matches.map(m => TRIPS.find(t => t.id === m.id)).filter(Boolean);
-  document.getElementById('bt-count').textContent = matched.length;
-  document.getElementById('bt-grid').innerHTML = matched.map((t, i) => renderSelectableCard(t, i * 50)).join('');
-  document.getElementById('bt-results').classList.remove('hidden');
-}
-
-function mockSearch(query) {
-  const q = query.toLowerCase();
-  const all = [...TRIPS];
-  let matched = all.filter(t =>
-    q.includes(t.geography.toLowerCase()) ||
-    t.destinations.some(d => q.includes(d.toLowerCase())) ||
-    q.includes(t.name.toLowerCase().split(' ')[0])
-  );
-  if (!matched.length) matched = all;
-  return {
-    summary: `"${query}" — ${matched.length} tours found. Select 2+ to build your package.`,
-    matches: matched.slice(0, 8).map(t => ({ id: t.id })),
-  };
-}
-
-// ─── SELECTION ───────────────────────────────────────────────────────────────
-function selectTrip(id) {
-  const trip = TRIPS.find(t => t.id === id);
-  if (!trip) return;
-  const idx = selectedTours.findIndex(t => t.id === id);
-  if (idx > -1) {
-    selectedTours.splice(idx, 1);
-  } else {
-    selectedTours.push(trip);
-  }
-  // Re-render card
-  const card = document.getElementById(`card-${id}`);
-  if (card) {
-    const selected = selectedTours.some(t => t.id === id);
-    card.style.outline = selected ? '2px solid #FF5900' : 'none';
-    const btn = document.getElementById(`btn-${id}`);
-    if (btn) {
-      btn.textContent = selected ? '✓ Added' : '+ Add to package';
-      btn.style.background = selected ? '#FF5900' : 'transparent';
-      btn.style.color = selected ? 'white' : '#FF5900';
-      btn.style.border = selected ? 'none' : '1.5px solid #FF5900';
-    }
-  }
-  // Enable/disable build button
-  const btn = document.getElementById('build-pkg-btn');
-  if (selectedTours.length >= 2) {
-    btn.disabled = false;
-    btn.style.background = '#FF5900';
-    btn.style.color = 'white';
-    btn.style.cursor = 'pointer';
-  } else {
-    btn.disabled = true;
-    btn.style.background = '#E5E0D8';
-    btn.style.color = '#aaa';
-    btn.style.cursor = 'not-allowed';
-  }
-}
-
-// ─── TIMELINE ────────────────────────────────────────────────────────────────
-function goToTimeline() {
-  if (selectedTours.length < 2) return;
-  // Sort by departure date
-  selectedTours.sort((a, b) => new Date(a.departure_date) - new Date(b.departure_date));
-  document.getElementById('search-view').classList.add('hidden');
-  document.getElementById('timeline-view').classList.remove('hidden');
-  renderTimeline();
-}
-
-function backToSearch() {
-  document.getElementById('timeline-view').classList.add('hidden');
-  document.getElementById('search-view').classList.remove('hidden');
-  document.getElementById('sticky-footer').classList.remove('visible');
-}
-
-function renderTimeline() {
-  const tours = selectedTours;
-  // Title = combined geographies
-  const geos = [...new Set(tours.map(t => t.geography))];
-  document.getElementById('tl-title').textContent = geos.join(' + ');
-  const startDate = formatDate(tours[0].departure_date);
-  const endDate = formatDate(tours[tours.length - 1].end_date);
-  document.getElementById('tl-dates').textContent = `${startDate} – ${endDate}`;
-
-  let html = '';
-  for (let i = 0; i < tours.length; i++) {
-    const t = tours[i];
-    // Tour dot + card
-    html += `
-      <div class="relative mb-2">
-        <div class="absolute -left-[51px] top-4 w-4 h-4 rounded-full ring-2 ring-dawn" style="background:#FF5900;box-shadow:0 0 8px rgba(255,89,0,.5);"></div>
-        ${renderCompactCard(t)}
-      </div>`;
-    // Gap between this and next tour
-    if (i < tours.length - 1) {
-      const gapKey = `${t.id}__${tours[i+1].id}`;
-      const gapDays = Math.round((new Date(tours[i+1].departure_date) - new Date(t.end_date)) / 86400000);
-      if (gapDays > 0) {
-        html += `
-          <div class="relative mb-2">
-            <div class="absolute -left-[51px] top-5 w-4 h-4 rounded-full ring-2 ring-dawn" style="background:#3B82F6;box-shadow:0 0 8px rgba(59,130,246,.5);"></div>
-            <div id="gap-${gapKey}">${renderGapCard(gapKey, t, tours[i+1], gapDays)}</div>
-          </div>`;
-        loadGapFlights(gapKey, t, tours[i+1]);
-      }
-    }
-  }
-  document.getElementById('timeline-list').innerHTML = html;
-  updateFooter();
-  setTimeout(() => document.getElementById('sticky-footer').classList.add('visible'), 300);
-}
-
-function renderCompactCard(trip) {
+// ─── OUTBOUND / RETURN FLIGHT STEP ───────────────────────────────────────────
+function renderFlightStep(type) {
+  const isReturn = type === 'return';
+  const from = isReturn ? lastTripEndCity() : journey.origin.city;
+  const to   = isReturn ? journey.origin.city : journey.startLocation.city;
+  const label = isReturn ? `Return flight back to ${to}` : `Outbound flight to ${to}`;
   return `
-    <div class="flex gap-3 rounded-xl overflow-hidden mb-2" style="background:#1C1C1C;padding:8px;">
-      <div class="flex-shrink-0 overflow-hidden" style="width:120px;height:80px;border-radius:10px;">
-        <img src="${trip.image}" alt="${trip.name}" style="width:100%;height:100%;object-fit:cover;"
-             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
+    <div id="flight-step-${type}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #BFDBFE;box-shadow:0 4px 16px rgba(0,0,0,.06);">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-9 h-9 flex items-center justify-center rounded-full" style="background:#2563EB;">
+          <span class="material-symbols-outlined text-white" style="font-size:18px;">${isReturn ? 'flight_land' : 'flight_takeoff'}</span>
+        </div>
+        <div>
+          <p class="font-semibold text-dusk" style="font-size:.95rem;">${label}</p>
+          <p style="font-size:.75rem;color:#6B6B6B;">${from} → ${to}</p>
+        </div>
       </div>
-      <div class="flex-1 min-w-0 py-1">
-        <p class="font-display font-bold text-white truncate" style="font-size:.88rem;">${trip.name}</p>
-        <p class="text-white/50" style="font-size:.75rem;">${formatDate(trip.departure_date)} – ${formatDate(trip.end_date)} · ${trip.duration_days} days</p>
-        <p class="text-go font-semibold" style="font-size:.82rem;margin-top:4px;">From $${trip.from_price.toLocaleString()} pp</p>
+      <div id="${type}-flights-list">
+        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.83rem;">
+          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
+          Searching flights…
+        </div>
       </div>
-      <button onclick="removeTour('${trip.id}')" class="self-start p-1 rounded hover:bg-white/10 transition-colors" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);">
-        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      <button onclick="skipFlight('${type}')"
+        class="mt-3 text-ui-grey80 hover:text-dusk transition-colors"
+        style="background:none;border:none;font-size:.8rem;font-family:inherit;cursor:pointer;text-decoration:underline;">
+        Skip — I'll arrange my own
       </button>
     </div>`;
 }
 
-function removeTour(id) {
-  selectedTours = selectedTours.filter(t => t.id !== id);
-  if (selectedTours.length < 2) { backToSearch(); return; }
-  gaps = {};
-  renderTimeline();
-}
-
-// ─── GAP CARD (11) ──────────────────────────────────────────────────────────
-function renderGapCard(key, tourA, tourB, days) {
-  const origin = tourA.destinations[tourA.destinations.length - 1];
-  const dest   = tourB.destinations[0];
-  const fromDate = tourA.end_date;
-  const toDate   = tourB.departure_date;
-  return `
-    <div class="rounded-[14px] p-4" style="border:1.5px dashed #BFDBFE;background:#EFF6FF;">
-      <div class="flex items-center gap-2 mb-3">
-        <div class="flex items-center justify-center w-8 h-8 rounded-full" style="background:#DBEAFE;">
-          <span class="material-symbols-outlined" style="font-size:18px;color:#2563EB;">flight_takeoff</span>
-        </div>
-        <div>
-          <p class="font-semibold" style="font-size:.9rem;color:#1D4ED8;">${days}-day gap · ${origin} → ${dest}</p>
-          <p style="font-size:.75rem;color:#3B82F6;">${formatDate(fromDate)} – ${formatDate(toDate)}</p>
-        </div>
-      </div>
-
-      <!-- Flights -->
-      <p class="font-semibold mb-2" style="font-size:.78rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">Available flights</p>
-      <div id="flights-${key}" class="mb-4">
-        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.83rem;">
-          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
-          Searching flights ${origin} → ${dest}…
-        </div>
-      </div>
-
-      <!-- Stay city picker -->
-      <p class="font-semibold mb-2" style="font-size:.78rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">🏨 Where would you like to stay during the gap?</p>
-      <div class="flex gap-2 mb-4 flex-wrap" id="city-picker-${key}">
-        <button onclick="chooseCity('${key}','${origin}','${dest}')"
-          class="city-btn flex items-center gap-1.5 px-4 py-2 rounded-pill transition-all"
-          data-city="${origin}"
-          style="background:white;border:1.5px solid #BFDBFE;font-size:.82rem;font-family:inherit;cursor:pointer;color:#1D4ED8;">
-          📍 ${origin} (End of tour)
-        </button>
-        <button onclick="chooseCity('${key}','${dest}','${origin}')"
-          class="city-btn flex items-center gap-1.5 px-4 py-2 rounded-pill transition-all"
-          data-city="${dest}"
-          style="background:white;border:1.5px solid #BFDBFE;font-size:.82rem;font-family:inherit;cursor:pointer;color:#1D4ED8;">
-          📍 ${dest} (Start of next tour)
-        </button>
-      </div>
-
-      <!-- Hotels -->
-      <div id="hotels-${key}" class="hidden">
-        <p class="font-semibold mb-2" style="font-size:.78rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">Hotels nearby</p>
-        <div id="hotels-list-${key}"></div>
-      </div>
-    </div>`;
-}
-
-async function loadGapFlights(key, tourA, tourB) {
-  const origin = tourA.destinations[tourA.destinations.length - 1];
-  const dest   = tourB.destinations[0];
+async function loadFlights(type, originIata, destIata, date, tripBStart, listId) {
   let flights;
   try {
     const res = await fetch('/api/flights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
-        origin_city: origin, destination_city: dest,
-        departure_date: tourA.end_date,
-        trip_b_start_iso: tourB.departure_date + 'T00:00:00Z',
+        origin: originIata, destination: destIata,
+        departure_date: date,
+        trip_b_start_iso: tripBStart,
         min_buffer_hours: 4, city_transfer_minutes: 120,
       }),
     });
     if (!res.ok) throw new Error();
     flights = await res.json();
   } catch {
-    flights = mockFlights(origin, dest);
+    flights = mockFlights(originIata, destIata);
   }
 
-  const container = document.getElementById(`flights-${key}`);
-  if (!container) return;
-  if (!flights.length) {
-    container.innerHTML = `<p style="font-size:.82rem;color:#6B6B6B;">No direct flights found for these dates.</p>`;
-    return;
-  }
-  if (!gaps[key]) gaps[key] = {};
-  if (!gaps[key].selectedFlight) {
-    gaps[key].selectedFlight = flights[0];
-    updateFooter();
-  }
-  container.innerHTML = flights.map((f, i) => {
-    const sel = gaps[key]?.selectedFlight?.offer_id === f.offer_id;
+  const list = document.getElementById(listId);
+  if (!list) return;
+
+  list.innerHTML = flights.slice(0, 4).map((f, i) => {
+    const sel = i === 0;
     return `
-      <div onclick="selectFlight('${key}',${i})" data-idx="${i}"
-        class="flight-opt flex items-center justify-between rounded-xl p-3 mb-2 cursor-pointer transition-all"
-        style="background:white;${sel?'border:1.5px solid #3B82F6;':'border:1.5px solid transparent;'}">
+      <div onclick="selectFlightOption('${type}', this, '${f.offer_id}', ${f.price})"
+        class="flight-opt flex items-center justify-between rounded-xl p-3 mb-2"
+        style="background:#F8FAFF;border:1.5px solid ${sel?'#3B82F6':'transparent'};"
+        data-offer="${f.offer_id}" data-price="${f.price}">
         <div class="flex items-center gap-3">
-          <span class="font-semibold px-2 py-0.5 rounded" style="background:#EFF6FF;color:#1D4ED8;font-size:.75rem;">${f.airline}</span>
+          <span class="font-semibold px-2 py-0.5 rounded" style="background:#EFF6FF;color:#1D4ED8;font-size:.72rem;">${f.airline.length > 12 ? f.airline.slice(0,10)+'…' : f.airline}</span>
           <div>
-            <p class="font-semibold text-dusk" style="font-size:.85rem;">${f.flight} <span class="text-green-600 font-semibold" style="font-size:.72rem;">Direct</span></p>
-            <p style="font-size:.75rem;color:#6B6B6B;">${f.departing_at} → ${f.arriving_at}</p>
+            <p class="font-semibold text-dusk" style="font-size:.85rem;">${f.flight} <span class="text-green-600 font-semibold" style="font-size:.7rem;">Direct</span></p>
+            <p style="font-size:.73rem;color:#6B6B6B;">${f.departing_at} → ${f.arriving_at}</p>
           </div>
         </div>
         <p class="font-extrabold" style="font-size:.95rem;color:#16A34A;">$${f.price}</p>
       </div>`;
-  }).join('');
+  }).join('') + `
+    <button onclick="confirmFlightSelection('${type}')"
+      class="w-full py-2.5 text-white font-bold rounded-pill hover:opacity-90 mt-2 transition-opacity"
+      style="background:#FF5900;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
+      Confirm flight
+    </button>`;
+
+  // Pre-select cheapest
+  if (flights.length) {
+    if (type === 'outbound') {
+      journey._pendingOutbound = { offer_id: flights[0].offer_id, flight: flights[0].flight, airline: flights[0].airline, price: flights[0].price, from: journey.origin.city, to: journey.startLocation.city };
+    } else {
+      journey._pendingReturn = { offer_id: flights[0].offer_id, flight: flights[0].flight, airline: flights[0].airline, price: flights[0].price, from: lastTripEndCity(), to: journey.origin.city };
+    }
+    updateFooter();
+  }
 }
 
-function selectFlight(key, idx) {
-  const container = document.getElementById(`flights-${key}`);
-  const opts = container.querySelectorAll('.flight-opt');
-  opts.forEach((el, i) => {
-    el.style.border = i === idx ? '1.5px solid #3B82F6' : '1.5px solid transparent';
-  });
-  // Store selected flight
-  const priceText = opts[idx].querySelector('[style*="color:#16A34A"]')?.textContent?.replace('$','') || '0';
-  if (!gaps[key]) gaps[key] = {};
-  gaps[key].selectedFlight = { offer_id: `f${idx}`, price: parseFloat(priceText) };
+function selectFlightOption(type, el, offerId, price) {
+  const list = el.closest('[id$="-flights-list"]') || el.parentElement;
+  list.querySelectorAll('.flight-opt').forEach(opt => opt.style.borderColor = 'transparent');
+  el.style.borderColor = '#3B82F6';
+  const flightEl = el.querySelector('.font-semibold');
+  const flightCode = flightEl ? flightEl.textContent.split(' ')[0] : '';
+  const airline = el.querySelector('[style*="#EFF6FF"]')?.textContent?.trim() || '';
+  if (type === 'outbound') {
+    journey._pendingOutbound = { offer_id: offerId, flight: flightCode, airline, price, from: journey.origin.city, to: journey.startLocation.city };
+  } else {
+    journey._pendingReturn = { offer_id: offerId, flight: flightCode, airline, price, from: lastTripEndCity(), to: journey.origin.city };
+  }
   updateFooter();
 }
 
-function mockFlights(origin, dest) {
-  return [
-    { offer_id:'f1', flight:'BA204', airline:'BA', departing_at:'09:15', arriving_at:'14:30', price:189, currency:'USD', _mock:true },
-    { offer_id:'f2', flight:'U2447', airline:'EZY', departing_at:'14:00', arriving_at:'19:20', price:124, currency:'USD', _mock:true },
-    { offer_id:'f3', flight:'LH332', airline:'LH', departing_at:'17:45', arriving_at:'23:05', price:215, currency:'USD', _mock:true },
-  ];
+function confirmFlightSelection(type) {
+  if (type === 'outbound') {
+    journey.outboundFlight = journey._pendingOutbound || { skipped: true };
+    removeActiveStep('flight-step-outbound');
+    if (journey.outboundFlight && !journey.outboundFlight.skipped) {
+      setTimeout(() => appendStep(resolvedFlight('Outbound flight', journey.outboundFlight.from, journey.outboundFlight.to, journey.outboundFlight.flight, journey.outboundFlight.price)), 250);
+    }
+    setTimeout(() => appendStep(renderTripSelectionStep(journey.startLocation.city, 'first')), 350);
+  } else {
+    journey.returnFlight = journey._pendingReturn || { skipped: true };
+    removeActiveStep('flight-step-return');
+    if (journey.returnFlight && !journey.returnFlight.skipped) {
+      setTimeout(() => appendStep(resolvedFlight('Return flight', journey.returnFlight.from, journey.returnFlight.to, journey.returnFlight.flight, journey.returnFlight.price, true)), 250);
+    }
+    setTimeout(() => renderDoneState(), 350);
+  }
+  updateFooter();
 }
 
-async function chooseCity(key, city, other) {
-  // Update button states
-  const picker = document.getElementById(`city-picker-${key}`);
-  picker.querySelectorAll('.city-btn').forEach(btn => {
-    const isSelected = btn.dataset.city === city;
-    btn.style.background = isSelected ? '#2563EB' : 'white';
-    btn.style.color = isSelected ? 'white' : '#1D4ED8';
-  });
-  if (!gaps[key]) gaps[key] = {};
-  gaps[key].stayCity = city;
+function skipFlight(type) {
+  if (type === 'outbound') {
+    journey.outboundFlight = { skipped: true };
+    removeActiveStep('flight-step-outbound');
+    setTimeout(() => appendStep(renderTripSelectionStep(journey.startLocation.city, 'first')), 300);
+  } else {
+    journey.returnFlight = { skipped: true };
+    removeActiveStep('flight-step-return');
+    setTimeout(() => renderDoneState(), 300);
+  }
+  updateFooter();
+}
 
-  const hotelsDiv = document.getElementById(`hotels-${key}`);
-  const listDiv   = document.getElementById(`hotels-list-${key}`);
-  hotelsDiv.classList.remove('hidden');
-  listDiv.innerHTML = `<div class="flex items-center gap-2 text-ui-grey80" style="font-size:.83rem;"><div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div> Finding hotels near ${city}…</div>`;
+// ─── TRIP SELECTION STEP ──────────────────────────────────────────────────────
+function renderTripSelectionStep(fromCity, role) {
+  const label = role === 'first'
+    ? `Contiki trips starting in ${fromCity}`
+    : `Trips you can reach from ${fromCity}`;
+  const trips = role === 'first'
+    ? getTripsFromCity(fromCity)
+    : getReachableTrips(fromCity);
+
+  const stepId = `trip-selection-${Date.now()}`;
+  return `
+    <div id="${stepId}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #E5E0D8;box-shadow:0 4px 16px rgba(0,0,0,.06);">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-go" style="font-size:22px;">map</span>
+        <p class="font-semibold text-dusk" style="font-size:.95rem;">${label}</p>
+      </div>
+      <p class="text-ui-grey80 mb-4" style="font-size:.8rem;">Select one tour to add to your adventure.</p>
+      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
+        ${trips.map(t => renderPickCard(t, stepId)).join('')}
+      </div>
+      ${trips.length === 0 ? `<p class="text-ui-grey80 text-sm">No tours found departing from ${fromCity} — try a different start city.</p>` : ''}
+    </div>`;
+}
+
+function renderPickCard(trip, stepId) {
+  const words = trip.name.split(' ');
+  const line1 = words[0].toLowerCase();
+  const line2 = words.slice(1).join(' ').toUpperCase();
+  const tagHtml = trip.tags.slice(0,2).map(t => {
+    if (t==='sale' || t==='hot') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.55rem;padding:2px 7px;border-radius:4px;">${t==='sale'?'Sale':'Hot'}</span>`;
+    return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.55rem;padding:2px 7px;border-radius:4px;">${t==='new'?'New':t==='bestseller'?'Bestseller':t}</span>`;
+  }).join('');
+  const alreadyAdded = journey.segments.some(s => s.type === 'trip' && s.tour.id === trip.id);
+  return `
+    <div class="rounded-card overflow-hidden" style="background:#1C1C1C;${alreadyAdded?'opacity:.4;pointer-events:none;':''}">
+      <div class="relative overflow-hidden" style="border-radius:12px 12px 0 0;height:160px;">
+        <img src="${trip.image}" alt="${trip.name}" style="width:100%;height:100%;object-fit:cover;"
+             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.78),transparent 60%);"></div>
+        ${trip.is_original ? `<div class="absolute top-2 left-1/2 -translate-x-1/2 font-hero italic font-extrabold text-white" style="background:#FF5900;font-size:.6rem;padding:3px 12px;border-radius:5px;white-space:nowrap;">originals</div>` : ''}
+        <div class="absolute bottom-2 left-3 right-3">
+          <div class="font-hero font-extrabold text-white" style="font-size:1.2rem;line-height:.95;">${line1}</div>
+          <div class="font-display font-bold text-white/75 uppercase" style="font-size:.5rem;letter-spacing:.2em;margin-top:2px;">${line2}</div>
+        </div>
+        <div class="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-white font-semibold" style="background:rgba(0,0,0,.6);font-size:.65rem;">
+          ${fmtDate(trip.departure_date)}
+        </div>
+      </div>
+      <div style="padding:8px 12px 12px;">
+        ${trip.tags.length ? `<div style="display:flex;gap:5px;margin-bottom:5px;">${tagHtml}</div>` : ''}
+        <div class="flex items-center gap-2 text-white/50 mb-2" style="font-size:.7rem;">
+          <span><span class="material-symbols-outlined" style="font-size:12px;color:#FF5900;">calendar_today</span> ${trip.duration_days}d</span>
+          <span><span class="material-symbols-outlined" style="font-size:12px;color:#FF5900;">public</span> ${trip.destinations.length} stops</span>
+        </div>
+        <div class="flex items-baseline gap-1 mb-2">
+          <span class="text-white/40" style="font-size:.72rem;">From</span>
+          <span class="font-extrabold text-white" style="font-size:1.1rem;">$${trip.from_price.toLocaleString()}</span>
+          ${trip.was_price ? `<span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-size:.72rem;">$${trip.was_price.toLocaleString()}</span>` : ''}
+        </div>
+        <button onclick="pickTrip('${trip.id}', '${stepId}')"
+          class="w-full py-2 text-white font-bold hover:opacity-90 transition-opacity"
+          style="background:#FF5900;border:none;border-radius:100px;font-size:.82rem;font-family:inherit;cursor:pointer;">
+          ${alreadyAdded ? '✓ Added' : 'Select this trip →'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function pickTrip(tripId, stepId) {
+  const trip = TRIPS.find(t => t.id === tripId);
+  if (!trip) return;
+
+  const prevTrip = lastTripSegment();
+
+  // Remove selection step
+  const stepEl = document.getElementById(stepId);
+  if (stepEl) {
+    stepEl.style.transition = 'opacity .2s';
+    stepEl.style.opacity = '0';
+    setTimeout(() => stepEl.remove(), 220);
+  }
+
+  setTimeout(() => {
+    // If there's a previous trip, insert gap first
+    if (prevTrip) {
+      const gapId = `gap-${prevTrip.tour.id}__${trip.id}`;
+      appendStep(renderGapCard(gapId, prevTrip.tour, trip));
+      loadGapFlights(gapId, prevTrip.tour, trip);
+      loadGapHotels(gapId, trip);
+    }
+
+    // Add trip to journey
+    journey.segments.push({ type: 'trip', tour: trip });
+
+    // Resolved trip card
+    appendStep(resolvedTripCard(trip), prevTrip ? 100 : 0);
+
+    // "Add another?" prompt
+    setTimeout(() => appendStep(renderAddAnotherPrompt(trip)), 200);
+
+    updateFooter();
+    updateBuilderTitle();
+  }, 250);
+}
+
+// ─── GAP CARD (11) ───────────────────────────────────────────────────────────
+function renderGapCard(gapId, tourA, tourB) {
+  const from = tourA.end_city;
+  const to   = tourB.departure_city;
+  const fromDate = tourA.end_date;
+  const toDate   = tourB.departure_date;
+  const days = Math.max(1, Math.round((new Date(toDate) - new Date(fromDate)) / 86400000));
+  return `
+    <div id="${gapId}" class="rounded-[14px] p-4 mb-1" style="border:1.5px dashed #BFDBFE;background:#EFF6FF;">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-8 h-8 flex items-center justify-center rounded-full" style="background:#DBEAFE;">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#2563EB;">connecting_airports</span>
+        </div>
+        <div>
+          <p class="font-semibold" style="font-size:.88rem;color:#1D4ED8;">Connecting · ${from} → ${to}</p>
+          <p style="font-size:.72rem;color:#3B82F6;">${fmtDate(fromDate)} – ${fmtDate(toDate)} · ${days} day${days!==1?'s':''} gap</p>
+        </div>
+      </div>
+
+      <!-- Flight section -->
+      <p class="font-bold mb-2" style="font-size:.72rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">✈ Feasible flight</p>
+      <div id="${gapId}-flights">
+        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.82rem;">
+          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
+          Checking flights ${from} → ${to}…
+        </div>
+      </div>
+
+      <!-- Hotels section -->
+      <p class="font-bold mt-3 mb-2" style="font-size:.72rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">🏨 Hotels near ${to} (your next start)</p>
+      <div id="${gapId}-hotels">
+        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.82rem;">
+          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
+          Finding hotels near ${to}…
+        </div>
+      </div>
+    </div>`;
+}
+
+async function loadGapFlights(gapId, tourA, tourB) {
+  const originIata = tourA.end_iata;
+  const destIata   = tourB.departure_iata;
+  const date       = tourA.end_date;
+  const tripBStart = tourB.departure_date + 'T00:00:00Z';
+
+  let flights;
+  try {
+    const res = await fetch('/api/flights', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ origin: originIata, destination: destIata,
+        departure_date: date, trip_b_start_iso: tripBStart,
+        min_buffer_hours: 4, city_transfer_minutes: 120 }),
+    });
+    if (!res.ok) throw new Error();
+    flights = await res.json();
+  } catch {
+    flights = mockFlights(originIata, destIata);
+  }
+
+  const container = document.getElementById(`${gapId}-flights`);
+  if (!container) return;
+
+  if (!flights.length) {
+    container.innerHTML = `<p style="font-size:.8rem;color:#6B6B6B;">No feasible direct flight found — you may need to adjust dates.</p>`;
+    return;
+  }
+
+  // Init gap segment in journey
+  const gapSeg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
+  const cheapest = flights[0];
+  if (gapSeg) {
+    gapSeg.selectedFlight = cheapest;
+  } else {
+    journey.segments.push({ type:'gap', gapId, tourAId: tourA.id, tourBId: tourB.id,
+      fromCity: tourA.end_city, toCity: tourB.departure_city,
+      fromDate: tourA.end_date, toDate: tourB.departure_date,
+      selectedFlight: cheapest, selectedHotel: null });
+  }
+
+  container.innerHTML = flights.slice(0, 3).map((f, i) => {
+    const sel = i === 0;
+    return `
+      <div onclick="selectGapFlight('${gapId}', this, ${JSON.stringify(f).replace(/"/g,'&quot;')})"
+        class="flight-opt flex items-center justify-between rounded-xl p-3 mb-1"
+        style="background:white;border:1.5px solid ${sel?'#3B82F6':'transparent'};">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded font-semibold" style="background:#EFF6FF;color:#1D4ED8;font-size:.7rem;">${f.airline.length > 10 ? f.airline.slice(0,8)+'…' : f.airline}</span>
+          <div>
+            <p class="font-semibold text-dusk" style="font-size:.82rem;">${f.flight} <span style="color:#16A34A;font-size:.68rem;">Direct</span></p>
+            <p style="font-size:.7rem;color:#6B6B6B;">${f.departing_at} → ${f.arriving_at}</p>
+          </div>
+        </div>
+        <p class="font-extrabold" style="font-size:.9rem;color:#16A34A;">$${f.price}</p>
+      </div>`;
+  }).join('');
+
+  updateFooter();
+}
+
+function selectGapFlight(gapId, el, flight) {
+  el.parentElement.querySelectorAll('.flight-opt').forEach(o => o.style.borderColor = 'transparent');
+  el.style.borderColor = '#3B82F6';
+  const seg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
+  if (seg) { seg.selectedFlight = flight; updateFooter(); }
+}
+
+async function loadGapHotels(gapId, tourB) {
+  const city = tourB.departure_city;
+  const cityData = resolveCity(city);
+  const checkIn  = tourB.departure_date;
+  const checkOut = tourB.departure_date; // indicative 1 night
 
   let hotels;
   try {
-    const gapTour = selectedTours.find(t => key.startsWith(t.id));
+    const body = { location: city, check_in: checkIn, check_out: checkOut };
+    if (cityData.lat) { body.lat = cityData.lat; body.lng = cityData.lng; body.radius_meters = 5000; }
     const res = await fetch('/api/hotels', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ location: city, check_in: gapTour?.end_date, check_out: gapTour?.end_date }),
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error();
-    hotels = await res.json();
+    const data = await res.json();
+    hotels = data.hotels || data; // handle both old array and new { hotels: [] }
   } catch {
     hotels = mockHotels(city);
   }
 
+  const container = document.getElementById(`${gapId}-hotels`);
+  if (!container) return;
+
   if (!hotels.length) {
-    listDiv.innerHTML = `<p style="font-size:.82rem;color:#6B6B6B;">No hotels found. Try the other city.</p>`;
+    container.innerHTML = `<p style="font-size:.8rem;color:#6B6B6B;">No hotels found near ${city}.</p>`;
     return;
   }
-  if (!gaps[key].selectedHotel) gaps[key].selectedHotel = hotels[0];
-  listDiv.innerHTML = hotels.map((h, i) => {
-    const sel = gaps[key]?.selectedHotel?.id === h.id;
+
+  // Store first as selected
+  const seg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
+  if (seg && !seg.selectedHotel) seg.selectedHotel = hotels[0];
+
+  container.innerHTML = hotels.slice(0, 3).map((h, i) => {
+    const sel = i === 0;
+    const stars = h.rating ? '★'.repeat(Math.min(5, Math.round(h.rating))) : '';
+    const priceStr = h.price_per_night ? `$${h.price_per_night}/nt` : '';
     return `
-      <div onclick="selectHotel('${key}','${h.id}')"
-        class="hotel-opt flex items-center justify-between rounded-xl p-3 mb-2 cursor-pointer transition-all"
-        style="background:white;${sel?'border:1.5px solid #FF5900;':'border:1.5px solid transparent;'}">
-        <div class="flex items-center gap-3">
-          <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background:#FFF7ED;font-size:1.1rem;">🏨</div>
+      <div onclick="selectGapHotel('${gapId}', this, '${h.id}')"
+        class="hotel-opt flex items-center justify-between rounded-xl p-3 mb-1"
+        style="background:white;border:1.5px solid ${sel?'#FF5900':'transparent'};">
+        <div class="flex items-center gap-2">
+          <div class="flex items-center justify-center w-7 h-7 rounded-lg" style="background:#FFF7ED;font-size:.9rem;">🏨</div>
           <div>
-            <p class="font-semibold text-dusk" style="font-size:.85rem;">${h.name}</p>
-            <p style="font-size:.75rem;color:#6B6B6B;">${h.address}</p>
-            <p class="flex items-center gap-1" style="font-size:.75rem;color:#D97706;">
-              ★ ${h.rating} <span style="color:#9CA3AF;">(${h.reviews?.toLocaleString()})</span>
-            </p>
+            <p class="font-semibold text-dusk" style="font-size:.82rem;">${h.name}</p>
+            <p style="font-size:.7rem;color:#6B6B6B;">${h.cancellation === 'FREE_CANCELLATION' ? '✓ Free cancel · ' : ''}${stars}</p>
           </div>
         </div>
-        <a href="${h.maps_url}" target="_blank" class="flex items-center gap-1 text-go font-semibold hover:underline" style="font-size:.8rem;text-decoration:none;" onclick="event.stopPropagation()">
-          View <span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span>
-        </a>
+        <p class="font-bold text-go" style="font-size:.85rem;">${priceStr}</p>
       </div>`;
   }).join('');
 }
 
-function selectHotel(key, hotelId) {
-  document.querySelectorAll(`#hotels-list-${key} .hotel-opt`).forEach(el => {
-    el.style.border = '1.5px solid transparent';
-  });
-  event.currentTarget.style.border = '1.5px solid #FF5900';
-  if (!gaps[key]) gaps[key] = {};
-  gaps[key].selectedHotel = { id: hotelId };
+function selectGapHotel(gapId, el, hotelId) {
+  el.parentElement.querySelectorAll('.hotel-opt').forEach(o => o.style.borderColor = 'transparent');
+  el.style.borderColor = '#FF5900';
+  const seg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
+  if (seg) seg.selectedHotel = { id: hotelId };
 }
 
-function mockHotels(city) {
-  return [
-    { id:'h1', name:`${city} Grand Hotel`, address:`Central ${city}`, rating:4.5, reviews:2134, maps_url:'#', _mock:true },
-    { id:'h2', name:`${city} Boutique Stay`, address:`Old Town, ${city}`, rating:4.3, reviews:876, maps_url:'#', _mock:true },
-    { id:'h3', name:`The ${city} Collection`, address:`${city} City Centre`, rating:4.7, reviews:3210, maps_url:'#', _mock:true },
-  ];
+// ─── ADD ANOTHER / GOING HOME PROMPTS ────────────────────────────────────────
+function renderAddAnotherPrompt(lastTour) {
+  const promptId = `add-another-${Date.now()}`;
+  return `
+    <div id="${promptId}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #E5E0D8;box-shadow:0 4px 16px rgba(0,0,0,.06);">
+      <p class="font-semibold text-dusk mb-1" style="font-size:.95rem;">Add another trip?</p>
+      <p class="text-ui-grey80 mb-4" style="font-size:.8rem;">Your last trip ends in <strong>${lastTour.end_city}</strong>. We'll find tours reachable from there.</p>
+      <div class="flex gap-3">
+        <button onclick="addAnotherTrip('${lastTour.id}', '${promptId}')"
+          class="flex-1 py-2.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity"
+          style="background:#FF5900;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
+          Yes, add another →
+        </button>
+        <button onclick="doneAdding('${promptId}')"
+          class="flex-1 py-2.5 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill"
+          style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.88rem;cursor:pointer;">
+          No, I'm done
+        </button>
+      </div>
+    </div>`;
 }
 
-// ─── FOOTER TOTALS ───────────────────────────────────────────────────────────
-function updateFooter() {
-  const tourTotal = selectedTours.reduce((s, t) => s + t.from_price, 0);
-  const flightTotal = Object.values(gaps).reduce((s, g) => s + (g.selectedFlight?.price || 0), 0);
-  const total = tourTotal + flightTotal;
-  const totalDays = selectedTours.reduce((s, t) => s + t.duration_days, 0);
-  document.getElementById('footer-tours').textContent = selectedTours.length;
-  document.getElementById('footer-days').textContent = totalDays;
-  document.getElementById('footer-cost').textContent = `$${total.toLocaleString()}`;
+function addAnotherTrip(lastTourId, promptId) {
+  const lastTour = TRIPS.find(t => t.id === lastTourId);
+  removeActiveStep(promptId);
+  setTimeout(() => appendStep(renderTripSelectionStep(lastTour.end_city, 'next')), 300);
 }
 
-// ─── PACKAGE MODAL ───────────────────────────────────────────────────────────
+function doneAdding(promptId) {
+  removeActiveStep(promptId);
+  setTimeout(() => appendStep(renderGoingHomePrompt()), 300);
+}
+
+function renderGoingHomePrompt() {
+  const promptId = `going-home-${Date.now()}`;
+  const last = lastTripSegment();
+  return `
+    <div id="${promptId}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #E5E0D8;box-shadow:0 4px 16px rgba(0,0,0,.06);">
+      <p class="font-semibold text-dusk mb-1" style="font-size:.95rem;">Are you heading home after?</p>
+      <p class="text-ui-grey80 mb-4" style="font-size:.8rem;">We'll find a return flight from <strong>${last ? last.tour.end_city : '...'}</strong> back to <strong>${journey.origin.city}</strong>.</p>
+      <div class="flex gap-3">
+        <button onclick="goingHome('${promptId}')"
+          class="flex-1 py-2.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity"
+          style="background:#FF5900;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
+          Yes, find return flight
+        </button>
+        <button onclick="notGoingHome('${promptId}')"
+          class="flex-1 py-2.5 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill"
+          style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.88rem;cursor:pointer;">
+          No, ending here
+        </button>
+      </div>
+    </div>`;
+}
+
+function goingHome(promptId) {
+  removeActiveStep(promptId);
+  const last = lastTripSegment();
+  setTimeout(() => {
+    appendStep(renderFlightStep('return'));
+    const endIata = last ? last.tour.end_iata : null;
+    if (endIata && journey.origin.iata) {
+      loadFlights('return', endIata, journey.origin.iata,
+        last.tour.end_date, null, 'return-flights-list');
+    }
+  }, 300);
+}
+
+function notGoingHome(promptId) {
+  removeActiveStep(promptId);
+  journey.returnFlight = { skipped: true };
+  setTimeout(() => renderDoneState(), 300);
+}
+
+function renderDoneState() {
+  appendStep(`
+    <div class="rounded-[14px] p-6 text-center" style="background:#1C4A3D;">
+      <div class="text-4xl mb-3">🎉</div>
+      <p class="font-hero italic font-extrabold text-go mb-1" style="font-size:1.4rem;">Your adventure is ready!</p>
+      <p class="text-white/60 mb-5" style="font-size:.85rem;">Review and save your full package below.</p>
+      <button onclick="openPackageModal()"
+        class="px-8 py-3 text-wander font-bold rounded-pill hover:opacity-90 transition-opacity"
+        style="background:#FFFAF2;border:none;font-family:inherit;font-size:.95rem;cursor:pointer;">
+        View &amp; save package →
+      </button>
+    </div>`);
+  document.getElementById('view-pkg-btn').style.display = 'flex';
+  updateFooter();
+}
+
+// ─── PACKAGE MODAL (12) ──────────────────────────────────────────────────────
 function openPackageModal() {
-  const tourTotal = selectedTours.reduce((s, t) => s + t.from_price, 0);
-  const flightTotal = Object.values(gaps).reduce((s, g) => s + (g.selectedFlight?.price || 0), 0);
-  const total = tourTotal + flightTotal;
-  const totalDays = selectedTours.reduce((s, t) => s + t.duration_days, 0);
+  const trips = journey.segments.filter(s => s.type === 'trip').map(s => s.tour);
+  const gaps  = journey.segments.filter(s => s.type === 'gap');
+  const totalDays = trips.reduce((s, t) => s + t.duration_days, 0);
+  let total = trips.reduce((s, t) => s + t.from_price, 0);
+  let flightCount = 0;
 
-  document.getElementById('pkg-sub').textContent = `${selectedTours.length} tours · ${Object.keys(gaps).length} flight${Object.keys(gaps).length !== 1 ? 's' : ''} included`;
+  if (journey.outboundFlight && !journey.outboundFlight.skipped) {
+    total += journey.outboundFlight.price; flightCount++;
+  }
+  gaps.forEach(g => {
+    if (g.selectedFlight?.price) { total += g.selectedFlight.price; flightCount++; }
+  });
+  if (journey.returnFlight && !journey.returnFlight.skipped) {
+    total += journey.returnFlight.price; flightCount++;
+  }
+
+  const cities = [journey.origin?.city];
+  trips.forEach(t => { if (t.departure_city !== cities[cities.length-1]) cities.push(t.departure_city); });
+  if (trips.length) cities.push(trips[trips.length-1].end_city);
+  if (journey.returnFlight && !journey.returnFlight.skipped) cities.push(journey.origin?.city);
+  const route = cities.filter(Boolean).join(' → ');
+
+  document.getElementById('pkg-route').textContent = route;
   document.getElementById('pkg-days').textContent = totalDays;
-  document.getElementById('pkg-tours-count').textContent = selectedTours.length;
+  document.getElementById('pkg-tours-count').textContent = trips.length;
+  document.getElementById('pkg-flights-count').textContent = flightCount;
   document.getElementById('pkg-total-top').textContent = `$${total.toLocaleString()}`;
   document.getElementById('pkg-total').textContent = `$${total.toLocaleString()} pp`;
 
   let items = '';
-  for (let i = 0; i < selectedTours.length; i++) {
-    const t = selectedTours[i];
-    items += `
-      <div class="flex items-center justify-between py-3">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#1C1C1C;font-size:.9rem;">🗺️</div>
-          <div>
-            <p class="font-semibold text-dusk" style="font-size:.88rem;">${t.name}</p>
-            <p style="font-size:.75rem;color:#6B6B6B;">${formatDate(t.departure_date)} – ${formatDate(t.end_date)}</p>
-          </div>
-        </div>
-        <p class="font-bold text-dusk" style="font-size:.9rem;">$${t.from_price.toLocaleString()}</p>
-      </div>`;
-    if (i < selectedTours.length - 1) {
-      const gapKey = `${t.id}__${selectedTours[i+1].id}`;
-      const gap = gaps[gapKey];
-      if (gap?.selectedFlight) {
-        items += `
-          <div class="flex items-center justify-between py-3" style="border-top:1px solid #f3f4f6;">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#EFF6FF;font-size:.9rem;">✈️</div>
-              <div>
-                <p class="font-semibold text-dusk" style="font-size:.88rem;">Flight · ${t.destinations[t.destinations.length-1]} → ${selectedTours[i+1].destinations[0]}</p>
-                <p style="font-size:.75rem;color:#6B6B6B;">Direct · selected offer</p>
-              </div>
-            </div>
-            <p class="font-bold text-dusk" style="font-size:.9rem;">$${gap.selectedFlight.price || '—'}</p>
-          </div>`;
+
+  // Outbound flight
+  if (journey.outboundFlight && !journey.outboundFlight.skipped) {
+    const f = journey.outboundFlight;
+    items += pkgRow('✈️', '#EFF6FF', `Outbound flight · ${f.from} → ${f.to}`, f.flight, `$${f.price}`, 'price');
+  }
+
+  // Trips and gaps in order
+  for (let i = 0; i < trips.length; i++) {
+    const t = trips[i];
+    items += pkgRow('🗺️', '#1C1C1C', t.name, `${fmtDate(t.departure_date)} – ${fmtDate(t.end_date)}`, `$${t.from_price.toLocaleString()}`, 'price', true);
+
+    // Gap after this trip (before next)
+    if (i < trips.length - 1) {
+      const gap = gaps.find(g => g.tourAId === t.id && g.tourBId === trips[i+1].id);
+      if (gap?.selectedFlight?.price) {
+        items += pkgRow('✈️', '#EFF6FF', `Connection flight · ${gap.fromCity} → ${gap.toCity}`, `${gap.selectedFlight.flight || 'Direct'}`, `$${gap.selectedFlight.price}`, 'price');
       }
-      if (gap?.stayCity) {
-        items += `
-          <div class="flex items-center justify-between py-3" style="border-top:1px solid #f3f4f6;">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:#FFF7ED;font-size:.9rem;">🏨</div>
-              <div>
-                <p class="font-semibold text-dusk" style="font-size:.88rem;">Hotel · ${gap.stayCity}</p>
-                <p style="font-size:.75rem;color:#6B6B6B;">Indicative — confirm at booking</p>
-              </div>
-            </div>
-            <p style="font-size:.9rem;color:#9CA3AF;">—</p>
-          </div>`;
+      if (gap?.selectedHotel) {
+        items += pkgRow('🏨', '#FFF7ED', `Hotel near ${gap.toCity}`, `${gap.fromDate ? Math.max(1, Math.round((new Date(gap.toDate) - new Date(gap.fromDate)) / 86400000)) : 1} night(s) · indicative`, '—', 'muted');
       }
     }
   }
-  document.getElementById('pkg-items').innerHTML = items;
 
+  // Return flight
+  if (journey.returnFlight && !journey.returnFlight.skipped) {
+    const f = journey.returnFlight;
+    items += pkgRow('✈️', '#EFF6FF', `Return flight · ${f.from} → ${f.to}`, f.flight, `$${f.price}`, 'price');
+  }
+
+  document.getElementById('pkg-items').innerHTML = items;
   document.getElementById('package-overlay').classList.add('open');
   document.getElementById('package-modal').classList.add('open');
+}
+
+function pkgRow(icon, iconBg, label, sub, price, priceStyle, dark = false) {
+  const bg = dark ? '#1C1C1C' : iconBg;
+  const textColor = dark ? '#fff' : '#1D4ED8';
+  return `
+    <div class="flex items-center justify-between py-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${bg};font-size:.9rem;">${icon}</div>
+        <div>
+          <p class="font-semibold" style="font-size:.88rem;color:${dark?'#1C1C1C':'#0A0C0A'}">${label}</p>
+          <p style="font-size:.73rem;color:#6B6B6B;">${sub}</p>
+        </div>
+      </div>
+      <p class="font-bold" style="font-size:.9rem;color:${priceStyle==='price'?'#0A0C0A':'#9CA3AF'};">${price}</p>
+    </div>`;
 }
 
 function closePackageModal() {
   document.getElementById('package-overlay').classList.remove('open');
   document.getElementById('package-modal').classList.remove('open');
 }
+
+function saveTrip() {
+  try {
+    localStorage.setItem('contiki-saved-journey', JSON.stringify(journey));
+  } catch {}
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '✓ Saved!';
+  btn.style.background = '#1C4A3D';
+  setTimeout(() => { btn.textContent = 'Save my trip'; btn.style.background = '#FF5900'; }, 2500);
+}
+
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closePackageModal(); });
+
+// ─── FOOTER TOTALS ────────────────────────────────────────────────────────────
+function updateFooter() {
+  const trips = journey.segments.filter(s => s.type === 'trip').map(s => s.tour);
+  const gaps  = journey.segments.filter(s => s.type === 'gap');
+  let total = trips.reduce((s, t) => s + t.from_price, 0);
+  let flightCount = 0;
+
+  if (journey.outboundFlight && !journey.outboundFlight.skipped) {
+    const p = journey.outboundFlight.price || journey._pendingOutbound?.price || 0;
+    total += p; flightCount++;
+  } else if (journey._pendingOutbound) {
+    total += journey._pendingOutbound.price; flightCount++;
+  }
+  gaps.forEach(g => {
+    if (g.selectedFlight?.price) { total += g.selectedFlight.price; flightCount++; }
+  });
+  if (journey.returnFlight && !journey.returnFlight.skipped) {
+    total += journey.returnFlight.price; flightCount++;
+  } else if (journey._pendingReturn) {
+    total += journey._pendingReturn.price; flightCount++;
+  }
+
+  document.getElementById('footer-tours').textContent   = trips.length;
+  document.getElementById('footer-flights').textContent = flightCount;
+  document.getElementById('footer-cost').textContent    = `$${total.toLocaleString()}`;
+}
+
+function updateBuilderTitle() {
+  const trips = journey.segments.filter(s => s.type === 'trip').map(s => s.tour);
+  if (!trips.length) return;
+  const geos = [...new Set(trips.map(t => t.geography))];
+  document.getElementById('builder-title').textContent = geos.join(' + ');
+  document.getElementById('builder-sub').textContent = `${trips.length} tour${trips.length!==1?'s':''} · building…`;
+}
+
+// ─── TRIP FILTERING ───────────────────────────────────────────────────────────
+function getTripsFromCity(city) {
+  const key = city.toLowerCase();
+  const added = new Set(journey.segments.filter(s=>s.type==='trip').map(s=>s.tour.id));
+  const exact = TRIPS.filter(t => !added.has(t.id) && t.departure_city.toLowerCase() === key);
+  if (exact.length) return exact;
+  // Fallback: same region or any (for demo robustness)
+  return TRIPS.filter(t => !added.has(t.id)).slice(0, 6);
+}
+
+function getReachableTrips(endCity) {
+  const key = endCity.toLowerCase();
+  const added = new Set(journey.segments.filter(s=>s.type==='trip').map(s=>s.tour.id));
+  const remaining = TRIPS.filter(t => !added.has(t.id));
+  // Score by region proximity
+  const endTrip = lastTripSegment()?.tour;
+  return remaining.sort((a, b) => {
+    const aScore = a.departure_city.toLowerCase() === key ? 3
+      : (endTrip && a.geography === endTrip.geography) ? 2 : 1;
+    const bScore = b.departure_city.toLowerCase() === key ? 3
+      : (endTrip && b.geography === endTrip.geography) ? 2 : 1;
+    return bScore - aScore;
+  });
+}
+
+// ─── JOURNEY HELPERS ──────────────────────────────────────────────────────────
+function lastTripSegment() {
+  const trips = journey.segments.filter(s => s.type === 'trip');
+  return trips.length ? trips[trips.length - 1] : null;
+}
+
+function lastTripEndCity() {
+  const last = lastTripSegment();
+  return last ? last.tour.end_city : journey.startLocation?.city || '';
+}
+
+// ─── DATE HELPER ──────────────────────────────────────────────────────────────
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+function mockFlights(origin, dest) {
+  const carriers = [
+    { code:'BA', name:'British Airways' },
+    { code:'LH', name:'Lufthansa' },
+    { code:'EK', name:'Emirates' },
+    { code:'TG', name:'Thai Airways' },
+    { code:'QR', name:'Qatar Airways' },
+  ];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  return [
+    { offer_id:'mock-1', flight:`${carriers[0].code}${204+Math.floor(Math.random()*100)}`, airline:carriers[0].name, departing_at:'09:15', arriving_at:'14:30', price:Math.floor(350+Math.random()*400), currency:'USD', _mock:true },
+    { offer_id:'mock-2', flight:`${pick(carriers).code}${300+Math.floor(Math.random()*200)}`, airline:pick(carriers).name, departing_at:'13:45', arriving_at:'19:00', price:Math.floor(280+Math.random()*350), currency:'USD', _mock:true },
+    { offer_id:'mock-3', flight:`${pick(carriers).code}${500+Math.floor(Math.random()*200)}`, airline:pick(carriers).name, departing_at:'17:30', arriving_at:'23:15', price:Math.floor(420+Math.random()*500), currency:'USD', _mock:true },
+  ].sort((a,b) => a.price - b.price);
+}
+
+function mockHotels(city) {
+  return [
+    { id:'mock-h1', name:`Hotel Centrale ${city}`, address:`City Centre, ${city}`, rating:4, price_per_night:145, currency:'USD', room_type:'Standard Double', cancellation:'FREE_CANCELLATION', offer_id:null },
+    { id:'mock-h2', name:`${city} Boutique Hotel`, address:`Old Town, ${city}`, rating:4, price_per_night:189, currency:'USD', room_type:'Superior Room', cancellation:'FREE_CANCELLATION', offer_id:null },
+    { id:'mock-h3', name:`Budget Stay ${city}`, address:`Near Station, ${city}`, rating:3, price_per_night:89, currency:'USD', room_type:'Twin Room', cancellation:'NON_REFUNDABLE', offer_id:null },
+  ];
+}
 </script>
 </body>
 </html>

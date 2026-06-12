@@ -1,69 +1,57 @@
-# 11 — Gap Card (Flights + Hotels)
+# 11 — Gap Card (Flight + Hotels Between Trips)
 
-> The signature feature of the builder. Between two locked Contiki tours, this card fills the gap: feasibility-aware flights (Duffel) + user-chosen city hotels (Google Places, geo-fenced).
+> The connective tissue between two Contiki trips in the guided journey (10). A feasibility-checked flight plus geo-fenced hotels positioning the traveller for the NEXT trip's start.
 
 ## Purpose
-For the gap between Tour A ending (city X, date) and Tour B starting (city Y, date):
-1. Suggest **direct, feasible flights** X→Y (Duffel)
-2. Let the user **choose which city to stay in** during the gap (X or Y)
-3. Suggest **hotels geo-fenced around the chosen city** (Google Places)
+For the gap between Trip N (ends city X, date) and Trip N+1 (starts city Y, date):
+1. Suggest a **direct, feasibility-checked flight** X → Y (Duffel back-to-back checker)
+2. Suggest **hotels geo-fenced around Y** (the next trip's start) so the traveller is positioned to depart — via LiteAPI lat/lng radius search
+
+> KEY CHANGE from prior version: hotels are always near the NEXT trip's start location (Y), not a user-chosen city. The traveller needs to be where the next tour begins.
 
 ## Anatomy
 ```
 ┌─ dashed blue card ───────────────────────┐
-│ ✈ 3-day gap · Rome → Bangkok             │
-│   18 Jul – 21 Jul                         │
-│ ── Available flights ──                   │
-│ [BA Direct  08:00→10:30      $189] (sel)  │
-│ [U2 Direct  14:00→16:45      $124]        │
-│ ── Where would you like to stay? ──       │
-│ [📍 Rome (end Tour 1)] [📍 Bangkok (start)]│  ← city picker
-│ ── Hotels near Rome ──                     │
-│ [🏨 Hotel name ★4.5 (1.2k)      View →]   │
+│ ✈ Connecting · Rome → Bangkok            │
+│   Trip 1 ends 18 Jul · Trip 2 starts 21 Jul│
+│ ── Feasible flight ──                     │
+│ [TG911 Direct  10:00→05:30+1   $640](sel) │
+│   ✓ Arrives 2 days before Trip 2          │
+│ ── Hotels near Bangkok (your next start) ─│
+│ [🏨 Hotel near departure  ★4  $120](sel)  │
+│ [🏨 …]                                     │
 └───────────────────────────────────────────┘
 ```
 
 ## Design spec (ref: design-system.md)
-- Card: dashed 1.5px `blue-border` (#BFDBFE), `blue-soft` (#EFF6FF) bg, radius 14px
-- Header: blue circle icon (✈), "N-day gap · X → Y" (blue, weight 700), date sub
-- **Flights:**
-  - Loading: spinner + "Searching flights X → Y…"
-  - Each option: white card, airline code chip, flight number + green "Direct" badge, dep→arr times, price (green, weight 800). Selectable (click → blue border + bg). Cheapest auto-selected.
-  - Empty: "No direct flights found for these dates."
-- **Stay-city selector** (the key UX):
-  - Label: "🏨 Where would you like to stay during the gap?"
-  - Two buttons: `📍 {endCity} (End of Tour N)` and `📍 {startCity} (Start of Tour N+1)`
-  - Selected → blue fill, white text
-- **Hotels** (only after city chosen):
-  - Loading: spinner + "Finding hotels near {city}…"
-  - Each: white card, 🏨 thumb, name, address, rating (orange ★ + review count), "View →" Maps link (opens place). Selectable → orange border.
-  - Empty: "No hotels found. Try the other city."
+- Card: dashed 1.5px `blue-border`, `blue-soft` bg, radius 14px
+- Header: blue ✈ icon, "Connecting · X → Y", date sub showing both trip boundaries
+- **Flight section:**
+  - Auto-loads on gap creation (no button)
+  - Direct only, feasibility-checked (arrives before Trip N+1 start − 4h buffer − 120min transfer)
+  - Each option: airline/flight no., Direct badge, times, price (green). Feasibility note ("✓ Arrives X before next trip"). Cheapest auto-selected.
+  - Empty: "No feasible direct flight — try removing this trip or choosing another."
+- **Hotels section (geo-fenced to NEXT start, Y):**
+  - Label: "Hotels near {Y} (your next start)"
+  - LiteAPI lat/lng radius search around Y
+  - Each: name, address, star rating, price/night, room type, cancellation policy, Maps link, offer_id (for future booking). Selectable → orange border. First auto-selected.
+  - Loading + empty states.
 
 ## Behaviour
 ```
 on gap created:
-  loadGapFlights(gap)  → POST /api/flights
-                          { origin, destination, departure_date,
-                            trip_b_start_iso, min_buffer_hours: 4,
-                            city_transfer_minutes: 120 }
-                       → direct + feasible offers; auto-select cheapest
-
-on stay-city chosen:
-  loadGapHotels(gap)   → POST /api/hotels { location: chosenCity,
-                            check_in: gap.fromDate, check_out: gap.toDate }
-                       → geo-fenced hotels; auto-select first
+  loadFlights → POST /api/flights { origin: X_iata, destination: Y_iata,
+                  departure_date, trip_b_start_iso, min_buffer_hours:4,
+                  city_transfer_minutes:120 }
+  loadHotels  → POST /api/hotels { location: Y, lat: Y_lat, lng: Y_lng,
+                  radius_meters: 5000, check_in, check_out }
 ```
 
-### Flight feasibility (mirrors multi-trip-concierge tool)
-- Direct only (`segments.length === 1`)
-- Must arrive before `tripB_start − buffer(4h) − cityTransfer(120min)`
-- See 13-api-proxies for exact logic.
-
 ## Acceptance criteria
-- [ ] Flights auto-load on gap creation (no button)
-- [ ] Direct-only, feasibility-filtered, cheapest auto-selected
-- [ ] City picker: user chooses end-city OR start-city to stay in
-- [ ] Hotels load only after city chosen, geo-fenced to that city
-- [ ] Maps link per hotel
+- [ ] Flight auto-loads, direct-only, feasibility-checked, cheapest pre-selected
+- [ ] Feasibility note shown ("arrives before next trip")
+- [ ] Hotels ALWAYS geo-fenced to the NEXT trip's start city (not user-chosen)
+- [ ] Hotel offer_id captured for future booking
 - [ ] Loading + empty states for both
-- [ ] Selecting flight/hotel updates package totals
+- [ ] Selecting updates package totals
+- [ ] No-feasible-flight case handled without dead-ending

@@ -1,44 +1,50 @@
-# 09 — Build-Trip Search (Entry)
+# 09 — Trip Builder Entry (Origin & Start)
+
+> The opening of the guided journey (see 10 for the full flow). Two sequential questions that seed everything downstream.
 
 ## Purpose
-Entry screen for the Multi-Trip Builder. A semantic search box ("Where and when?") that returns Contiki tours to combine into a package. Replaces any home-city form — the search box IS the start.
+Capture the two anchors of the journey before any trips are shown:
+1. **Origin** — where the traveller is coming from (drives outbound + return flights)
+2. **Start location** — where they want to begin their first tour (drives first-trip filtering + outbound flight destination)
 
 ## Anatomy
 ```
-        Multi-Trip Builder            ← eyebrow
-        Build your adventure          ← Mencken hero, orange
-   [supporting copy]
+        Trip Builder                    ← eyebrow
+        Build your adventure            ← Mencken hero, orange (on wander green)
    ┌──────────────────────────────┐
-   │ 🔍 Where and when?   [Find]   │   ← semantic search bar
+   │ Where are you coming from?    │    ← Step 1 prompt
+   │ 🔍 e.g. London…        [Next] │
    └──────────────────────────────┘
-   [chip] [chip] [chip] [chip]      ← example prompts
-   ─ AI understood ─ [summary]
-   ── results: selectable trip cards ──
-   <N> tours matched — select 2+    [Build package →]
+   (then)
+   ┌──────────────────────────────┐
+   │ Where do you want to start?   │    ← Step 2 prompt
+   │ 🔍 e.g. Bangkok…       [Next] │
+   └──────────────────────────────┘
+```
 
 ## Design spec (ref: design-system.md)
-- Hero band: `wander` (#1C4A3D) green bg, centred
-- Eyebrow: "Multi-Trip Builder", white@40%, uppercase, 0.72rem, tracked
-- Title: "Build your adventure", **Mencken** Bold italic, `primary-1` orange, clamp(2.2rem,5vw,3.5rem)
-- Search bar: white, radius 14px, shadow-2xl, orange search icon, placeholder **"Where and when? e.g. Europe in July then Southeast Asia in September…"**, orange "Find trips" Primary button. Focus → 2px orange border.
-- Chips: white@8% on green, hover → brighter. Example multi-trip prompts.
-- Status + AI understood strip: same pattern as search modal (04)
-- Results section: `cream-dark` bg, selectable trip cards (variant 4)
+- Hero band: `wander` (#1C4A3D) green, centred
+- Eyebrow: "Trip Builder", white@40%, uppercase, tracked
+- Title: "Build your adventure", **Mencken** Bold italic, `primary-1` orange
+- Prompt cards: white, radius 14px, shadow-2xl. Single free-text input + orange "Next" Primary button. Orange focus border.
+- Input placeholder examples guide the user ("e.g. London", "e.g. Bangkok")
+- Steps appear sequentially — Step 2 reveals after Step 1 is answered.
 
 ## Behaviour
-- Enter / Find → POST `/api/search` with all TOURS
-- Returns ranked tours with AI reasons + dates shown
-- User selects 2+ (cards highlight orange, button "✓ Added")
-- "Build package" enabled at 2+ selections → transitions to Timeline (10)
-- Selected tours auto-sorted by `departure_date`
+- Step 1 input → `journey.origin` (resolve city + IATA via lookup)
+- Step 2 input → `journey.startLocation` (resolve city + IATA)
+- On completing Step 2 → transition into the guided builder (10): suggest outbound flight (if origin ≠ start), then first trips from start location.
+- (Optional enhancement: autocomplete on city inputs.)
 
 ## Data
-Tours carry TTC fields incl. `departure_date`/`end_date` (needed for gap calc downstream).
+```js
+journey.origin = { city, iata }
+journey.startLocation = { city, iata }
+```
 
 ## Acceptance criteria
-- [ ] Semantic "Where and when?" search (not a form)
-- [ ] Mencken orange hero title on green
-- [ ] AI-ranked selectable tour cards with dates
-- [ ] Min 2 selection gate
-- [ ] Selection sorted by departure date
-- [ ] Transitions to timeline builder
+- [ ] Two sequential prompts: origin, then start location
+- [ ] Mencken orange hero on green
+- [ ] City inputs resolve to IATA for downstream flight calls
+- [ ] Transitions to guided builder on completion
+- [ ] Distinct origin vs start (they can differ → outbound flight)
