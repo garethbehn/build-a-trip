@@ -44,6 +44,26 @@ export default async function handler(req) {
     });
   }
 
+  // ── Demo mode: generate reference without hitting TTC ────────────────────
+  if (payment?.demo === true) {
+    const year = new Date().getFullYear();
+    const ref  = `CTK-${year}-${String(Math.floor(10000 + Math.random() * 90000))}`;
+    return new Response(JSON.stringify({
+      bookingReference:   ref,
+      status:             'confirmed',
+      confirmationEmail:  leadBooker.email,
+      tourId,
+      departureId,
+      roomType,
+      passengers:         passengers.length,
+      totalPrice:         pricing?.totalPrice  || 0,
+      currency:           pricing?.currency    || 'USD',
+      depositAmount:      pricing?.depositAmount || 0,
+      balanceDueDate:     pricing?.balanceDueDate || null,
+      _demo: true,
+    }), { status: 200, headers: { 'Content-Type': 'application/json', ...cors() } });
+  }
+
   // ── Production booking (when TTC booking API is available) ────────────────
   // Uncomment and wire up when real API credentials are available:
   //

@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book your trip · Contiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" rel="stylesheet"/>
+
+  <style>
+    /* ── TOKENS ───────────────────────────────────────────────────────────── */
+    :root {
+      --go:        #FF5900;
+      --go-alt:    #FF7300;
+      --wander:    #1C4A3D;
+      --wander-alt:#1C6348;
+      --burst:     #FFE100;
+      --dusk:      #0A0C0A;
+      --dawn:      #FFFAF2;
+      --ui-grey80: #6B6B6B;
+      --ui-border: #E5E0D8;
+      --card-dark: #1C1C1C;
+
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:  0 4px 6px rgba(0,0,0,0.07);
+      --shadow-lg:  0 10px 15px rgba(0,0,0,0.1);
+      --shadow-xl:  0 20px 25px rgba(0,0,0,0.1);
+
+      --r-sm:   6px;
+      --r-md:   12px;
+      --r-lg:   16px;
+      --r-pill: 100px;
+
+      --t-fast:  0.15s ease;
+      --t-base:  0.2s ease;
+      --t-modal: 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ── RESET ────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--dawn); color: var(--dusk); min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+    .icon { font-family: 'Material Symbols Outlined'; font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; font-size: 20px; line-height: 1; vertical-align: middle; display: inline-block; }
+
+    /* ── GATE ─────────────────────────────────────────────────────────────── */
+    #gate { position: fixed; inset: 0; z-index: 9999; background: var(--dusk); display: flex; align-items: center; justify-content: center; }
+    .gate-box { background: #1a1a1a; border-radius: var(--r-lg); padding: 48px 40px; width: 360px; max-width: 90vw; }
+    .gate-logo { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 2rem; color: var(--go); margin-bottom: 6px; }
+    .gate-sub  { color: rgba(255,255,255,.4); font-size: .8rem; margin-bottom: 28px; }
+    .gate-input { width: 100%; background: #111; border: 1px solid #333; border-radius: var(--r-md); color: white; font-family: inherit; font-size: .9rem; padding: 14px 16px; outline: none; transition: border-color var(--t-fast); margin-bottom: 10px; }
+    .gate-input:focus { border-color: var(--go); }
+    .gate-error { color: #ff6b6b; font-size: .8rem; margin-bottom: 10px; display: none; }
+    .gate-btn { width: 100%; background: var(--go); color: white; border: none; border-radius: var(--r-md); padding: 14px; font-size: .95rem; font-weight: 700; transition: background var(--t-fast); }
+    .gate-btn:hover { background: var(--go-alt); }
+
+    /* ── NAV ──────────────────────────────────────────────────────────────── */
+    #nav { position: sticky; top: 0; z-index: 200; background: var(--dawn); border-bottom: 1px solid var(--ui-border); height: 64px; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-left { display: flex; align-items: center; gap: 4px; }
+    .nav-link { font-size: .85rem; font-weight: 600; color: var(--dusk); padding: 8px 12px; border-radius: var(--r-md); border: none; background: none; display: flex; align-items: center; gap: 4px; transition: background var(--t-fast); }
+    .nav-link:hover { background: rgba(0,0,0,.05); }
+    .nav-logo { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 1.6rem; color: var(--go); }
+    .nav-logo:hover { opacity: .8; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-pill { display: flex; align-items: center; gap: 6px; border: 1.5px solid var(--ui-border); border-radius: var(--r-pill); padding: 8px 14px; background: none; font-size: .85rem; font-weight: 600; color: var(--dusk); transition: background var(--t-fast); }
+    .nav-pill:hover { background: rgba(0,0,0,.04); }
+
+    /* ── LOADING / ERROR ──────────────────────────────────────────────────── */
+    #loading-state { padding: 80px 32px; text-align: center; color: var(--ui-grey80); }
+    .spin { width: 36px; height: 36px; border: 3px solid var(--ui-border); border-top-color: var(--go); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #error-state { display: none; padding: 80px 32px; text-align: center; }
+    .err-icon  { font-size: 2.8rem; margin-bottom: 14px; }
+    .err-title { font-size: 1.3rem; font-weight: 700; color: var(--wander); margin-bottom: 8px; }
+    .err-sub   { color: var(--ui-grey80); font-size: .9rem; margin-bottom: 24px; }
+
+    /* ── BOOKING PAGE ─────────────────────────────────────────────────────── */
+    #booking-page { display: none; max-width: 720px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* ── PROGRESS BAR ─────────────────────────────────────────────────────── */
+    .progress-wrap { margin-bottom: 36px; }
+    .progress-track { height: 4px; background: var(--ui-border); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--go); border-radius: 2px; transition: width .4s ease; }
+    .progress-steps { display: flex; justify-content: space-between; }
+    .ps-label { font-size: .68rem; font-weight: 700; color: var(--ui-grey80); text-align: center; flex: 1; text-transform: uppercase; letter-spacing: .04em; transition: color var(--t-fast); }
+    .ps-label.active   { color: var(--go); }
+    .ps-label.done     { color: var(--wander); }
+
+    /* ── STEP PANELS ──────────────────────────────────────────────────────── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; animation: fadeUp .25s ease; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── FORM CARD ────────────────────────────────────────────────────────── */
+    .form-card { background: white; border-radius: var(--r-lg); box-shadow: var(--shadow-md); padding: 24px; margin-bottom: 16px; border: 1px solid var(--ui-border); }
+    .form-card-title { font-size: 1rem; font-weight: 700; color: var(--wander); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .form-card-title .icon { color: var(--go); }
+
+    /* ── FORM FIELDS ──────────────────────────────────────────────────────── */
+    .field-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .field-row.single { grid-template-columns: 1fr; }
+    .field-row.thirds  { grid-template-columns: 1fr 1fr 1fr; }
+    .field-group { display: flex; flex-direction: column; gap: 5px; }
+    .field-label { font-size: .75rem; font-weight: 700; color: var(--dusk); }
+    .field-label .req { color: var(--go); margin-left: 2px; }
+    .field-label .opt { color: var(--ui-grey80); font-weight: 400; margin-left: 4px; }
+    .field-input, .field-select {
+      background: white; border: 1.5px solid var(--ui-border);
+      border-radius: var(--r-md); padding: 10px 12px;
+      font-family: inherit; font-size: .88rem; color: var(--dusk);
+      outline: none; width: 100%;
+      transition: border-color var(--t-fast);
+    }
+    .field-input:focus, .field-select:focus { border-color: var(--go); }
+    .field-input.error, .field-select.error { border-color: #EF4444; }
+    .field-error { font-size: .72rem; color: #EF4444; display: none; }
+    .field-error.show { display: block; }
+    .field-warn { font-size: .72rem; color: #D97706; display: none; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--r-sm); padding: 4px 8px; margin-top: 2px; }
+    .field-warn.show { display: block; }
+    textarea.field-input { resize: vertical; min-height: 72px; }
+
+    /* ── TRIP SUMMARY MINI ────────────────────────────────────────────────── */
+    .trip-mini { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
+    .trip-mini-img { width: 80px; height: 60px; border-radius: var(--r-md); object-fit: cover; flex-shrink: 0; background: #ddd; }
+    .trip-mini-title { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 1.2rem; color: var(--go); text-transform: lowercase; line-height: 1; }
+    .trip-mini-sub   { font-size: .78rem; color: var(--ui-grey80); margin-top: 4px; }
+
+    /* ── ROOM TYPE SELECTOR ───────────────────────────────────────────────── */
+    .room-row   { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .room-opt   { flex: 1; min-width: 90px; border: 1.5px solid var(--ui-border); border-radius: var(--r-md); padding: 10px 12px; background: white; text-align: center; transition: border-color var(--t-fast), background var(--t-fast); }
+    .room-opt:hover { border-color: var(--go); }
+    .room-opt.selected { border-color: var(--go); background: #FFF5F0; }
+    .room-opt-type { font-size: .82rem; font-weight: 700; color: var(--dusk); }
+    .room-opt-supp { font-size: .7rem; color: var(--ui-grey80); margin-top: 2px; }
+
+    /* ── PRICE BREAKDOWN ──────────────────────────────────────────────────── */
+    .price-box { background: #F9F8F5; border-radius: var(--r-md); padding: 16px 18px; margin-top: 16px; }
+    .pbd-row   { display: flex; justify-content: space-between; font-size: .83rem; color: var(--ui-grey80); margin-bottom: 6px; }
+    .pbd-row.was .pbd-val { text-decoration: line-through; color: #BBB; }
+    .pbd-row.discount { color: var(--wander); font-weight: 600; }
+    .pbd-divider { border: none; border-top: 1px solid var(--ui-border); margin: 10px 0; }
+    .pbd-total { display: flex; justify-content: space-between; align-items: baseline; }
+    .pbd-total-label { font-size: .9rem; font-weight: 700; color: var(--dusk); }
+    .pbd-total-amount { font-size: 1.6rem; font-weight: 800; color: var(--go); line-height: 1; }
+    .pbd-total-pp { font-size: .7rem; color: var(--ui-grey80); }
+    .deposit-row { margin-top: 12px; display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--ui-border); }
+    .deposit-label { font-size: .8rem; color: var(--ui-grey80); }
+    .deposit-amount { font-size: 1rem; font-weight: 700; color: var(--wander); }
+    .balance-note { font-size: .72rem; color: var(--ui-grey80); margin-top: 6px; }
+    .prices-caveat { font-size: .75rem; color: var(--ui-grey80); background: #FFF9F0; border: 1px solid #FFE0C8; border-radius: var(--r-sm); padding: 8px 12px; margin-top: 12px; display: flex; gap: 7px; align-items: flex-start; }
+
+    /* ── PASSENGER COUNT ──────────────────────────────────────────────────── */
+    .pax-count-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .pax-count-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--ui-border); background: white; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background var(--t-fast), border-color var(--t-fast); }
+    .pax-count-btn:hover { border-color: var(--go); background: #FFF5F0; }
+    .pax-count-val { font-size: 1.1rem; font-weight: 700; min-width: 24px; text-align: center; }
+
+    /* ── PASSENGER CARD ───────────────────────────────────────────────────── */
+    .pax-card { border: 1.5px solid var(--ui-border); border-radius: var(--r-lg); margin-bottom: 12px; overflow: hidden; }
+    .pax-card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: white; cursor: pointer; transition: background var(--t-fast); }
+    .pax-card-header:hover { background: #FAFAF8; }
+    .pax-card-num  { width: 28px; height: 28px; border-radius: 50%; background: var(--wander); color: white; font-size: .75rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pax-card-name { font-size: .9rem; font-weight: 600; color: var(--dusk); margin-left: 10px; flex: 1; }
+    .pax-card-lead { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--go); background: #FFF5F0; padding: 2px 8px; border-radius: var(--r-sm); margin-right: 8px; }
+    .pax-card-toggle { color: var(--ui-grey80); transition: transform var(--t-fast); }
+    .pax-card.open .pax-card-toggle { transform: rotate(180deg); }
+    .pax-card-body { max-height: 0; overflow: hidden; transition: max-height var(--t-modal); }
+    .pax-card.open .pax-card-body { max-height: 1200px; }
+    .pax-card-inner { padding: 0 18px 18px; background: #FAFAF8; }
+    .pax-section-divider { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--ui-grey80); margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--ui-border); }
+
+    /* ── PAYMENT TOGGLE ───────────────────────────────────────────────────── */
+    .pay-toggle { display: flex; background: #F3F3F0; border-radius: var(--r-pill); padding: 3px; margin-bottom: 20px; }
+    .pay-toggle-btn { flex: 1; padding: 9px 16px; border: none; background: transparent; border-radius: var(--r-pill); font-size: .85rem; font-weight: 600; color: var(--ui-grey80); transition: background var(--t-fast), color var(--t-fast); }
+    .pay-toggle-btn.selected { background: white; color: var(--dusk); box-shadow: var(--shadow-sm); }
+
+    /* ── SUMMARY TABLE ────────────────────────────────────────────────────── */
+    .summary-section { margin-bottom: 20px; }
+    .summary-section-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--ui-grey80); margin-bottom: 10px; }
+    .summary-row { display: flex; justify-content: space-between; font-size: .85rem; color: var(--dusk); padding: 6px 0; border-bottom: 1px solid #F3F3F0; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row-label { color: var(--ui-grey80); }
+
+    /* ── T&C CHECKBOX ─────────────────────────────────────────────────────── */
+    .tc-row { display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: #F9F8F5; border-radius: var(--r-md); margin-bottom: 14px; }
+    .tc-checkbox { width: 18px; height: 18px; accent-color: var(--go); flex-shrink: 0; margin-top: 1px; cursor: pointer; }
+    .tc-label { font-size: .82rem; color: var(--dusk); line-height: 1.5; }
+    .tc-link { color: var(--go); text-decoration: underline; }
+
+    /* ── DEMO PAYMENT FORM ────────────────────────────────────────────────── */
+    .demo-badge { background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .demo-badge-pill { background: var(--card-dark); color: #9CA3AF; font-size: .65rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 3px 10px; border-radius: var(--r-sm); flex-shrink: 0; }
+    .demo-badge-text { font-size: .78rem; color: var(--ui-grey80); }
+    .card-input-wrap { position: relative; }
+    .card-input-wrap .icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ui-grey80); font-size: 18px; }
+    .pay-amount-display { background: #F9F8F5; border-radius: var(--r-md); padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .pad-label { font-size: .8rem; color: var(--ui-grey80); }
+    .pad-amount { font-size: 1.3rem; font-weight: 800; color: var(--dusk); }
+    .secure-note { display: flex; align-items: center; gap: 6px; font-size: .72rem; color: var(--ui-grey80); justify-content: center; margin-top: 12px; }
+
+    /* ── CONFIRMATION HERO ────────────────────────────────────────────────── */
+    .confirm-hero { background: var(--wander); border-radius: var(--r-lg); padding: 40px 32px; text-align: center; margin-bottom: 16px; }
+    .confirm-check { width: 64px; height: 64px; background: rgba(255,255,255,.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .confirm-check .icon { font-size: 36px; color: white; }
+    .confirm-title { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 2rem; color: var(--go); margin-bottom: 8px; line-height: 1; }
+    .confirm-ref { font-size: .8rem; color: rgba(255,255,255,.55); margin-bottom: 6px; }
+    .confirm-ref-code { font-size: 1.6rem; font-weight: 800; color: white; letter-spacing: .06em; }
+    .confirm-email-note { font-size: .8rem; color: rgba(255,255,255,.5); margin-top: 10px; }
+    .what-next { margin: 8px 0 16px; }
+    .what-next-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ui-border); }
+    .what-next-item:last-child { border-bottom: none; }
+    .wni-num { width: 28px; height: 28px; border-radius: 50%; background: var(--wander); color: white; font-size: .75rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .wni-text { font-size: .85rem; color: var(--dusk); line-height: 1.5; }
+    .wni-strong { font-weight: 700; display: block; margin-bottom: 2px; }
+    .confirm-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-placeholder { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--ui-border); border-radius: var(--r-pill); padding: 12px; font-size: .88rem; font-weight: 600; color: var(--dusk); background: none; transition: background var(--t-fast); }
+    .btn-placeholder:hover { background: rgba(0,0,0,.04); }
+    .placeholder-tag { font-size: .6rem; font-weight: 700; background: var(--ui-grey80); color: white; padding: 2px 7px; border-radius: var(--r-sm); }
+
+    /* ── CTAs ─────────────────────────────────────────────────────────────── */
+    .cta-row { display: flex; gap: 12px; align-items: center; margin-top: 24px; flex-wrap: wrap; }
+    .btn-primary { background: var(--go); color: white; border: none; border-radius: var(--r-pill); padding: 14px 28px; font-size: .95rem; font-weight: 700; flex: 1; transition: background var(--t-fast); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary:hover { background: var(--go-alt); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-back { background: none; color: var(--dusk); border: 1.5px solid var(--ui-border); border-radius: var(--r-pill); padding: 13px 20px; font-size: .88rem; font-weight: 600; transition: background var(--t-fast); display: flex; align-items: center; gap: 6px; }
+    .btn-back:hover { background: rgba(0,0,0,.04); }
+    .btn-full-width { width: 100%; text-align: center; }
+
+    /* ── CANCELLATION POLICY ──────────────────────────────────────────────── */
+    .cancel-policy { background: #F9F8F5; border-radius: var(--r-md); padding: 14px; font-size: .78rem; color: var(--ui-grey80); line-height: 1.6; margin-bottom: 14px; }
+    .cancel-policy strong { color: var(--dusk); }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #booking-page { padding: 20px 16px 60px; }
+      .field-row { grid-template-columns: 1fr; }
+      .field-row.thirds { grid-template-columns: 1fr 1fr; }
+      .progress-steps { display: none; }
+      .cta-row { flex-direction: column; }
+      .btn-back { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── GATE ───────────────────────────────────────────────────────────────── -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">contiki</div>
+    <p class="gate-sub">Preview access only</p>
+    <input id="gate-input" class="gate-input" type="password" placeholder="Enter password"
+      onkeydown="if(event.key==='Enter')checkGate()"/>
+    <p id="gate-error" class="gate-error">Incorrect password.</p>
+    <button class="gate-btn" onclick="checkGate()">Enter</button>
+  </div>
+</div>
+
+<!-- ── NAV ────────────────────────────────────────────────────────────────── -->
+<nav id="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-link">
+      <span class="icon" style="font-size:16px;">arrow_back</span> Trips
+    </a>
+  </div>
+  <a href="index.html" class="nav-logo">contiki</a>
+  <div class="nav-right">
+    <button class="nav-pill">
+      <span class="icon" style="font-size:18px;opacity:.6;">person</span>
+      <span class="icon" style="font-size:16px;opacity:.4;">expand_more</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── LOADING ────────────────────────────────────────────────────────────── -->
+<div id="loading-state" style="padding:80px 32px;text-align:center;">
+  <div class="spin"></div>
+  <p style="color:var(--ui-grey80);font-size:.9rem;">Loading your trip…</p>
+</div>
+
+<!-- ── ERROR ──────────────────────────────────────────────────────────────── -->
+<div id="error-state">
+  <div class="err-icon">🗺️</div>
+  <h2 class="err-title">Trip not found</h2>
+  <p class="err-sub" id="error-msg">We couldn't load this trip. Please go back and try again.</p>
+  <a href="index.html" class="btn-primary" style="display:inline-flex;gap:8px;padding:12px 24px;font-size:.88rem;">Back to trips</a>
+</div>
+
+<!-- ── BOOKING PAGE ────────────────────────────────────────────────────────── -->
+<div id="booking-page">
+
+  <!-- Progress indicator -->
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:20%;"></div>
+    </div>
+    <div class="progress-steps">
+      <span class="ps-label active" id="ps-1">1 Review</span>
+      <span class="ps-label"        id="ps-2">2 Passengers</span>
+      <span class="ps-label"        id="ps-3">3 Summary</span>
+      <span class="ps-label"        id="ps-4">4 Payment</span>
+      <span class="ps-label"        id="ps-5">5 Confirmed</span>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: REVIEW YOUR TRIP ────────────────────────────────────────── -->
+  <div class="step-panel active" id="step-1">
+
+    <div class="form-card">
+      <div class="form-card-title"><span class="icon">luggage</span> Review your trip</div>
+      <div class="trip-mini" id="s1-trip-mini"></div>
+
+      <p style="font-size:.78rem;font-weight:700;color:var(--dusk);margin-bottom:8px;">Room type</p>
+      <div class="room-row" id="s1-room-row"></div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title"><span class="icon">payments</span> Price breakdown</div>
+      <div class="price-box" id="s1-price-box">
+        <div class="pbd-row"><span>Base price pp</span><span id="s1-base">—</span></div>
+        <div class="pbd-row" id="s1-supp-row" style="display:none;"><span id="s1-supp-label">Supplement</span><span id="s1-supp">—</span></div>
+        <div class="pbd-row was" id="s1-was-row" style="display:none;"><span>Was</span><span class="pbd-val" id="s1-was">—</span></div>
+        <div class="pbd-row discount" id="s1-disc-row" style="display:none;"><span id="s1-disc-label">Discount</span><span id="s1-disc">—</span></div>
+        <hr class="pbd-divider"/>
+        <div class="pbd-total">
+          <div><span class="pbd-total-label">Total per person</span></div>
+          <div><span class="pbd-total-amount" id="s1-total">—</span> <span class="pbd-total-pp">pp</span></div>
+        </div>
+        <div class="deposit-row">
+          <div>
+            <div class="deposit-label">Deposit to secure your place</div>
+            <div class="balance-note" id="s1-balance-note"></div>
+          </div>
+          <div class="deposit-amount" id="s1-deposit">—</div>
+        </div>
+      </div>
+      <div class="prices-caveat">
+        <span class="icon" style="font-size:16px;color:var(--go);flex-shrink:0;margin-top:1px;">info</span>
+        Prices may change — confirming a booking reserves your spot at today's price.
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <button class="btn-back" onclick="goBack()">
+        <span class="icon" style="font-size:16px;">arrow_back</span> Back to trip
+      </button>
+      <button class="btn-primary" onclick="goToStep(2)">
+        Continue to passengers <span class="icon" style="font-size:18px;">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: PASSENGER DETAILS ───────────────────────────────────────── -->
+  <div class="step-panel" id="step-2">
+
+    <div class="form-card">
+      <div class="form-card-title"><span class="icon">group</span> How many passengers?</div>
+      <div class="pax-count-row">
+        <button class="pax-count-btn" onclick="changePaxCount(-1)">−</button>
+        <span class="pax-count-val" id="pax-count-display">1</span>
+        <button class="pax-count-btn" onclick="changePaxCount(+1)">+</button>
+        <span style="font-size:.82rem;color:var(--ui-grey80);">passengers (max 8)</span>
+      </div>
+    </div>
+
+    <div id="pax-cards-wrap"></div>
+
+    <div class="cta-row">
+      <button class="btn-back" onclick="goToStep(1)">
+        <span class="icon" style="font-size:16px;">arrow_back</span> Back
+      </button>
+      <button class="btn-primary" onclick="validateAndNext(2)">
+        Continue to review <span class="icon" style="font-size:18px;">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: REVIEW & CONFIRM ────────────────────────────────────────── -->
+  <div class="step-panel" id="step-3">
+
+    <div class="form-card" id="s3-trip-card">
+      <div class="form-card-title"><span class="icon">luggage</span> Trip details</div>
+      <div id="s3-trip-summary"></div>
+    </div>
+
+    <div class="form-card" id="s3-pax-card">
+      <div class="form-card-title"><span class="icon">group</span> Passengers</div>
+      <div id="s3-pax-summary"></div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title"><span class="icon">payments</span> Payment option</div>
+      <div class="pay-toggle" id="pay-toggle">
+        <button class="pay-toggle-btn selected" id="pt-deposit" onclick="selectPayOption('deposit')">
+          Pay deposit <span id="pt-deposit-amt"></span>
+        </button>
+        <button class="pay-toggle-btn" id="pt-full" onclick="selectPayOption('full')">
+          Pay in full <span id="pt-full-amt"></span>
+        </button>
+      </div>
+      <div class="price-box">
+        <div class="pbd-row"><span>Total trip price pp</span><span id="s3-total">—</span></div>
+        <div class="pbd-row"><span>Number of passengers</span><span id="s3-pax-n">—</span></div>
+        <hr class="pbd-divider"/>
+        <div class="pbd-total">
+          <div>
+            <span class="pbd-total-label" id="s3-pay-label">Deposit due today</span>
+          </div>
+          <div><span class="pbd-total-amount" id="s3-pay-amount">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title"><span class="icon">policy</span> Cancellation policy</div>
+      <div class="cancel-policy">
+        <strong>Contiki standard cancellation policy:</strong><br/>
+        More than 60 days before departure: deposit forfeited.<br/>
+        60–30 days before departure: 50% of total price.<br/>
+        30–15 days before departure: 75% of total price.<br/>
+        Less than 15 days before departure: 100% of total price.
+      </div>
+      <div class="tc-row">
+        <input type="checkbox" class="tc-checkbox" id="tc-checkbox"/>
+        <label class="tc-label" for="tc-checkbox">
+          I have read and agree to the
+          <a href="#" class="tc-link" target="_blank">Contiki Terms &amp; Conditions</a>
+          and confirm all passenger details are accurate.
+        </label>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <button class="btn-back" onclick="goToStep(2)">
+        <span class="icon" style="font-size:16px;">arrow_back</span> Back
+      </button>
+      <button class="btn-primary" onclick="validateAndNext(3)">
+        Confirm booking <span class="icon" style="font-size:18px;">arrow_forward</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: PAYMENT (DEMO) ───────────────────────────────────────────── -->
+  <div class="step-panel" id="step-4">
+
+    <div class="form-card">
+      <div class="demo-badge">
+        <span class="demo-badge-pill">Demo mode</span>
+        <span class="demo-badge-text">No real payment will be taken. Pre-filled with test card details.</span>
+      </div>
+
+      <div class="form-card-title"><span class="icon">credit_card</span> Card details</div>
+
+      <div class="pay-amount-display">
+        <span class="pad-label" id="s4-pay-label">Paying today</span>
+        <span class="pad-amount" id="s4-pay-amount">—</span>
+      </div>
+
+      <div class="field-row single" style="margin-bottom:14px;">
+        <div class="field-group">
+          <label class="field-label" for="card-number">Card number <span class="req">*</span></label>
+          <div class="card-input-wrap">
+            <input id="card-number" class="field-input" type="text" maxlength="19"
+              value="4242 4242 4242 4242" placeholder="1234 5678 9012 3456"
+              oninput="formatCardNumber(this)"/>
+            <span class="icon">credit_card</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row thirds" style="margin-bottom:14px;">
+        <div class="field-group">
+          <label class="field-label" for="card-expiry">Expiry <span class="req">*</span></label>
+          <input id="card-expiry" class="field-input" type="text" maxlength="5"
+            value="12/26" placeholder="MM/YY" oninput="formatExpiry(this)"/>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="card-cvv">CVV <span class="req">*</span></label>
+          <input id="card-cvv" class="field-input" type="text" maxlength="3"
+            value="123" placeholder="123"/>
+        </div>
+        <div class="field-group" style="grid-column:span 1;">
+          <label class="field-label" for="card-name">Name on card <span class="req">*</span></label>
+          <input id="card-name" class="field-input" type="text" placeholder="As it appears on card"/>
+        </div>
+      </div>
+      <p class="field-error" id="card-name-error" style="margin-top:-8px;margin-bottom:10px;"></p>
+
+      <div class="secure-note">
+        <span class="icon" style="font-size:16px;color:var(--wander);">lock</span>
+        Secure demo environment · SSL encrypted
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <button class="btn-back" onclick="goToStep(3)">
+        <span class="icon" style="font-size:16px;">arrow_back</span> Back
+      </button>
+      <button class="btn-primary" id="pay-btn" onclick="submitPayment()">
+        <span class="icon" style="font-size:18px;">lock</span>
+        <span id="pay-btn-label">Pay deposit</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: CONFIRMATION ─────────────────────────────────────────────── -->
+  <div class="step-panel" id="step-5">
+
+    <div class="confirm-hero">
+      <div class="confirm-check"><span class="icon" style="font-size:36px;color:white;">check_circle</span></div>
+      <h1 class="confirm-title">Booking confirmed!</h1>
+      <p class="confirm-ref">Booking reference</p>
+      <p class="confirm-ref-code" id="confirm-ref">CTK-2026-—</p>
+      <p class="confirm-email-note" id="confirm-email-note"></p>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-title"><span class="icon">event_note</span> What happens next</div>
+      <div class="what-next" id="what-next">
+        <div class="what-next-item">
+          <div class="wni-num">1</div>
+          <div class="wni-text"><span class="wni-strong">Confirmation email</span>A booking summary has been sent to your email address (demo: shown here only).</div>
+        </div>
+        <div class="what-next-item">
+          <div class="wni-num">2</div>
+          <div class="wni-text"><span class="wni-strong" id="wni-deposit-due">Deposit receipt</span>Your deposit payment is confirmed. Keep this reference for your records.</div>
+        </div>
+        <div class="what-next-item">
+          <div class="wni-num">3</div>
+          <div class="wni-text"><span class="wni-strong">Balance due</span><span id="wni-balance-text">Your full balance is due 60 days before departure.</span></div>
+        </div>
+        <div class="what-next-item">
+          <div class="wni-num">4</div>
+          <div class="wni-text"><span class="wni-strong">Trip documents</span>Your travel documents will be sent 2–3 weeks before departure.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card" id="s5-summary-card">
+      <div class="form-card-title"><span class="icon">luggage</span> Booking summary</div>
+      <div id="s5-summary"></div>
+    </div>
+
+    <div class="confirm-actions">
+      <button class="btn-placeholder" onclick="void(0)">
+        <span class="icon" style="font-size:18px;color:var(--wander);">download</span>
+        Download itinerary (PDF)
+        <span class="placeholder-tag">coming soon</span>
+      </button>
+      <button class="btn-placeholder" onclick="void(0)">
+        <span class="icon" style="font-size:18px;color:var(--wander);">event_available</span>
+        Add to calendar
+        <span class="placeholder-tag">coming soon</span>
+      </button>
+      <a href="index.html" class="btn-placeholder">
+        <span class="icon" style="font-size:18px;">search</span>
+        Back to search
+      </a>
+    </div>
+  </div>
+
+</div><!-- /booking-page -->
+
+<!-- ── MINIMAL FOOTER ─────────────────────────────────────────────────────── -->
+<footer style="background:var(--dusk);color:rgba(255,255,255,.3);padding:24px 32px;text-align:center;font-size:.75rem;margin-top:40px;">
+  © 2026 Contiki Holidays Ltd · <a href="#" style="color:rgba(255,255,255,.4);">Privacy</a> · <a href="#" style="color:rgba(255,255,255,.4);">Terms</a>
+</footer>
+
+<script>
+'use strict';
+
+// ── GATE ──────────────────────────────────────────────────────────────────────
+function checkGate() {
+  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
+    document.getElementById('gate').style.display = 'none';
+    localStorage.setItem('ct-auth', '1');
+  } else {
+    document.getElementById('gate-error').style.display = 'block';
+    document.getElementById('gate-input').value = '';
+  }
+}
+if (localStorage.getItem('ct-auth') === '1') document.getElementById('gate').style.display = 'none';
+
+// ── BOOKING STATE ─────────────────────────────────────────────────────────────
+const BS = {
+  step:             1,
+  tour:             null,
+  departure:        null,
+  roomType:         'Twin',
+  roomSupplement:   0,
+  passengers:       [newPax(1)],
+  leadBooker:       {},
+  pricing:          {},
+  payOption:        'deposit', // 'deposit' | 'full'
+  payment:          {},
+  bookingReference: null,
+};
+
+function newPax(n) {
+  return { firstName:'', lastName:'', dob:'', nationality:'', passportNumber:'', passportExpiry:'', dietaryRequirements:'', emergencyContact:{ name:'', phone:'', relationship:'' } };
+}
+
+// ── URL PARAMS ────────────────────────────────────────────────────────────────
+const params     = new URLSearchParams(location.search);
+const tourId     = params.get('tourId')     || '';
+const departureId = params.get('departureId') || '';
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(async () => {
+  if (!tourId) { showError('No tour specified. Please start from the trip page.'); return; }
+
+  try {
+    const res = await fetch(`/api/tour?id=${encodeURIComponent(tourId)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    BS.tour = await res.json();
+
+    BS.departure = departureId
+      ? BS.tour.departures?.find(d => d.id === departureId)
+      : BS.tour.departures?.find(d => d.availability !== 'unavailable');
+
+    if (!BS.departure && BS.tour.departures?.length) BS.departure = BS.tour.departures[0];
+    if (!BS.departure) { showError('No available departures for this tour.'); return; }
+
+    // Default room type
+    const twin = BS.departure.roomTypes?.find(r => r.supplement === 0) || BS.departure.roomTypes?.[0];
+    if (twin) { BS.roomType = twin.type; BS.roomSupplement = twin.supplement || 0; }
+
+    calcPricing();
+    renderStep1();
+    renderPaxCards();
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('booking-page').style.display  = 'block';
+  } catch (e) {
+    showError('Failed to load trip data: ' + e.message);
+  }
+})();
+
+// ── PRICING ───────────────────────────────────────────────────────────────────
+function calcPricing() {
+  const dep        = BS.departure;
+  const base       = dep.adultPrice || 0;
+  const supp       = BS.roomSupplement;
+  const discounts  = dep.discounts || [];
+  const discTotal  = discounts.reduce((n, d) => n + (d.amount || 0), 0);
+  const totalPP    = base + supp - discTotal;
+  const deposit    = Math.round(totalPP * 0.15);
+
+  // Balance due 60 days before start
+  const startDate  = dep.startDate ? new Date(dep.startDate) : null;
+  const balanceDate = startDate ? new Date(startDate.getTime() - 60 * 86400000) : null;
+
+  BS.pricing = {
+    basePrice:     base,
+    supplement:    supp,
+    discounts,
+    discTotal,
+    totalPP,
+    deposit,
+    balanceDueDate: balanceDate ? balanceDate.toISOString().split('T')[0] : null,
+    currency:      dep.currency || 'USD',
+    wasPrice:      dep.wasPrice || null,
+  };
+}
+
+// ── STEP 1 ────────────────────────────────────────────────────────────────────
+function renderStep1() {
+  const t   = BS.tour;
+  const dep = BS.departure;
+  const p   = BS.pricing;
+
+  // Trip mini card
+  const img = t.images?.[0]?.url || '';
+  document.getElementById('s1-trip-mini').innerHTML = `
+    <img class="trip-mini-img" src="${esc(img)}" alt="${esc(t.title)}"
+      onerror="this.style.display='none'"/>
+    <div>
+      <div class="trip-mini-title">${esc(t.title.toLowerCase())}</div>
+      <div class="trip-mini-sub">
+        ${fmtDateFull(dep.startDate)} – ${fmtDateFull(dep.endDate)} · ${t.days} days
+      </div>
+      <div class="trip-mini-sub">${esc(t.startCity)} → ${esc(t.endCity)}</div>
+    </div>`;
+
+  // Room type buttons
+  const roomRow = document.getElementById('s1-room-row');
+  roomRow.innerHTML = (dep.roomTypes || [{ type: 'Twin', supplement: 0 }]).map(r => {
+    const suppLabel = r.supplement > 0 ? `+$${r.supplement}` : r.supplement < 0 ? `-$${Math.abs(r.supplement)}` : 'Included';
+    const sel = BS.roomType === r.type;
+    return `<div class="room-opt${sel ? ' selected' : ''}" onclick="selectRoom('${esc(r.type)}',${r.supplement})">
+      <div class="room-opt-type">${esc(r.type)}</div>
+      <div class="room-opt-supp">${suppLabel}</div>
+    </div>`;
+  }).join('');
+
+  updateS1Prices();
+}
+
+function selectRoom(type, supp) {
+  BS.roomType = type;
+  BS.roomSupplement = supp;
+  calcPricing();
+  document.querySelectorAll('.room-opt').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  updateS1Prices();
+}
+
+function updateS1Prices() {
+  const p   = BS.pricing;
+  const dep = BS.departure;
+  const fmt = n => `$${n.toLocaleString()}`;
+
+  setText('s1-base', fmt(p.basePrice));
+
+  const suppRow = document.getElementById('s1-supp-row');
+  if (p.supplement !== 0) {
+    suppRow.style.display = 'flex';
+    setText('s1-supp-label', p.supplement > 0 ? `${BS.roomType} supplement` : `${BS.roomType} discount`);
+    setText('s1-supp', (p.supplement > 0 ? '+' : '') + fmt(p.supplement));
+  } else { suppRow.style.display = 'none'; }
+
+  const wasRow = document.getElementById('s1-was-row');
+  if (p.wasPrice) {
+    wasRow.style.display = 'flex';
+    setText('s1-was', fmt(p.wasPrice));
+  } else { wasRow.style.display = 'none'; }
+
+  const discRow = document.getElementById('s1-disc-row');
+  if (p.discTotal > 0) {
+    discRow.style.display = 'flex';
+    const label = dep.discounts?.[0]?.type || 'Discount';
+    setText('s1-disc-label', label);
+    setText('s1-disc', '-' + fmt(p.discTotal));
+  } else { discRow.style.display = 'none'; }
+
+  setText('s1-total',   fmt(p.totalPP));
+  setText('s1-deposit', fmt(p.deposit));
+  setText('s1-balance-note', p.balanceDueDate
+    ? `Balance due by ${fmtDateFull(p.balanceDueDate)}`
+    : 'Balance due 60 days before departure');
+}
+
+// ── STEP 2: PASSENGER CARDS ───────────────────────────────────────────────────
+function renderPaxCards() {
+  const wrap = document.getElementById('pax-cards-wrap');
+  setText('pax-count-display', BS.passengers.length);
+  wrap.innerHTML = BS.passengers.map((_, i) => buildPaxCard(i)).join('');
+  // Open first card
+  const first = document.getElementById(`pax-item-0`);
+  if (first) { first.classList.add('open'); }
+}
+
+function changePaxCount(delta) {
+  const next = Math.max(1, Math.min(8, BS.passengers.length + delta));
+  while (BS.passengers.length < next) BS.passengers.push(newPax(BS.passengers.length + 1));
+  while (BS.passengers.length > next) BS.passengers.pop();
+  renderPaxCards();
+}
+
+function buildPaxCard(i) {
+  const isLead = i === 0;
+  const pax    = BS.passengers[i];
+  return `
+  <div class="pax-card" id="pax-item-${i}">
+    <div class="pax-card-header" onclick="togglePax(${i})">
+      <div class="pax-card-num">${i+1}</div>
+      <span class="pax-card-name" id="pax-name-${i}">Passenger ${i+1}</span>
+      ${isLead ? '<span class="pax-card-lead">Lead booker</span>' : ''}
+      <span class="icon pax-card-toggle">keyboard_arrow_down</span>
+    </div>
+    <div class="pax-card-body" id="pax-body-${i}">
+      <div class="pax-card-inner">
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="p${i}-first">First name <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-first" type="text" value="${esc(pax.firstName)}"
+              placeholder="Given name"
+              oninput="savePax(${i},'firstName',this.value)"
+              onblur="validateField(this,'p${i}-first-err','required')"/>
+            <p class="field-error" id="p${i}-first-err">First name is required.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="p${i}-last">Last name <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-last" type="text" value="${esc(pax.lastName)}"
+              placeholder="Family name"
+              oninput="savePax(${i},'lastName',this.value);updatePaxLabel(${i})"
+              onblur="validateField(this,'p${i}-last-err','required')"/>
+            <p class="field-error" id="p${i}-last-err">Last name is required.</p>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="p${i}-dob">Date of birth <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-dob" type="date" value="${esc(pax.dob)}"
+              oninput="savePax(${i},'dob',this.value)"
+              onblur="validateDOB(this,${i})"/>
+            <p class="field-error" id="p${i}-dob-err">Date of birth is required.</p>
+            <p class="field-warn"  id="p${i}-dob-warn"></p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="p${i}-nat">Nationality <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-nat" type="text" value="${esc(pax.nationality)}"
+              placeholder="e.g. British, Australian"
+              list="nationalities-list"
+              oninput="savePax(${i},'nationality',this.value)"
+              onblur="validateField(this,'p${i}-nat-err','required')"/>
+            <p class="field-error" id="p${i}-nat-err">Nationality is required.</p>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="p${i}-passport">Passport number <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-passport" type="text" value="${esc(pax.passportNumber)}"
+              placeholder="e.g. 123456789"
+              oninput="savePax(${i},'passportNumber',this.value)"
+              onblur="validateField(this,'p${i}-pp-err','required')"/>
+            <p class="field-error" id="p${i}-pp-err">Passport number is required.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="p${i}-ppexp">Passport expiry <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-ppexp" type="date" value="${esc(pax.passportExpiry)}"
+              oninput="savePax(${i},'passportExpiry',this.value)"
+              onblur="validatePassportExpiry(this,${i})"/>
+            <p class="field-error" id="p${i}-ppexp-err">Passport expiry is required.</p>
+            <p class="field-warn"  id="p${i}-ppexp-warn"></p>
+          </div>
+        </div>
+        <div class="field-row single">
+          <div class="field-group">
+            <label class="field-label" for="p${i}-diet">Dietary requirements <span class="opt">(optional)</span></label>
+            <input class="field-input" id="p${i}-diet" type="text" value="${esc(pax.dietaryRequirements)}"
+              placeholder="e.g. Vegetarian, gluten-free, nut allergy"
+              oninput="savePax(${i},'dietaryRequirements',this.value)"/>
+          </div>
+        </div>
+        <p class="pax-section-divider">Emergency contact</p>
+        <div class="field-row thirds">
+          <div class="field-group">
+            <label class="field-label" for="p${i}-ec-name">Full name <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-ec-name" type="text"
+              value="${esc(pax.emergencyContact.name)}"
+              placeholder="Contact name"
+              oninput="savePaxEC(${i},'name',this.value)"
+              onblur="validateField(this,'p${i}-ec-name-err','required')"/>
+            <p class="field-error" id="p${i}-ec-name-err">Name is required.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="p${i}-ec-phone">Phone <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-ec-phone" type="tel"
+              value="${esc(pax.emergencyContact.phone)}"
+              placeholder="+44 7700 900000"
+              oninput="savePaxEC(${i},'phone',this.value)"
+              onblur="validateField(this,'p${i}-ec-phone-err','required')"/>
+            <p class="field-error" id="p${i}-ec-phone-err">Phone is required.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="p${i}-ec-rel">Relationship <span class="req">*</span></label>
+            <input class="field-input" id="p${i}-ec-rel" type="text"
+              value="${esc(pax.emergencyContact.relationship)}"
+              placeholder="e.g. Mother, Partner"
+              oninput="savePaxEC(${i},'relationship',this.value)"
+              onblur="validateField(this,'p${i}-ec-rel-err','required')"/>
+            <p class="field-error" id="p${i}-ec-rel-err">Relationship is required.</p>
+          </div>
+        </div>
+        ${isLead ? buildLeadFields(i) : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildLeadFields(i) {
+  const lb = BS.leadBooker;
+  return `
+    <p class="pax-section-divider">Contact &amp; address</p>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label" for="lb-email">Email address <span class="req">*</span></label>
+        <input class="field-input" id="lb-email" type="email" value="${esc(lb.email||'')}"
+          placeholder="you@example.com"
+          oninput="BS.leadBooker.email=this.value"
+          onblur="validateField(this,'lb-email-err','email')"/>
+        <p class="field-error" id="lb-email-err">Valid email is required.</p>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="lb-phone">Phone number <span class="req">*</span></label>
+        <input class="field-input" id="lb-phone" type="tel" value="${esc(lb.phone||'')}"
+          placeholder="+44 7700 900000"
+          oninput="BS.leadBooker.phone=this.value"
+          onblur="validateField(this,'lb-phone-err','required')"/>
+        <p class="field-error" id="lb-phone-err">Phone number is required.</p>
+      </div>
+    </div>
+    <div class="field-row single">
+      <div class="field-group">
+        <label class="field-label" for="lb-addr1">Address line 1 <span class="req">*</span></label>
+        <input class="field-input" id="lb-addr1" type="text" value="${esc(lb.address?.line1||'')}"
+          placeholder="Street address"
+          oninput="saveLeadAddr('line1',this.value)"
+          onblur="validateField(this,'lb-addr1-err','required')"/>
+        <p class="field-error" id="lb-addr1-err">Address is required.</p>
+      </div>
+    </div>
+    <div class="field-row thirds">
+      <div class="field-group">
+        <label class="field-label" for="lb-city">City <span class="req">*</span></label>
+        <input class="field-input" id="lb-city" type="text" value="${esc(lb.address?.city||'')}"
+          placeholder="City"
+          oninput="saveLeadAddr('city',this.value)"
+          onblur="validateField(this,'lb-city-err','required')"/>
+        <p class="field-error" id="lb-city-err">City is required.</p>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="lb-postcode">Post code <span class="req">*</span></label>
+        <input class="field-input" id="lb-postcode" type="text" value="${esc(lb.address?.postCode||'')}"
+          placeholder="Post code"
+          oninput="saveLeadAddr('postCode',this.value)"
+          onblur="validateField(this,'lb-postcode-err','required')"/>
+        <p class="field-error" id="lb-postcode-err">Post code is required.</p>
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="lb-country">Country <span class="req">*</span></label>
+        <input class="field-input" id="lb-country" type="text" value="${esc(lb.address?.country||'')}"
+          placeholder="Country" list="nationalities-list"
+          oninput="saveLeadAddr('country',this.value)"
+          onblur="validateField(this,'lb-country-err','required')"/>
+        <p class="field-error" id="lb-country-err">Country is required.</p>
+      </div>
+    </div>`;
+}
+
+function togglePax(i) {
+  document.getElementById(`pax-item-${i}`)?.classList.toggle('open');
+}
+
+function updatePaxLabel(i) {
+  const fn = document.getElementById(`p${i}-first`)?.value || '';
+  const ln = document.getElementById(`p${i}-last`)?.value  || '';
+  const name = [fn, ln].filter(Boolean).join(' ') || `Passenger ${i+1}`;
+  setText(`pax-name-${i}`, name);
+  BS.passengers[i].firstName = fn;
+  BS.passengers[i].lastName  = ln;
+}
+
+function savePax(i, field, val) {
+  BS.passengers[i][field] = val;
+  if (field === 'firstName' || field === 'lastName') updatePaxLabel(i);
+}
+
+function savePaxEC(i, field, val) {
+  BS.passengers[i].emergencyContact[field] = val;
+}
+
+function saveLeadAddr(field, val) {
+  if (!BS.leadBooker.address) BS.leadBooker.address = {};
+  BS.leadBooker.address[field] = val;
+}
+
+// ── STEP 3: SUMMARY ───────────────────────────────────────────────────────────
+function renderStep3() {
+  const t   = BS.tour;
+  const dep = BS.departure;
+  const p   = BS.pricing;
+  const n   = BS.passengers.length;
+
+  // Trip summary
+  document.getElementById('s3-trip-summary').innerHTML = `
+    <div class="summary-section">
+      <div class="summary-row"><span class="summary-row-label">Tour</span><span>${esc(t.title)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Departure</span><span>${fmtDateFull(dep.startDate)} – ${fmtDateFull(dep.endDate)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Room type</span><span>${esc(BS.roomType)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Passengers</span><span>${n}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Price per person</span><span>$${p.totalPP.toLocaleString()}</span></div>
+    </div>`;
+
+  // Passengers summary
+  document.getElementById('s3-pax-summary').innerHTML = BS.passengers.map((px, i) => `
+    <div class="summary-section" style="${i>0?'border-top:1px solid var(--ui-border);padding-top:10px;margin-top:10px;':''}">
+      <div style="font-size:.78rem;font-weight:700;color:var(--wander);margin-bottom:6px;">Passenger ${i+1}${i===0?' (Lead booker)':''}</div>
+      <div class="summary-row"><span class="summary-row-label">Name</span><span>${esc(px.firstName)} ${esc(px.lastName)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Date of birth</span><span>${esc(px.dob)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Nationality</span><span>${esc(px.nationality)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Passport</span><span>${esc(px.passportNumber)} · exp ${esc(px.passportExpiry)}</span></div>
+      ${px.dietaryRequirements ? `<div class="summary-row"><span class="summary-row-label">Dietary</span><span>${esc(px.dietaryRequirements)}</span></div>` : ''}
+    </div>`).join('');
+
+  // Payment toggle amounts
+  const depAmt  = p.deposit;
+  const fullAmt = p.totalPP * n;
+  setText('pt-deposit-amt', `$${depAmt.toLocaleString()}`);
+  setText('pt-full-amt',    `$${fullAmt.toLocaleString()}`);
+  setText('s3-total',       `$${p.totalPP.toLocaleString()}`);
+  setText('s3-pax-n',       n);
+
+  selectPayOption(BS.payOption);
+}
+
+function selectPayOption(opt) {
+  BS.payOption = opt;
+  const p   = BS.pricing;
+  const n   = BS.passengers.length;
+  const isDeposit = opt === 'deposit';
+  const amount = isDeposit ? p.deposit : p.totalPP * n;
+
+  document.getElementById('pt-deposit').classList.toggle('selected', isDeposit);
+  document.getElementById('pt-full').classList.toggle('selected', !isDeposit);
+
+  setText('s3-pay-label',  isDeposit ? 'Deposit due today' : 'Full payment due today');
+  setText('s3-pay-amount', `$${amount.toLocaleString()}`);
+
+  // Sync Step 4
+  const payLabel = isDeposit ? `Pay deposit $${amount.toLocaleString()}` : `Pay in full $${amount.toLocaleString()}`;
+  setText('pay-btn-label', payLabel.replace('Pay ', ''));
+  setText('s4-pay-label',  isDeposit ? 'Deposit payment' : 'Full payment');
+  setText('s4-pay-amount', `$${amount.toLocaleString()}`);
+}
+
+// ── STEP 4: PAYMENT ───────────────────────────────────────────────────────────
+function renderStep4() {
+  const p   = BS.pricing;
+  const n   = BS.passengers.length;
+  const isDeposit = BS.payOption === 'deposit';
+  const amount = isDeposit ? p.deposit : p.totalPP * n;
+  setText('s4-pay-label',  isDeposit ? 'Deposit payment' : 'Full payment');
+  setText('s4-pay-amount', `$${amount.toLocaleString()}`);
+  setText('pay-btn-label', (isDeposit ? 'Pay deposit' : 'Pay in full') + ` $${amount.toLocaleString()}`);
+}
+
+async function submitPayment() {
+  const cardName = document.getElementById('card-name').value.trim();
+  if (!cardName) {
+    const err = document.getElementById('card-name-error');
+    err.textContent = 'Name on card is required.';
+    err.classList.add('show');
+    document.getElementById('card-name').classList.add('error');
+    return;
+  }
+
+  const p   = BS.pricing;
+  const n   = BS.passengers.length;
+  const btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="icon" style="font-size:18px;">hourglass_empty</span> Processing…';
+
+  const payload = {
+    tourId:      BS.tour.id,
+    departureId: BS.departure.id,
+    roomType:    BS.roomType,
+    passengers:  BS.passengers,
+    leadBooker:  BS.leadBooker,
+    pricing: {
+      basePrice:     p.basePrice,
+      discounts:     p.discounts,
+      totalPrice:    p.totalPP * n,
+      currency:      p.currency,
+      depositAmount: p.deposit,
+      balanceDueDate: p.balanceDueDate,
+    },
+    payment: {
+      method: 'card',
+      demo:   true,
+      amount: BS.payOption === 'deposit' ? p.deposit : p.totalPP * n,
+    },
+  };
+
+  try {
+    const res  = await fetch('/api/booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (res.ok && data.bookingReference) {
+      BS.bookingReference = data.bookingReference;
+    } else {
+      // Fallback: generate client-side reference
+      BS.bookingReference = `CTK-${new Date().getFullYear()}-${String(Math.floor(10000 + Math.random() * 90000))}`;
+    }
+  } catch {
+    BS.bookingReference = `CTK-${new Date().getFullYear()}-${String(Math.floor(10000 + Math.random() * 90000))}`;
+  }
+
+  goToStep(5);
+}
+
+// ── STEP 5: CONFIRMATION ──────────────────────────────────────────────────────
+function renderStep5() {
+  const t   = BS.tour;
+  const dep = BS.departure;
+  const p   = BS.pricing;
+  const n   = BS.passengers.length;
+  const leadEmail = BS.leadBooker?.email || '';
+
+  setText('confirm-ref',  BS.bookingReference || '—');
+  if (leadEmail) {
+    setText('confirm-email-note', `A confirmation would be sent to: ${leadEmail}`);
+  }
+
+  // What next
+  const isDeposit = BS.payOption === 'deposit';
+  if (isDeposit) {
+    setText('wni-deposit-due', `Deposit confirmed · $${p.deposit.toLocaleString()}`);
+    setText('wni-balance-text', p.balanceDueDate
+      ? `Your balance of $${(p.totalPP * n - p.deposit).toLocaleString()} is due by ${fmtDateFull(p.balanceDueDate)}.`
+      : 'Your balance is due 60 days before departure.');
+  } else {
+    setText('wni-deposit-due', `Full payment confirmed · $${(p.totalPP * n).toLocaleString()}`);
+    setText('wni-balance-text', 'No further payment required — you\'re fully paid up!');
+  }
+
+  // Summary
+  document.getElementById('s5-summary').innerHTML = `
+    <div class="summary-section">
+      <div class="summary-row"><span class="summary-row-label">Tour</span><span>${esc(t.title)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Dates</span><span>${fmtDateFull(dep.startDate)} – ${fmtDateFull(dep.endDate)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Room type</span><span>${esc(BS.roomType)}</span></div>
+      <div class="summary-row"><span class="summary-row-label">Passengers</span><span>${n}</span></div>
+      ${BS.passengers.map((px,i) => `<div class="summary-row"><span class="summary-row-label">Pax ${i+1}</span><span>${esc(px.firstName)} ${esc(px.lastName)}</span></div>`).join('')}
+      <div class="summary-row"><span class="summary-row-label">Total trip value</span><span>$${(p.totalPP * n).toLocaleString()} (${p.currency})</span></div>
+      <div class="summary-row"><span class="summary-row-label">Paid today</span><span style="color:var(--wander);font-weight:700;">$${(isDeposit ? p.deposit : p.totalPP * n).toLocaleString()}</span></div>
+    </div>`;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function goToStep(n) {
+  // Run pre-render hooks
+  if (n === 3) renderStep3();
+  if (n === 4) renderStep4();
+  if (n === 5) renderStep5();
+
+  BS.step = n;
+
+  document.querySelectorAll('.step-panel').forEach(el => el.classList.remove('active'));
+  document.getElementById(`step-${n}`).classList.add('active');
+
+  updateProgress(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress(n) {
+  const pct = (n / 5) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById(`ps-${i}`);
+    el.classList.toggle('active', i === n);
+    el.classList.toggle('done', i < n);
+  }
+}
+
+function goBack() {
+  const tourPath = BS.tour ? `/trip/${encodeURIComponent(BS.tour.id)}` : '/index.html';
+  window.location.href = tourPath;
+}
+
+// ── VALIDATION ────────────────────────────────────────────────────────────────
+function validateField(input, errId, rule) {
+  const val = input.value.trim();
+  const err = document.getElementById(errId);
+  if (!err) return true;
+  let ok = true;
+  if (rule === 'required') ok = val.length > 0;
+  if (rule === 'email') ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  input.classList.toggle('error', !ok);
+  err.classList.toggle('show', !ok);
+  return ok;
+}
+
+function validateDOB(input, i) {
+  const val = input.value;
+  const err  = document.getElementById(`p${i}-dob-err`);
+  const warn = document.getElementById(`p${i}-dob-warn`);
+  if (!val) { input.classList.add('error'); err.classList.add('show'); return false; }
+  input.classList.remove('error'); err.classList.remove('show');
+  const age = calcAge(val);
+  warn.textContent = age < 18
+    ? `⚠ Minimum age for Contiki trips is 18. This passenger will be ${age} at departure.`
+    : age > 35
+    ? `⚠ Contiki trips are for 18–35s. This passenger will be ${age} at departure.`
+    : '';
+  warn.classList.toggle('show', age < 18 || age > 35);
+  return true;
+}
+
+function validatePassportExpiry(input, i) {
+  const val = input.value;
+  const err  = document.getElementById(`p${i}-ppexp-err`);
+  const warn = document.getElementById(`p${i}-ppexp-warn`);
+  if (!val) { input.classList.add('error'); err.classList.add('show'); warn.classList.remove('show'); return false; }
+  input.classList.remove('error'); err.classList.remove('show');
+  const endDate = BS.departure?.endDate;
+  if (endDate) {
+    const minExpiry = new Date(endDate);
+    minExpiry.setMonth(minExpiry.getMonth() + 6);
+    if (new Date(val) < minExpiry) {
+      warn.textContent = `⚠ Passport must be valid for 6 months after your return (${fmtDateFull(minExpiry.toISOString().split('T')[0])}).`;
+      warn.classList.add('show');
+    } else { warn.classList.remove('show'); }
+  }
+  return true;
+}
+
+function calcAge(dob) {
+  const d = BS.departure?.startDate;
+  const ref = d ? new Date(d) : new Date();
+  const birth = new Date(dob);
+  let age = ref.getFullYear() - birth.getFullYear();
+  const m = ref.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && ref.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function validateAndNext(fromStep) {
+  if (fromStep === 2) {
+    const errs = collectStep2Errors();
+    if (errs.length) {
+      // Scroll to first passenger with errors and open it
+      const firstErrPax = errs[0].pax;
+      const card = document.getElementById(`pax-item-${firstErrPax}`);
+      if (card && !card.classList.contains('open')) card.classList.add('open');
+      document.getElementById(errs[0].fieldId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(errs[0].fieldId)?.focus();
+      return;
+    }
+    goToStep(3);
+    return;
+  }
+  if (fromStep === 3) {
+    if (!document.getElementById('tc-checkbox')?.checked) {
+      alert('Please accept the Terms & Conditions to continue.');
+      return;
+    }
+    goToStep(4);
+    return;
+  }
+}
+
+function collectStep2Errors() {
+  const errs = [];
+  BS.passengers.forEach((px, i) => {
+    const checks = [
+      [`p${i}-first`, 'required'], [`p${i}-last`, 'required'],
+      [`p${i}-dob`, 'required'],   [`p${i}-nat`, 'required'],
+      [`p${i}-passport`, 'required'], [`p${i}-ppexp`, 'required'],
+      [`p${i}-ec-name`, 'required'], [`p${i}-ec-phone`, 'required'], [`p${i}-ec-rel`, 'required'],
+    ];
+    if (i === 0) checks.push(
+      ['lb-email', 'email'], ['lb-phone', 'required'],
+      ['lb-addr1', 'required'], ['lb-city', 'required'],
+      ['lb-postcode', 'required'], ['lb-country', 'required']
+    );
+    checks.forEach(([fieldId, rule]) => {
+      const el = document.getElementById(fieldId);
+      if (!el) return;
+      const errId = fieldId + (fieldId.includes('ec') ? '-err' : fieldId.includes('lb') ? '-err' : `-err`.replace(/-err$/, '-err'));
+      const ok = validateField(el, fieldId + '-err', rule);
+      if (!ok) errs.push({ pax: i, fieldId });
+    });
+  });
+  return errs;
+}
+
+// ── CARD INPUT FORMATTERS ─────────────────────────────────────────────────────
+function formatCardNumber(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 16);
+  input.value = v.match(/.{1,4}/g)?.join(' ') || v;
+}
+function formatExpiry(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 4);
+  if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
+  input.value = v;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmtDateFull(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function showError(msg) {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('error-state').style.display   = 'block';
+  setText('error-msg', msg);
+}
+</script>
+
+<!-- Nationality datalist for autocomplete -->
+<datalist id="nationalities-list">
+  <option value="Australian"/><option value="Austrian"/><option value="Belgian"/><option value="Brazilian"/>
+  <option value="British"/><option value="Canadian"/><option value="Chinese"/><option value="Danish"/>
+  <option value="Dutch"/><option value="Finnish"/><option value="French"/><option value="German"/>
+  <option value="Greek"/><option value="Indian"/><option value="Irish"/><option value="Italian"/>
+  <option value="Japanese"/><option value="Mexican"/><option value="New Zealand"/><option value="Norwegian"/>
+  <option value="Polish"/><option value="Portuguese"/><option value="South African"/><option value="Spanish"/>
+  <option value="Swedish"/><option value="Swiss"/><option value="American"/>
+</datalist>
+
+</body>
+</html>
