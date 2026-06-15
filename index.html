@@ -3,737 +3,637 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contiki — Go Wander</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            go:          { DEFAULT: '#FF5900', alt: '#FF7300' },
-            wander:      { DEFAULT: '#1C4A3D', alt: '#1C6348' },
-            burst:       '#FFE100',
-            dusk:        '#0A0C0A',
-            dawn:        '#FFFAF2',
-            'ui-grey80': '#6B6B6B',
-            'ui-border': '#E5E0D8',
-            'card-dark': '#1C1C1C',
-          },
-          fontFamily: {
-            hero:    ['"Playfair Display"', 'Georgia', 'serif'],
-            display: ['"Inter"', 'system-ui', 'sans-serif'],
-            body:    ['"Inter"', 'system-ui', 'sans-serif'],
-          },
-          borderRadius: { card: '16px', media: '12px', pill: '100px' },
-        },
-      },
-    }
-  </script>
-
+  <title>Contiki · Find Your Adventure</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
-
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-      font-size: 20px; line-height: 1; vertical-align: middle;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #FF5500; --orange-light: #FF6B1A;
+      --dark-green: #1B3A2D; --cream: #FAF8F4; --cream-dark: #F2EFE9;
+      --black: #111111; --white: #FFFFFF; --muted: #6B6B6B;
+      --border: #E5E0D8; --card-radius: 12px;
     }
-    /* Nav glass */
-    #site-nav { transition: background-color .2s ease, backdrop-filter .2s ease, box-shadow .2s ease; }
-    #site-nav.scrolled {
-      background-color: rgba(255,250,242,.78);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 1px 24px rgba(0,0,0,.07);
+    html { font-size: 16px; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--black); min-height: 100vh; }
+
+    /* GATE */
+    #gate { position:fixed; inset:0; z-index:9999; background:var(--black); display:flex; align-items:center; justify-content:center; }
+    .gate-box { text-align:center; padding:48px 40px; background:#1a1a1a; border-radius:16px; width:360px; }
+    .gate-logo { font-size:2rem; font-weight:800; color:var(--orange); font-style:italic; letter-spacing:-0.02em; margin-bottom:8px; }
+    .gate-sub { color:rgba(255,255,255,0.4); font-size:0.8rem; margin-bottom:32px; }
+    .gate-label { color:rgba(255,255,255,0.6); font-size:0.78rem; font-weight:600; text-align:left; margin-bottom:8px; display:block; }
+    #gate-input { width:100%; padding:12px 16px; border-radius:8px; border:1px solid #333; background:#111; color:white; font-family:'Inter',sans-serif; font-size:0.95rem; outline:none; margin-bottom:12px; }
+    #gate-input:focus { border-color:var(--orange); }
+    #gate-btn { width:100%; padding:12px; border-radius:8px; background:var(--orange); color:white; border:none; font-family:'Inter',sans-serif; font-weight:700; font-size:0.95rem; cursor:pointer; }
+    #gate-btn:hover { background:var(--orange-light); }
+    #gate-error { color:#ff6b6b; font-size:0.8rem; margin-top:8px; min-height:20px; }
+
+    /* NAV */
+    nav { background:var(--cream); border-bottom:1px solid var(--border); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:200; }
+    .nav-left { display:flex; align-items:center; gap:28px; }
+    .nav-link { font-size:0.85rem; font-weight:600; color:var(--black); text-decoration:none; display:flex; align-items:center; gap:4px; }
+    .nav-logo { position:absolute; left:50%; transform:translateX(-50%); font-size:1.6rem; font-weight:800; color:var(--orange); letter-spacing:-0.04em; text-decoration:none; font-style:italic; }
+    .nav-right { display:flex; align-items:center; gap:12px; }
+    .search-pill { display:flex; align-items:center; gap:8px; border:1.5px solid var(--orange); border-radius:100px; padding:8px 18px; cursor:pointer; background:transparent; font-family:'Inter',sans-serif; font-size:0.85rem; font-weight:600; color:var(--black); transition:background 0.15s; }
+    .search-pill:hover { background:rgba(255,85,0,0.06); }
+    .search-pill svg { color:var(--orange); }
+    .account-pill { border:1.5px solid var(--border); border-radius:100px; padding:8px 14px; cursor:pointer; background:transparent; display:flex; align-items:center; gap:6px; color:var(--black); }
+
+    /* SEARCH MODAL */
+    #search-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); overflow:hidden; }
+    #search-overlay.open { display:block; }
+    #search-modal { position:absolute; top:0; left:0; right:0; background:var(--white); padding:40px 60px 48px; box-shadow:0 8px 48px rgba(0,0,0,0.15); transform:translateY(-100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); overflow-y:auto; max-height:100vh; }
+    #search-overlay.open #search-modal { transform:translateY(0); }
+    body.modal-open { overflow:hidden; }
+    .modal-heading { font-family:'Inter',sans-serif; font-size:1.6rem; font-weight:700; color:var(--dark-green); margin-bottom:24px; }
+    .modal-close { position:absolute; top:20px; right:24px; background:none; border:none; cursor:pointer; color:var(--muted); font-size:1.4rem; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; }
+    .modal-close:hover { background:var(--cream); }
+
+    .search-bar { display:flex; align-items:stretch; border:1.5px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:24px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+    .search-bar:focus-within { border-color:var(--orange); }
+    .search-field-wrap { flex:2; display:flex; flex-direction:column; justify-content:center; padding:12px 20px; }
+    .field-label { font-size:0.7rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--dark-green); margin-bottom:2px; display:flex; align-items:center; gap:6px; }
+    .field-label svg { color:var(--orange); }
+    #ai-search-input { border:none; outline:none; font-family:'Inter',sans-serif; font-size:0.9rem; color:var(--black); background:transparent; width:100%; }
+    #ai-search-input::placeholder { color:#AAAAAA; }
+    .search-submit { background:var(--orange); color:white; border:none; padding:0 28px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:8px; transition:background 0.15s; white-space:nowrap; }
+    .search-submit:hover { background:var(--orange-light); }
+    .search-submit:disabled { opacity:0.6; cursor:not-allowed; }
+
+    .suggestion-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:24px; align-items:center; }
+    .suggestion-row label { font-size:0.75rem; font-weight:600; color:var(--muted); }
+    .chip { border:1.5px solid var(--border); border-radius:100px; padding:6px 14px; font-size:0.78rem; font-weight:500; cursor:pointer; background:var(--white); color:var(--black); transition:border-color 0.15s,color 0.15s; font-family:'Inter',sans-serif; }
+    .chip:hover { border-color:var(--orange); color:var(--orange); }
+
+    #modal-status { display:none; align-items:center; gap:10px; font-size:0.85rem; color:var(--muted); margin-bottom:20px; }
+    #modal-status.visible { display:flex; }
+    .dots span { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--orange); margin-right:3px; animation:dotpulse 1.2s ease-in-out infinite; }
+    .dots span:nth-child(2) { animation-delay:0.2s; }
+    .dots span:nth-child(3) { animation-delay:0.4s; }
+    @keyframes dotpulse { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
+
+    #modal-summary { display:none; padding:14px 18px; border-radius:10px; background:#FFF5EF; border:1px solid #FFD5BC; font-size:0.85rem; color:#7A3800; line-height:1.55; margin-bottom:24px; }
+    #modal-summary.visible { display:block; }
+    .summary-label { font-size:0.68rem; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--orange); margin-bottom:4px; }
+
+    #modal-results-header { display:none; align-items:center; margin-bottom:16px; }
+    #modal-results-header.visible { display:flex; }
+    .results-label { font-size:0.85rem; font-weight:600; color:var(--dark-green); }
+    .results-label span { color:var(--orange); }
+
+    #modal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; background:#161616; border-radius:14px; padding:16px; margin:0 -4px; }
+    #modal-empty { display:none; text-align:center; padding:40px; color:var(--muted); font-size:0.9rem; }
+    #modal-empty.visible { display:block; }
+
+    /* TRIP CARD */
+    .trip-card { border-radius:16px; overflow:hidden; background:#1E1E1E; cursor:pointer; text-decoration:none; color:inherit; display:flex; flex-direction:column; opacity:0; transform:translateY(12px); animation:riseIn 0.3s ease forwards; transition:transform 0.2s,box-shadow 0.2s; }
+    .trip-card:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.35); }
+    @keyframes riseIn { to{opacity:1;transform:translateY(0)} }
+    .trip-card:nth-child(1){animation-delay:0.04s} .trip-card:nth-child(2){animation-delay:0.09s}
+    .trip-card:nth-child(3){animation-delay:0.14s} .trip-card:nth-child(4){animation-delay:0.19s}
+    .trip-card:nth-child(5){animation-delay:0.24s} .trip-card:nth-child(6){animation-delay:0.29s}
+
+    .card-img { position:relative; height:210px; overflow:hidden; border-radius:12px; margin:6px 6px 0; flex-shrink:0; }
+    .card-img-bg { width:100%; height:100%; background-size:cover; background-position:center; position:absolute; inset:0; }
+    .card-img-bg::after { content:''; position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,0.78) 0%,rgba(0,0,0,0.08) 55%,transparent 100%); }
+
+    .originals-badge { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:var(--orange); color:white; font-size:0.65rem; font-weight:700; letter-spacing:0.04em; font-style:italic; padding:4px 12px; border-radius:5px; text-transform:lowercase; white-space:nowrap; z-index:2; }
+
+    .card-title-overlay { position:absolute; bottom:0; left:0; right:0; padding:0 12px 12px; z-index:2; pointer-events:none; }
+    .card-title-line1 { font-family:'Playfair Display',serif; font-size:1.55rem; font-weight:900; color:white; line-height:1; display:block; text-transform:lowercase; }
+    .card-title-line2 { font-family:'Inter',sans-serif; font-size:0.6rem; font-weight:700; color:rgba(255,255,255,0.8); letter-spacing:0.2em; text-transform:uppercase; display:block; margin-top:2px; }
+
+    .card-meta { padding:10px 12px 14px; }
+    .card-tags-row { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+    .card-tag-sale { background:#FFD600; color:#111; font-size:0.62rem; font-weight:700; padding:3px 8px; border-radius:5px; white-space:nowrap; }
+    .card-tag-outline { border:1px solid rgba(255,255,255,0.25); color:rgba(255,255,255,0.7); font-size:0.62rem; font-weight:500; padding:3px 8px; border-radius:5px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+    .card-tag-outline svg { color:var(--orange); }
+
+    .card-name { font-weight:700; font-size:0.92rem; color:white; margin-bottom:7px; }
+    .card-stats { display:flex; gap:14px; font-size:0.75rem; color:rgba(255,255,255,0.6); margin-bottom:9px; }
+    .card-stat { display:flex; align-items:center; gap:5px; }
+    .card-stat svg { color:var(--orange); flex-shrink:0; }
+    .card-stat-val { text-decoration:underline; text-underline-offset:2px; color:rgba(255,255,255,0.75); }
+
+    .card-price-row { display:flex; align-items:baseline; gap:3px; flex-wrap:wrap; }
+    .card-price-from { font-size:0.72rem; color:rgba(255,255,255,0.5); margin-right:1px; }
+    .card-price-symbol { font-size:0.8rem; font-weight:700; color:white; }
+    .card-price-amount { font-size:1.3rem; font-weight:800; color:white; line-height:1; }
+    .card-price-pp { font-size:0.72rem; color:rgba(255,255,255,0.5); margin-left:2px; }
+    .card-price-was { font-size:0.72rem; color:rgba(255,255,255,0.38); text-decoration:line-through; margin-left:8px; }
+
+    .card-reason { padding:9px 12px 11px; background:#1E0C00; border-top:1px solid #3a1800; font-size:0.73rem; color:#FFB380; line-height:1.45; display:flex; gap:7px; }
+
+    /* POPULAR */
+    #popular-section { margin-top:0; background:#F7F4F0; border-radius:12px; padding:16px; margin:0 -4px; }
+    .popular-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .popular-title { font-size:1.15rem; font-weight:700; color:var(--dark-green); }
+    .popular-nav { display:flex; gap:8px; }
+    .pop-nav-btn { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--border); background:white; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--black); }
+    .pop-nav-btn.active { background:var(--orange); border-color:var(--orange); color:white; }
+    .popular-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; background:#161616; border-radius:12px; padding:16px; }
+    .popular-dots { display:flex; justify-content:center; gap:6px; margin-top:14px; }
+    .popular-dot { width:24px; height:4px; border-radius:2px; background:var(--orange); }
+    .popular-dot.inactive { background:var(--border); width:8px; }
+
+    /* HERO */
+    .hero { background:var(--black); position:relative; overflow:hidden; min-height:90vh; display:flex; flex-direction:column; justify-content:flex-end; padding-bottom:60px; }
+    .hero-bg { position:absolute; inset:0; background:url('https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1600&q=80') center/cover no-repeat; opacity:0.45; }
+    .hero-content { position:relative; z-index:1; padding:0 60px; }
+    .hero-title { font-family:'Playfair Display',serif; font-size:clamp(4rem,12vw,10rem); font-weight:900; font-style:italic; color:var(--orange); line-height:0.9; letter-spacing:-0.02em; margin-bottom:24px; text-transform:uppercase; }
+    .hero-cta { display:inline-flex; align-items:center; gap:8px; background:white; color:var(--black); padding:14px 28px; border-radius:100px; font-weight:700; font-size:0.9rem; text-decoration:none; cursor:pointer; border:none; font-family:'Inter',sans-serif; }
+
+    /* HOME SECTIONS */
+    .home-section { padding:60px; }
+    .section-eyebrow { font-family:'Playfair Display',serif; font-size:clamp(1.3rem,3vw,2rem); font-style:italic; color:var(--orange); text-align:center; margin-bottom:6px; }
+    .section-sub { text-align:center; color:var(--muted); font-size:0.85rem; margin-bottom:40px; }
+    .section-title { font-size:1.2rem; font-weight:700; color:var(--dark-green); margin-bottom:4px; }
+    .section-desc { font-size:0.8rem; color:var(--muted); margin-bottom:20px; }
+    .trips-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+    .static-card { border-radius:16px; overflow:hidden; background:#1E1E1E; text-decoration:none; display:block; transition:transform 0.2s,box-shadow 0.2s; }
+    .static-card:hover { transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,0.4); }
+    .region-links { text-align:center; font-size:1.4rem; font-weight:700; line-height:2; color:var(--dark-green); }
+    .region-links a { color:var(--dark-green); text-decoration:none; }
+    .region-links a:hover { color:var(--orange); }
+    .region-sep { color:var(--border); margin:0 8px; }
+
+    /* FOOTER */
+    footer { background:var(--black); color:rgba(255,255,255,0.5); padding:48px 60px 32px; }
+    .footer-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px; }
+    .footer-logo { font-size:1.8rem; font-weight:800; color:var(--orange); font-style:italic; letter-spacing:-0.03em; margin-bottom:12px; }
+    .footer-col-title { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:white; margin-bottom:12px; }
+    .footer-link { display:block; color:rgba(255,255,255,0.5); text-decoration:none; font-size:0.82rem; margin-bottom:8px; }
+    .footer-link:hover { color:white; }
+    .footer-bottom { border-top:1px solid rgba(255,255,255,0.1); padding-top:20px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; }
+
+    /* ── TABLET (max 1024px) ── */
+    @media (max-width:1024px) {
+      .nav-left { gap:18px; }
+      .home-section { padding:48px 32px; }
+      footer { padding:40px 32px 24px; }
+      #modal-grid,.popular-grid,.trips-row { grid-template-columns:repeat(3,1fr); }
+      #search-modal { padding:36px 40px 44px; }
     }
-    /* Search modal */
-    #search-overlay { opacity: 0; pointer-events: none; transition: opacity .3s ease; }
-    #search-overlay.open { opacity: 1; pointer-events: all; }
-    #search-panel {
-      transform: translateY(-100%);
-      transition: transform .3s cubic-bezier(.4,0,.2,1);
+
+    /* ── SMALL TABLET / LARGE MOBILE (max 768px) ── */
+    @media (max-width:768px) {
+      /* Nav: hide text links, keep logo + search */
+      .nav-left { display:none; }
+      nav { padding:0 20px; }
+      .nav-logo { font-size:1.4rem; }
+      .account-pill { display:none; }
+      .search-pill { padding:8px 14px; }
+
+      /* Gate */
+      .gate-box { width:calc(100% - 48px); padding:36px 24px; }
+
+      /* Hero */
+      .hero { min-height:70vh; padding-bottom:40px; }
+      .hero-content { padding:0 24px; }
+
+      /* Search modal: full screen slide-down */
+      #search-modal { padding:24px 20px 32px; overflow-y:auto; max-height:100vh; }
+      .modal-heading { font-size:1.3rem; margin-bottom:16px; }
+
+      /* Search bar: stack vertically */
+      .search-bar { flex-direction:column; border-radius:12px; }
+      .search-field-wrap { border-right:none; border-bottom:1px solid var(--border); padding:14px 16px; }
+      .search-submit { padding:14px 20px; justify-content:center; border-radius:0 0 10px 10px; }
+
+      /* Chips: scrollable row */
+      .suggestion-row { flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+      .suggestion-row::-webkit-scrollbar { display:none; }
+      .chip { flex-shrink:0; }
+
+      /* Grids: 2 cols */
+      #modal-grid,.popular-grid,.trips-row { grid-template-columns:repeat(2,1fr); gap:12px; }
+
+      /* Sections */
+      .home-section { padding:36px 20px; }
+      .section-eyebrow { font-size:1.4rem; }
+      .region-links { font-size:1.1rem; }
+
+      /* Footer */
+      footer { padding:36px 20px 24px; }
+      .footer-grid { grid-template-columns:1fr 1fr; gap:24px; }
+      .footer-bottom { flex-direction:column; gap:8px; text-align:center; }
     }
-    #search-panel.open { transform: translateY(0); }
-    /* Loading dots */
-    .dot-pulse span { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #FF5900;
-      animation: dotpulse 1.2s ease-in-out infinite; }
-    .dot-pulse span:nth-child(2) { animation-delay: .2s; }
-    .dot-pulse span:nth-child(3) { animation-delay: .4s; }
-    @keyframes dotpulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
-    /* Card animations */
-    .card-enter { opacity: 0; transform: translateY(14px); animation: cardRise .35s ease forwards; }
-    @keyframes cardRise { to { opacity: 1; transform: translateY(0); } }
-    .trip-card { transition: transform .2s ease, box-shadow .2s ease; }
-    .trip-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px rgba(0,0,0,.18); }
-    .trip-card.selected { outline: 2px solid #FF5900; }
+
+    /* ── MOBILE (max 480px) ── */
+    @media (max-width:480px) {
+      /* Nav */
+      nav { height:56px; }
+      .nav-logo { font-size:1.25rem; }
+      .search-pill span { display:none; } /* icon only */
+      .search-pill { padding:8px 12px; }
+
+      /* Gate */
+      .gate-box { padding:32px 20px; }
+
+      /* Hero */
+      .hero { min-height:60vh; padding-bottom:32px; }
+      .hero-cta { padding:12px 22px; font-size:0.85rem; }
+
+      /* Search modal */
+      #search-modal { padding:20px 16px 28px; }
+      .modal-heading { font-size:1.2rem; }
+      .modal-close { top:16px; right:16px; }
+
+      /* Cards: single column in modal, 2 col on homepage */
+      #modal-grid { grid-template-columns:1fr; }
+      .popular-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+      .trips-row { grid-template-columns:repeat(2,1fr); gap:10px; }
+
+      /* Card sizes */
+      .card-img { height:150px; }
+      .static-card-img { height:160px; }
+      .card-title-overlay { font-size:1rem; }
+
+      /* Sections */
+      .home-section { padding:28px 16px; }
+      .section-title { font-size:1.1rem; }
+      .region-links { font-size:1rem; line-height:1.9; }
+
+      /* Footer */
+      .footer-grid { grid-template-columns:1fr; gap:20px; }
+      footer { padding:28px 16px 20px; }
+    }
   </style>
 </head>
-<body class="bg-dawn font-body text-dusk">
+<body>
 
-<!-- =====================================================
-     08 — PASSWORD GATE
-     ===================================================== -->
-<div id="password-gate" class="fixed inset-0 z-[9999] bg-dusk flex items-center justify-center">
-  <div style="background:#1a1a1a; border-radius:16px; padding:48px 40px; width:360px; max-width:90vw;">
-    <div class="text-go font-hero italic font-extrabold leading-none mb-2" style="font-size:2rem;">contiki</div>
-    <p class="text-white/40 mb-8" style="font-size:.8rem;">Preview access only</p>
-    <input
-      id="gate-input"
-      type="password"
-      placeholder="Enter password"
-      class="w-full text-white text-sm mb-3 px-4 py-3 rounded-xl outline-none transition-colors"
-      style="background:#111; border:1px solid #333; font-family:inherit;"
-      onfocus="this.style.borderColor='#FF5900'"
-      onblur="this.style.borderColor='#333'"
-      onkeydown="if(event.key==='Enter')checkGate()"
-    />
-    <p id="gate-error" class="mb-3 hidden" style="color:#ff6b6b; font-size:.8rem;">Incorrect password. Try again.</p>
-    <button onclick="checkGate()"
-      class="w-full text-white font-bold py-3 rounded-xl transition-colors"
-      style="background:#FF5900; font-family:inherit; font-size:.95rem;"
-      onmouseover="this.style.background='#FF7300'"
-      onmouseout="this.style.background='#FF5900'">
-      Enter
-    </button>
+<!-- GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">contiki</div>
+    <div class="gate-sub">Preview access only</div>
+    <label class="gate-label" for="gate-input">Password</label>
+    <input type="password" id="gate-input" placeholder="Enter password" autocomplete="off" />
+    <button id="gate-btn" onclick="checkGate()">Enter</button>
+    <div id="gate-error"></div>
   </div>
 </div>
 
-<!-- =====================================================
-     01 — NAV HEADER
-     ===================================================== -->
-<header id="site-nav" class="sticky top-0 z-[200] bg-dawn border-b border-ui-border">
-  <div class="relative flex items-center justify-between h-16 px-6 md:px-8">
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="/" class="nav-link">Explore Trips <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="/build-trip.html" class="nav-link">Build Trip <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="#" class="nav-link">About <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+  </div>
+  <a href="/" class="nav-logo">contiki</a>
+  <div class="nav-right">
+    <button class="search-pill" onclick="openSearch()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>Search</span>
+    </button>
+    <div class="account-pill">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+</nav>
 
-    <nav class="hidden md:flex items-center gap-1">
-      <button class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem; font-weight:600; font-family:inherit;">
-        Explore Trips
-        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
-      </button>
-      <a href="build-trip.html" class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem; font-weight:600; font-family:inherit; text-decoration:none;">
-        Build Trip
-        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
-      </a>
-      <button class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem; font-weight:600; font-family:inherit;">
-        About
-        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
-      </button>
-    </nav>
-
-    <a href="/" class="absolute left-1/2 -translate-x-1/2 text-go font-hero italic font-extrabold hover:opacity-80 transition-opacity" style="font-size:1.6rem; line-height:1; text-decoration:none;">
-      contiki
-    </a>
-
-    <div class="flex items-center gap-2 ml-auto">
-      <button onclick="openSearch()"
-        class="hidden sm:flex items-center gap-1.5 px-4 py-2 text-go hover:bg-go/[.06] transition-colors"
-        style="border-radius:100px; border:1.5px solid #FF5900; background:transparent; font-size:.85rem; font-weight:600; font-family:inherit; cursor:pointer;">
-        <span class="material-symbols-outlined" style="font-size:18px; color:#FF5900;">search</span>
+<!-- SEARCH MODAL -->
+<div id="search-overlay" onclick="handleOverlayClick(event)">
+  <div id="search-modal">
+    <button class="modal-close" onclick="closeSearch()">&#x2715;</button>
+    <div class="modal-heading">Search</div>
+    <div class="search-bar">
+      <div class="search-field-wrap">
+        <div class="field-label">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Where
+        </div>
+        <input id="ai-search-input" type="text" placeholder="Describe your dream trip in your own words..." autocomplete="off" />
+      </div>
+      <button class="search-submit" id="search-btn" onclick="doSearch()">
         Search
-      </button>
-      <button onclick="openSearch()"
-        class="sm:hidden flex items-center justify-center w-9 h-9 hover:bg-go/[.06] transition-colors"
-        style="border-radius:100px; border:1.5px solid #FF5900; background:transparent; cursor:pointer;">
-        <span class="material-symbols-outlined" style="font-size:20px; color:#FF5900;">search</span>
-      </button>
-      <button class="hidden md:flex items-center gap-1 px-3 py-2 hover:bg-black/5 transition-colors"
-        style="border-radius:100px; border:1.5px solid #E5E0D8; background:transparent; font-family:inherit; cursor:pointer;">
-        <span class="material-symbols-outlined opacity-60" style="font-size:18px;">person</span>
-        <span class="material-symbols-outlined opacity-40" style="font-size:16px;">expand_more</span>
+        <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       </button>
     </div>
-
+    <div class="suggestion-row">
+      <label>Try:</label>
+      <span class="chip" onclick="useChip(this)">Solo trip, meet new people</span>
+      <span class="chip" onclick="useChip(this)">Beach &amp; islands, 10 days</span>
+      <span class="chip" onclick="useChip(this)">Epic adventure, South America</span>
+      <span class="chip" onclick="useChip(this)">Budget Europe under $2k</span>
+      <span class="chip" onclick="useChip(this)">Asia on a gap year</span>
+    </div>
+    <div id="modal-status">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <span id="status-text">Finding your perfect trips...</span>
+    </div>
+    <div id="modal-summary">
+      <div class="summary-label">&#10022; AI understood</div>
+      <div id="summary-text"></div>
+    </div>
+    <div id="modal-results-header">
+      <div class="results-label"><span id="results-count">0</span> trips matched</div>
+    </div>
+    <div id="modal-grid"></div>
+    <div id="modal-empty">No trips matched that search - try a different description.</div>
+    <div id="popular-section">
+      <div class="popular-header">
+        <div class="popular-title">Popular trips</div>
+        <div class="popular-nav">
+          <button class="pop-nav-btn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button class="pop-nav-btn active"><svg width="14" height="14" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+      <div class="popular-grid" id="popular-grid"></div>
+      <div class="popular-dots">
+        <div class="popular-dot"></div>
+        <div class="popular-dot inactive"></div>
+        <div class="popular-dot inactive"></div>
+        <div class="popular-dot inactive"></div>
+      </div>
+    </div>
   </div>
-</header>
+</div>
 
-<!-- =====================================================
-     02 — HERO
-     ===================================================== -->
-<section class="relative flex items-end bg-dusk overflow-hidden" style="min-height:90vh;">
-  <img
-    src="https://www.contiki.com/media/idcjq05g/two-males-rowing-on-river.jpg"
-    alt="" role="presentation"
-    class="absolute inset-0 w-full h-full object-cover"
-    onerror="this.style.display='none'"
-  />
-  <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.82),rgba(0,0,0,.35) 55%,rgba(0,0,0,.18));"></div>
-  <div class="relative z-10" style="padding:0 60px 60px;">
-    <h1 class="font-hero font-extrabold uppercase text-go"
-        style="font-size:clamp(4rem,12vw,10rem); letter-spacing:.05em; line-height:.75;">
-      GO<br>WANDER
-    </h1>
-    <div style="margin-top:2rem;">
-      <button onclick="openSearch()"
-        class="inline-flex items-center gap-2 text-dawn hover:bg-go transition-colors group"
-        style="background:#1C4A3D; border-radius:100px; padding:14px 28px; font-size:.95rem; font-weight:600; font-family:inherit; border:none; cursor:pointer;">
-        Start exploring
-        <span class="material-symbols-outlined" style="font-size:20px;">arrow_forward</span>
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- =====================================================
-     06 — REGION EXPLORER
-     ===================================================== -->
-<section class="py-16 md:py-20 text-center bg-dawn px-6">
-  <h2 class="font-display italic font-bold text-go mb-2" style="font-size:clamp(1.3rem,3vw,2rem);">
-    Where will you wander next?
-  </h2>
-  <p class="text-ui-grey80 mb-8" style="font-size:.85rem;">Choose a region to start exploring Contiki tours</p>
-  <div id="region-links" class="flex flex-wrap justify-center items-center gap-y-2 max-w-3xl mx-auto" style="font-size:1.4rem; font-weight:700; color:#1C4A3D; line-height:1.8;"></div>
-</section>
-
-<!-- =====================================================
-     FEATURED TRIPS (03 — Trip Card, default variant)
-     ===================================================== -->
-<section class="py-12 md:py-16 px-6" style="background:#f0ebe1;">
-  <div class="max-w-7xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-      <h2 class="font-display font-bold text-dusk" style="font-size:1.4rem;">Popular right now</h2>
-      <button onclick="openSearch()" class="flex items-center gap-1 text-go hover:underline" style="font-size:.85rem; font-weight:600; background:none; border:none; cursor:pointer; font-family:inherit;">
-        View all <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span>
-      </button>
-    </div>
-    <div id="featured-grid" class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));"></div>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-title">GO WANDER</div>
+    <button class="hero-cta" onclick="openSearch()">Make a trip finder &rarr;</button>
   </div>
 </section>
 
-<!-- =====================================================
-     07 — FOOTER
-     ===================================================== -->
-<footer style="background:#0A0C0A; color:white; padding:48px 32px 24px;">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid gap-8 mb-10" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
-      <div>
-        <div class="font-hero italic font-extrabold text-go mb-3" style="font-size:1.8rem; line-height:1;">contiki</div>
-        <p style="color:rgba(255,255,255,.4); font-size:.82rem; line-height:1.6; max-width:200px;">
-          The world's leading travel company for 18–35s.
-        </p>
-      </div>
-      <div>
-        <p style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:16px;">About Contiki</p>
-        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
-          <li><a href="#" class="footer-link">Who We Are</a></li>
-          <li><a href="#" class="footer-link">Meet the Team</a></li>
-          <li><a href="#" class="footer-link">Reviews</a></li>
-          <li><a href="#" class="footer-link">Careers</a></li>
-        </ul>
-      </div>
-      <div>
-        <p style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:16px;">Travelling with us</p>
-        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
-          <li><a href="#" class="footer-link">My Contiki</a></li>
-          <li><a href="#" class="footer-link">FAQs</a></li>
-          <li><a href="#" class="footer-link">Travel Updates</a></li>
-          <li><a href="#" class="footer-link">Payment Plans</a></li>
-          <li><a href="#" class="footer-link">Visa Guide</a></li>
-          <li><a href="#" class="footer-link">Booking Conditions</a></li>
-        </ul>
-      </div>
-      <div>
-        <p style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:16px;">Resources</p>
-        <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;">
-          <li><a href="#" class="footer-link">six-two magazine</a></li>
-          <li><a href="#" class="footer-link">Affiliates &amp; Reps</a></li>
-          <li><a href="#" class="footer-link">Press Room</a></li>
-          <li><a href="#" class="footer-link">Make Travel Matter</a></li>
-          <li><a href="#" class="footer-link">Brochure</a></li>
-        </ul>
-      </div>
+<!-- WHERE WILL YOU WANDER -->
+<section class="home-section" style="background:var(--cream-dark);text-align:center;">
+  <div class="section-eyebrow">Where will you wander next?</div>
+  <p class="section-sub">With expert guides, unbeatable itineraries and the freedom to explore your way,<br>we create unforgettable trips right across the world.</p>
+  <div class="region-links">
+    <a href="#">Europe</a><span class="region-sep">/</span>
+    <a href="#">Asia</a><span class="region-sep">/</span>
+    <a href="#">New Zealand</a><span class="region-sep">/</span>
+    <a href="#">Australia</a><span class="region-sep">/</span><br>
+    <a href="#">Latin America</a><span class="region-sep">/</span>
+    <a href="#">North America</a><span class="region-sep">/</span><br>
+    <a href="#">Africa &amp; The Middle East</a>
+  </div>
+</section>
+
+<!-- ICONIC TRIPS -->
+<section class="home-section" style="background:#181818;">
+  <div class="section-title" style="color:white">Our Most Iconic Trips</div>
+  <div class="section-desc" style="color:rgba(255,255,255,0.5)">The trips that travellers can't get enough of.</div>
+  <div class="trips-row" id="iconic-grid"></div>
+</section>
+
+<!-- LATEST DROPS -->
+<section class="home-section" style="background:#111111;">
+  <div class="section-title" style="color:white">Latest Drops</div>
+  <div class="section-desc" style="color:rgba(255,255,255,0.5)">Brand new trips, just added.</div>
+  <div class="trips-row" id="latest-grid"></div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo">contiki</div>
+      <div style="font-size:0.78rem;margin-bottom:16px;">For 18-35 year olds.<br>Travel with purpose.</div>
     </div>
-    <div style="border-top:1px solid rgba(255,255,255,.1); padding-top:24px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
-      <p style="color:rgba(255,255,255,.3); font-size:.75rem;">© 2026 Contiki Holidays Ltd. All rights reserved.</p>
-      <div style="display:flex; gap:20px;">
-        <a href="#" class="footer-link">Privacy Policy</a>
-        <a href="#" class="footer-link">Terms &amp; Conditions</a>
-        <a href="#" class="footer-link">Cookie Policy</a>
-      </div>
+    <div>
+      <div class="footer-col-title">About Contiki</div>
+      <a href="#" class="footer-link">Who We Are</a>
+      <a href="#" class="footer-link">Meet the Team</a>
+      <a href="#" class="footer-link">Reviews</a>
+      <a href="#" class="footer-link">Careers</a>
     </div>
+    <div>
+      <div class="footer-col-title">Travelling with us</div>
+      <a href="#" class="footer-link">My Contiki</a>
+      <a href="#" class="footer-link">FAQs</a>
+      <a href="#" class="footer-link">Travel Updates</a>
+      <a href="#" class="footer-link">Payment Plans</a>
+    </div>
+    <div>
+      <div class="footer-col-title">Resources</div>
+      <a href="#" class="footer-link">six-two: Our Travel Magazine</a>
+      <a href="#" class="footer-link">Affiliates &amp; Reps</a>
+      <a href="#" class="footer-link">Press Room</a>
+      <a href="#" class="footer-link">Make Travel Matter</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&#169; Copyright 2026 Contiki. All Rights Reserved.</span>
+    <span>Privacy &amp; Cookie Policy &middot; Terms and Conditions</span>
   </div>
 </footer>
-<style>
-  .footer-link { color:rgba(255,255,255,.45); font-size:.82rem; text-decoration:none; transition:color .15s; }
-  .footer-link:hover { color:white; }
-</style>
-
-<!-- =====================================================
-     04 — SEARCH MODAL
-     ===================================================== -->
-<!-- Backdrop -->
-<div id="search-overlay"
-     class="fixed inset-0 z-[300]"
-     style="background:rgba(0,0,0,.45); backdrop-filter:blur(2px);"
-     onclick="closeSearch()"></div>
-
-<!-- Panel slides from top -->
-<div id="search-panel"
-     class="fixed top-0 left-0 right-0 z-[301] bg-dawn overflow-y-auto"
-     style="max-height:100vh;">
-  <div style="padding:40px 60px 48px; max-width:1200px; margin:0 auto;">
-
-    <!-- Header row -->
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="font-display font-bold text-wander" style="font-size:1.6rem;">Search</h2>
-      <button onclick="closeSearch()" class="flex items-center justify-center rounded-full hover:bg-black/5 transition-colors" style="width:36px;height:36px;border:none;background:transparent;cursor:pointer;">
-        <span class="material-symbols-outlined text-dusk" style="font-size:24px;">close</span>
-      </button>
-    </div>
-
-    <!-- Search bar -->
-    <div class="flex items-center gap-3 rounded-xl border-2 border-ui-border px-4 py-3 bg-white mb-4 transition-colors" id="search-bar" style="focus-within:border-go;">
-      <span class="material-symbols-outlined text-go" style="font-size:20px;">location_on</span>
-      <div class="flex flex-col flex-1 min-w-0">
-        <span style="font-size:.65rem; font-weight:700; color:#FF5900; letter-spacing:.08em; text-transform:uppercase;">WHERE</span>
-        <input
-          id="search-input"
-          type="text"
-          placeholder="Describe your dream trip…"
-          class="w-full outline-none text-dusk bg-transparent"
-          style="font-size:.95rem; font-family:inherit;"
-          onkeydown="if(event.key==='Enter')doSearch()"
-          oninput="document.getElementById('search-bar').style.borderColor=this.value?'#FF5900':'#E5E0D8'"
-        />
-      </div>
-      <button onclick="doSearch()"
-        class="text-white px-5 py-2 hover:opacity-90 transition-opacity"
-        style="background:#FF5900; border-radius:100px; border:none; font-size:.85rem; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap;">
-        Search
-      </button>
-    </div>
-
-    <!-- Suggestion chips -->
-    <div id="search-chips" class="flex flex-wrap gap-2 mb-6">
-      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
-        Europe this summer
-      </button>
-      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
-        Southeast Asia under 3 weeks
-      </button>
-      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
-        Adventure in New Zealand
-      </button>
-      <button onclick="chipSearch(this)" class="chip-btn px-4 py-1.5 rounded-pill border border-ui-border hover:border-go hover:text-go transition-colors" style="font-size:.82rem; font-family:inherit; background:transparent; cursor:pointer;">
-        Japan in autumn
-      </button>
-    </div>
-
-    <!-- AI understood strip (hidden until search) -->
-    <div id="ai-understood" class="hidden rounded-xl px-4 py-3 mb-5 flex items-start gap-2" style="background:rgba(255,89,0,.07); border:1px solid rgba(255,89,0,.15);">
-      <span style="color:#FF5900; font-size:.85rem;">✦</span>
-      <div>
-        <span class="font-semibold text-go" style="font-size:.8rem;">AI understood</span>
-        <span id="ai-summary" class="text-dusk" style="font-size:.82rem; margin-left:.4rem;"></span>
-      </div>
-    </div>
-
-    <!-- Status (loading) -->
-    <div id="search-status" class="hidden flex items-center gap-3 mb-5 text-ui-grey80" style="font-size:.88rem;">
-      <div class="dot-pulse flex gap-1">
-        <span></span><span></span><span></span>
-      </div>
-      Finding your perfect trips…
-    </div>
-
-    <!-- Results count -->
-    <div id="results-header" class="hidden flex items-center justify-between mb-4">
-      <p style="font-size:.88rem; font-weight:600;">
-        <span id="results-count" class="text-go"></span>
-        <span class="text-dusk"> trips matched</span>
-      </p>
-    </div>
-
-    <!-- Results grid (dark container) -->
-    <div id="results-container" class="hidden rounded-xl p-4" style="background:#161616;">
-      <div id="results-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));"></div>
-    </div>
-
-    <!-- Empty state -->
-    <div id="empty-state" class="hidden py-16 text-center text-ui-grey80">
-      <div style="font-size:2rem; margin-bottom:12px;">🌍</div>
-      <p style="font-size:.95rem;">No trips matched — try a different description</p>
-    </div>
-
-    <!-- Popular trips (shown when modal first opens) -->
-    <div id="popular-section">
-      <p class="font-semibold text-dusk mb-4" style="font-size:.88rem;">Popular trips</p>
-      <div id="popular-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));"></div>
-    </div>
-
-  </div>
-</div>
 
 <script>
-// ─── MOCK DATA ──────────────────────────────────────────────────────────────
-const TRIPS = [
-  {
-    id: 'eur-highlights-14',
-    name: 'European Highlights',
-    geography: 'Europe',
-    destinations: ['Paris','Amsterdam','Berlin','Prague','Vienna'],
-    duration_days: 14,
-    departure_date: '2026-07-05',
-    end_date: '2026-07-19',
-    from_price: 2900,
-    currency: 'USD',
-    was_price: 3225,
-    image: 'https://picsum.photos/seed/european-highlights/600/400',
-    tags: ['hot'],
-    is_original: true,
-  },
-  {
-    id: 'italy-greece-12',
-    name: 'Italian Greek Adventure',
-    geography: 'Europe',
-    destinations: ['Rome','Florence','Athens','Santorini'],
-    duration_days: 12,
-    departure_date: '2026-07-12',
-    end_date: '2026-07-24',
-    from_price: 3100,
-    currency: 'USD',
-    was_price: null,
-    image: 'https://picsum.photos/seed/italy-greece/600/400',
-    tags: ['new'],
-    is_original: false,
-  },
-  {
-    id: 'japan-discovery-10',
-    name: 'Japan Discovery',
-    geography: 'Asia',
-    destinations: ['Tokyo','Kyoto','Osaka','Hiroshima'],
-    duration_days: 10,
-    departure_date: '2026-08-02',
-    end_date: '2026-08-12',
-    from_price: 3400,
-    currency: 'USD',
-    was_price: null,
-    image: 'https://picsum.photos/seed/japan-discovery/600/400',
-    tags: ['bestseller'],
-    is_original: true,
-  },
-  {
-    id: 'se-asia-18',
-    name: 'Southeast Asia Explorer',
-    geography: 'Asia',
-    destinations: ['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'],
-    duration_days: 18,
-    departure_date: '2026-09-01',
-    end_date: '2026-09-19',
-    from_price: 2650,
-    currency: 'USD',
-    was_price: 2950,
-    image: 'https://picsum.photos/seed/southeast-asia/600/400',
-    tags: ['hot','sale'],
-    is_original: false,
-  },
-  {
-    id: 'nz-adventure-8',
-    name: 'New Zealand Adventure',
-    geography: 'Australasia',
-    destinations: ['Auckland','Rotorua','Queenstown','Milford Sound'],
-    duration_days: 8,
-    departure_date: '2026-10-05',
-    end_date: '2026-10-13',
-    from_price: 2200,
-    currency: 'USD',
-    was_price: null,
-    image: 'https://picsum.photos/seed/new-zealand/600/400',
-    tags: ['new'],
-    is_original: false,
-  },
-  {
-    id: 'bali-7',
-    name: 'Bali Breeze',
-    geography: 'Asia',
-    destinations: ['Seminyak','Ubud','Nusa Penida','Canggu'],
-    duration_days: 7,
-    departure_date: '2026-08-15',
-    end_date: '2026-08-22',
-    from_price: 1850,
-    currency: 'USD',
-    was_price: 2100,
-    image: 'https://picsum.photos/seed/bali/600/400',
-    tags: ['sale'],
-    is_original: false,
-  },
-  {
-    id: 'morocco-10',
-    name: 'Morocco Magic',
-    geography: 'Africa',
-    destinations: ['Casablanca','Fes','Merzouga','Marrakech'],
-    duration_days: 10,
-    departure_date: '2026-07-20',
-    end_date: '2026-07-30',
-    from_price: 2400,
-    currency: 'USD',
-    was_price: null,
-    image: 'https://picsum.photos/seed/morocco/600/400',
-    tags: [],
-    is_original: true,
-  },
-  {
-    id: 'peru-9',
-    name: 'Peruvian Wonders',
-    geography: 'Latin America',
-    destinations: ['Lima','Cusco','Machu Picchu','Sacred Valley'],
-    duration_days: 9,
-    departure_date: '2026-09-15',
-    end_date: '2026-09-24',
-    from_price: 2750,
-    currency: 'USD',
-    was_price: null,
-    image: 'https://picsum.photos/seed/peru/600/400',
-    tags: ['bestseller'],
-    is_original: false,
-  },
-];
-
-// ─── TRIP CARD RENDERER ─────────────────────────────────────────────────────
-function renderTripCard(trip, opts = {}) {
-  const { aiReason, delay = 0, selectable = false, selected = false, compact = false } = opts;
-  const words = trip.name.split(' ');
-  const line1 = words[0].toLowerCase();
-  const line2 = words.slice(1).join(' ').toUpperCase();
-
-  const tagHtml = trip.tags.map(t => {
-    if (t === 'sale') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Black Friday</span>`;
-    if (t === 'hot') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.6rem;padding:2px 8px;border-radius:4px;">Hot NR</span>`;
-    if (t === 'bestseller') return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.6rem;padding:2px 8px;border-radius:4px;">Bestseller</span>`;
-    if (t === 'new') return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.6rem;padding:2px 8px;border-radius:4px;">New Trip</span>`;
-    return '';
-  }).join('');
-
-  const wasHtml = trip.was_price
-    ? `<span style="text-decoration:line-through;color:rgba(255,255,255,.32);font-size:.82rem;margin-left:6px;">Was $${trip.was_price.toLocaleString()} pp</span>`
-    : '';
-
-  const selectedStyle = selected ? 'outline:2px solid #FF5900;' : '';
-
-  return `
-    <div class="trip-card card-enter rounded-card overflow-hidden cursor-pointer ${selectable ? 'selectable-card' : ''}"
-         style="background:#1C1C1C; animation-delay:${delay}ms; ${selectedStyle}"
-         data-id="${trip.id}"
-         onclick="${selectable ? `selectTrip('${trip.id}',this)` : ''}">
-      <div class="relative mx-[7px] mt-[7px] overflow-hidden" style="border-radius:12px; height:210px;">
-        <img src="${trip.image}" alt="${trip.name}"
-             class="w-full h-full object-cover"
-             onerror="this.parentElement.style.background='#2a2a2a'; this.style.display='none'" />
-        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.78),transparent 60%);"></div>
-        ${trip.is_original ? `
-        <div class="absolute top-3 left-1/2 -translate-x-1/2 font-hero italic font-extrabold text-white"
-             style="background:#FF5900;font-size:.65rem;padding:4px 14px;border-radius:6px;letter-spacing:.05em;white-space:nowrap;">
-          originals
-        </div>` : ''}
-        <div class="absolute bottom-3 left-4 right-4">
-          <div class="font-hero font-extrabold text-white" style="font-size:1.55rem;line-height:.95;">${line1}</div>
-          <div class="font-display font-bold text-white/75 uppercase" style="font-size:.58rem;letter-spacing:.22em;margin-top:2px;">${line2}</div>
-        </div>
-      </div>
-      <div style="padding:12px 14px 16px;">
-        ${trip.tags.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${tagHtml}</div>` : ''}
-        <p class="font-display font-bold text-white" style="font-size:.95rem;margin-bottom:8px;">${trip.name}</p>
-        <div class="flex items-center gap-4 text-white/55" style="font-size:.75rem;margin-bottom:10px;">
-          <span class="flex items-center gap-1">
-            <span class="material-symbols-outlined" style="font-size:14px;color:#FF5900;">calendar_today</span>
-            <span style="text-decoration:underline;text-underline-offset:2px;">${trip.duration_days} days</span>
-          </span>
-          <span class="flex items-center gap-1">
-            <span class="material-symbols-outlined" style="font-size:14px;color:#FF5900;">public</span>
-            <span style="text-decoration:underline;text-underline-offset:2px;">${trip.destinations.length} Countries</span>
-          </span>
-        </div>
-        <div class="flex items-baseline flex-wrap" style="gap:4px;">
-          <span class="text-white/45" style="font-size:.78rem;">From</span>
-          <span class="font-display font-extrabold text-white" style="font-size:1.35rem;">$${trip.from_price.toLocaleString()}</span>
-          <span class="text-white/45" style="font-size:.78rem;">pp</span>
-          ${wasHtml}
-        </div>
-        ${aiReason ? `
-        <div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:#1A0800;color:#FFB380;font-size:.72rem;display:flex;gap:6px;align-items:flex-start;">
-          <span>✦</span><span>${aiReason}</span>
-        </div>` : ''}
-        ${selectable ? `
-        <button class="add-btn w-full mt-3 py-2 font-semibold transition-all"
-                style="border-radius:100px;font-size:.82rem;font-family:inherit;cursor:pointer;${selected?'background:#FF5900;color:white;border:none;':'background:transparent;color:#FF5900;border:1.5px solid #FF5900;'}"
-                onclick="event.stopPropagation();selectTrip('${trip.id}',this.closest('.trip-card'))">
-          ${selected ? '✓ Added' : '+ Add to package'}
-        </button>` : ''}
-      </div>
-    </div>`;
-}
-
-// ─── PASSWORD GATE ──────────────────────────────────────────────────────────
+// GATE
 function checkGate() {
-  const val = document.getElementById('gate-input').value;
-  if (val === 'Go-Wander-2026') {
-    document.getElementById('password-gate').style.display = 'none';
-    localStorage.setItem('contiki-auth', '1');
+  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
+    document.getElementById('gate').style.display = 'none';
   } else {
-    document.getElementById('gate-error').classList.remove('hidden');
+    document.getElementById('gate-error').textContent = 'Incorrect password. Try again.';
     document.getElementById('gate-input').value = '';
-    document.getElementById('gate-input').focus();
   }
 }
-if (localStorage.getItem('contiki-auth') === '1') {
-  document.getElementById('password-gate').style.display = 'none';
+document.getElementById('gate-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkGate(); });
+
+// TRIP DATA
+const TRIPS = [
+  { id:'eu-highlights', title:'European Highlights', region:'Europe', route:'London to Paris to Rome', days:14, countries:7, price:2900, photo:'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600&q=80', bgColor:'#1a1a2e', vibe:'Europe cities culture history nightlife social first time iconic classic multi country', tags:['Black Friday Sale','Hot NR','New Trip'] },
+  { id:'greek-islands', title:'Hopping the Greek Islands', region:'Europe', route:'Athens to Mykonos to Santorini', days:16, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=600&q=80', bgColor:'#0077b6', vibe:'Greece islands beach summer swimming sailing Mediterranean relaxing party sun', tags:['Black Friday Sale','New Trip'] },
+  { id:'south-america', title:'South American Odyssey', region:'South America', route:'Lima to Cusco to Uyuni', days:18, countries:3, price:2750, photo:'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=600&q=80', bgColor:'#2d6a4f', vibe:'South America adventure hiking mountains Machu Picchu ruins bucket list bold', tags:['Hot NR'] },
+  { id:'southeast-asia', title:'Southeast Asia Encounter', region:'Asia', route:'Bangkok to Chiang Mai to Hanoi', days:17, countries:4, price:2200, photo:'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=600&q=80', bgColor:'#3a0ca3', vibe:'Asia Southeast Asia budget gap year temples street food beaches culture backpacker', tags:['New Trip'] },
+  { id:'safari', title:'African Safari Experience', region:'Africa', route:'Nairobi to Masai Mara to Serengeti', days:12, countries:2, price:3900, photo:'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=600&q=80', bgColor:'#7d4e0a', vibe:'safari wildlife Africa animals adventure nature bucket list small group', tags:['Black Friday Sale'] },
+  { id:'japan', title:'Japan Uncovered', region:'Asia', route:'Tokyo to Kyoto to Osaka', days:11, countries:1, price:2900, photo:'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=600&q=80', bgColor:'#590d22', vibe:'Japan culture food city urban Tokyo Kyoto temples ancient modern unique', tags:['New Trip','Hot NR'] },
+  { id:'budget-europe', title:'European Discovery', region:'Europe', route:'London to Amsterdam to Paris', days:7, countries:3, price:999, photo:'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80', bgColor:'#023e8a', vibe:'budget cheap affordable Europe short trip first time cities quick under 1000', tags:['Black Friday Sale'] },
+  { id:'costa-rica', title:'Costa Rica Uncovered', region:'Latin America', route:'San Jose to Arenal to Manuel Antonio', days:10, countries:1, price:1900, photo:'https://images.unsplash.com/photo-1518182170546-07661fd94144?w=600&q=80', bgColor:'#1b4332', vibe:'nature adventure jungle wildlife active outdoors Latin America zip line hiking eco', tags:['Hot NR'] },
+  { id:'morocco', title:'Morocco Desert Adventure', region:'Africa', route:'Casablanca to Fes to Sahara to Marrakech', days:9, countries:1, price:1550, photo:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80', bgColor:'#7c3d10', vibe:'desert Africa Morocco unique culture souks camel Sahara adventure different', tags:['New Trip'] },
+  { id:'scandinavia', title:'Scandinavian Explorer', region:'Europe', route:'Copenhagen to Oslo to Bergen to Stockholm', days:10, countries:3, price:2500, photo:'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=600&q=80', bgColor:'#023e8a', vibe:'Scandinavia fjords Norway Sweden Denmark scenic nature chill relaxed unique', tags:[] },
+  { id:'aus-nz', title:'Australia and New Zealand', region:'Aus and NZ', route:'Sydney to Queenstown to Auckland', days:22, countries:2, price:4300, photo:'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=600&q=80', bgColor:'#264653', vibe:'Australia New Zealand bungee adventure long epic bucket list Queenstown Sydney', tags:['Black Friday Sale','Hot NR'] },
+  { id:'usa-parks', title:'USA National Parks', region:'North America', route:'Las Vegas to Grand Canyon to Zion', days:8, countries:1, price:1300, photo:'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=600&q=80', bgColor:'#7c2d12', vibe:'USA America road trip national parks nature hiking outdoors canyon desert landscapes', tags:['New Trip'] },
+];
+
+function imgErr(el) { el.style.display = 'none'; }
+
+function buildCardImg(t) {
+  var words = t.title.split(' ');
+  var line1 = words[0];
+  var line2 = words.slice(1).join(' ');
+  var imgHTML = t.photo
+    ? '<img src="' + t.photo + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;" onerror="imgErr(this)" />'
+    : '';
+  return '<div class="card-img">' +
+    '<div class="card-img-bg" style="background-color:' + t.bgColor + ';position:absolute;inset:0;"></div>' +
+    imgHTML +
+    '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.82) 0%,rgba(0,0,0,0.12) 48%,transparent 70%);z-index:1;"></div>' +
+    '<div class="originals-badge" style="z-index:2;">originals</div>' +
+    '<div class="card-title-overlay" style="z-index:2;">' +
+      '<span class="card-title-line1">' + line1.toLowerCase() + '</span>' +
+      (line2 ? '<span class="card-title-line2">' + line2.toUpperCase() + '</span>' : '') +
+    '</div>' +
+  '</div>';
 }
 
-// ─── NAV SCROLL GLASS ───────────────────────────────────────────────────────
-const nav = document.getElementById('site-nav');
-window.addEventListener('scroll', () => {
-  nav.classList.toggle('scrolled', window.scrollY > 10);
-}, { passive: true });
+function buildTags(tags) {
+  var html = '<div class="card-tags-row">';
+  if (tags.indexOf('Black Friday Sale') >= 0) html += '<span class="card-tag-sale">Black Friday Sale</span>';
+  if (tags.indexOf('Hot NR') >= 0) html += '<span class="card-tag-outline"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Hot NR</span>';
+  if (tags.indexOf('New Trip') >= 0) html += '<span class="card-tag-outline">New Trip</span>';
+  html += '</div>';
+  return html;
+}
 
-// ─── SEARCH MODAL ───────────────────────────────────────────────────────────
+function buildMeta(t) {
+  var wasPrice = Math.round(t.price * 1.105 / 25) * 25;
+  return '<div class="card-meta">' +
+    buildTags(t.tags) +
+    '<div class="card-name">' + t.title + '</div>' +
+    '<div class="card-stats">' +
+      '<span class="card-stat">' +
+        '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
+        '<span class="card-stat-val">' + t.days + ' days</span>' +
+      '</span>' +
+      '<span class="card-stat">' +
+        '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>' +
+        '<span class="card-stat-val">' + t.countries + ' ' + (t.countries===1?'Country':'Countries') + '</span>' +
+      '</span>' +
+    '</div>' +
+    '<div class="card-price-row">' +
+      '<span class="card-price-from">From</span>' +
+      '<span class="card-price-symbol">$</span>' +
+      '<span class="card-price-amount">' + t.price.toLocaleString() + '</span>' +
+      '<span class="card-price-pp">pp</span>' +
+      '<span class="card-price-was">Was $' + wasPrice.toLocaleString() + ' pp</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function staticCardHTML(t) {
+  return '<a href="#" class="static-card" onclick="return false">' + buildCardImg(t) + buildMeta(t) + '</a>';
+}
+
+function cardHTML(t, showReason) {
+  var reasonHTML = showReason && t.aiReason ? '<div class="card-reason"><span>&#10022;</span><span>' + t.aiReason + '</span></div>' : '';
+  return '<a href="#" class="trip-card" onclick="return false">' + buildCardImg(t) + buildMeta(t) + reasonHTML + '</a>';
+}
+
+function renderPopular() {
+  document.getElementById('popular-grid').innerHTML = TRIPS.slice(0,4).map(function(t){return cardHTML(t,false);}).join('');
+}
+
+function renderHomepageCards() {
+  document.getElementById('iconic-grid').innerHTML = [TRIPS[0],TRIPS[1],TRIPS[2],TRIPS[3]].map(staticCardHTML).join('');
+  document.getElementById('latest-grid').innerHTML = [TRIPS[5],TRIPS[4],TRIPS[8],TRIPS[11]].map(staticCardHTML).join('');
+}
+
+// MODAL
 function openSearch() {
   document.getElementById('search-overlay').classList.add('open');
-  document.getElementById('search-panel').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('search-input').focus(), 320);
+  document.body.classList.add('modal-open');
+  setTimeout(function(){ document.getElementById('ai-search-input').focus(); }, 300);
 }
-function closeSearch() {
-  document.getElementById('search-overlay').classList.remove('open');
-  document.getElementById('search-panel').classList.remove('open');
-  document.body.style.overflow = '';
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
-
-function chipSearch(el) {
-  document.getElementById('search-input').value = el.textContent.trim();
+function closeSearch() { document.getElementById('search-overlay').classList.remove('open'); document.body.classList.remove('modal-open'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('search-overlay')) closeSearch(); }
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeSearch(); });
+document.getElementById('ai-search-input').addEventListener('keydown', function(e){ if (e.key === 'Enter') doSearch(); });
+function useChip(el) {
+  document.getElementById('ai-search-input').value = el.textContent.replace('&amp;','&');
   doSearch();
 }
 
+// SEARCH
 async function doSearch() {
-  const query = document.getElementById('search-input').value.trim();
+  var query = document.getElementById('ai-search-input').value.trim();
   if (!query) return;
 
   document.getElementById('popular-section').style.display = 'none';
-  document.getElementById('ai-understood').classList.add('hidden');
-  document.getElementById('results-container').classList.add('hidden');
-  document.getElementById('results-header').classList.add('hidden');
-  document.getElementById('empty-state').classList.add('hidden');
-  document.getElementById('search-status').classList.remove('hidden');
+  document.getElementById('modal-grid').innerHTML = '';
+  document.getElementById('modal-summary').className = '';
+  document.getElementById('modal-results-header').className = '';
+  document.getElementById('modal-empty').className = '';
+  document.getElementById('modal-status').className = 'visible';
+  document.getElementById('search-btn').disabled = true;
 
-  let result;
   try {
-    const res = await fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, trips: TRIPS }),
-    });
-    if (!res.ok) throw new Error('API unavailable');
-    result = await res.json();
-  } catch {
-    result = mockSearch(query);
+    var result = await semanticSearch(query);
+    document.getElementById('modal-status').className = '';
+
+    if (!result.matches.length) {
+      document.getElementById('modal-empty').className = 'visible';
+      return;
+    }
+
+    document.getElementById('summary-text').textContent = result.summary;
+    document.getElementById('modal-summary').className = 'visible';
+    document.getElementById('results-count').textContent = result.matches.length;
+    document.getElementById('modal-results-header').className = 'visible';
+    document.getElementById('modal-grid').innerHTML = result.matches.map(function(t){return cardHTML(t,true);}).join('');
+
+  } catch(err) {
+    document.getElementById('modal-status').className = '';
+    document.getElementById('summary-text').textContent = 'Something went wrong: ' + err.message;
+    document.getElementById('modal-summary').className = 'visible';
+  } finally {
+    document.getElementById('search-btn').disabled = false;
   }
-
-  document.getElementById('search-status').classList.add('hidden');
-
-  if (!result.matches || result.matches.length === 0) {
-    document.getElementById('empty-state').classList.remove('hidden');
-    return;
-  }
-
-  document.getElementById('ai-summary').textContent = result.summary;
-  document.getElementById('ai-understood').classList.remove('hidden');
-  document.getElementById('results-count').textContent = result.matches.length;
-  document.getElementById('results-header').classList.remove('hidden');
-
-  const grid = document.getElementById('results-grid');
-  grid.innerHTML = result.matches.map((m, i) => {
-    const trip = TRIPS.find(t => t.id === m.id);
-    if (!trip) return '';
-    return renderTripCard(trip, { aiReason: m.reason, delay: i * 40 });
-  }).join('');
-  document.getElementById('results-container').classList.remove('hidden');
 }
 
-function mockSearch(query) {
-  const q = query.toLowerCase();
-  const keywords = {
-    europe: ['eur-highlights-14','italy-greece-12'],
-    italy: ['italy-greece-12'],
-    greece: ['italy-greece-12'],
-    paris: ['eur-highlights-14'],
-    japan: ['japan-discovery-10'],
-    asia: ['japan-discovery-10','se-asia-18','bali-7'],
-    bali: ['bali-7'],
-    'new zealand': ['nz-adventure-8'],
-    nz: ['nz-adventure-8'],
-    morocco: ['morocco-10'],
-    africa: ['morocco-10'],
-    peru: ['peru-9'],
-    'latin america': ['peru-9'],
-    beach: ['bali-7','italy-greece-12'],
-    adventure: ['nz-adventure-8','peru-9'],
-    culture: ['japan-discovery-10','morocco-10','italy-greece-12'],
-    cheap: ['bali-7','nz-adventure-8'],
-    short: ['bali-7','nz-adventure-8'],
-    long: ['se-asia-18','eur-highlights-14'],
-  };
+async function semanticSearch(query) {
+  var res = await fetch('/api/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: query, trips: TRIPS })
+  });
 
-  const matchedIds = new Set();
-  for (const [kw, ids] of Object.entries(keywords)) {
-    if (q.includes(kw)) ids.forEach(id => matchedIds.add(id));
+  if (!res.ok) {
+    var err = await res.json().catch(function(){return {};});
+    throw new Error(err && err.error ? err.error : 'Search error ' + res.status);
   }
 
-  let matches = [...matchedIds].map(id => ({
-    id,
-    reason: reasonFor(id, query),
-    score: 0.9 - Math.random() * 0.2,
-  }));
+  var parsed = await res.json();
 
-  if (!matches.length) {
-    matches = TRIPS.slice(0, 4).map(t => ({
-      id: t.id,
-      reason: `A great pick for travellers looking for ${t.geography} adventures`,
-      score: 0.7,
-    }));
+  // CRITICAL FIX: use full trip objects returned by server directly.
+  // Server returns complete TTC tour data in matches — do NOT re-look up
+  // by ID in the local TRIPS array which only has mock data.
+  var matches = (parsed.matches || []).filter(Boolean).map(function(m) {
+    if (m.title || m.name) {
+      return {
+        id:        m.id,
+        title:     m.title || m.name,
+        region:    m.region || m.geography || '',
+        route:     m.route || '',
+        days:      m.days || m.duration_days || 0,
+        countries: m.countries || 1,
+        price:     m.price || m.from_price || 0,
+        currency:  m.currency || 'USD',
+        photo:     m.photo || m.image || null,
+        bgColor:   m.bgColor || '#1C1C1C',
+        tags:      m.tags || [],
+        startDate: m.startDate || null,
+        endDate:   m.endDate || null,
+        startCity: m.startCity || '',
+        endCity:   m.endCity || '',
+        aiReason:  m.aiReason || m.reason || '',
+        score:     m.score || 0,
+      };
+    }
+    // Fallback: local mock data when no TTC token
+    var local = TRIPS.find(function(x){ return String(x.id) === String(m.id); });
+    return local ? Object.assign({}, local, { aiReason: m.aiReason || m.reason || '', score: m.score || 0 }) : null;
+  }).filter(Boolean);
+
+  if (parsed._ttcError) {
+    console.warn('TTC error (using mock data):', parsed._ttcError);
   }
 
-  return {
-    summary: `Looking for "${query}" — showing ${matches.length} best matches`,
-    matches: matches.slice(0, 6),
-  };
+  return { summary: parsed.summary, matches: matches };
 }
 
-function reasonFor(id, query) {
-  const reasons = {
-    'eur-highlights-14': 'Covers Europe\'s must-see cities in one epic 2-week loop',
-    'italy-greece-12': 'Italian history meets Greek island beauty — ideal combo',
-    'japan-discovery-10': 'Seamlessly blends ancient temples with neon-lit modern cities',
-    'se-asia-18': 'The best of Southeast Asia at a pace that feels immersive, not rushed',
-    'nz-adventure-8': 'Short but action-packed — perfect if time is tight',
-    'bali-7': 'Affordable island escape with surf, rice terraces and yoga retreats',
-    'morocco-10': 'Sahara sunsets, medina souks and genuine off-the-beaten-path vibes',
-    'peru-9': 'Machu Picchu and Sacred Valley — a bucket-list landmark done properly',
-  };
-  return reasons[id] || `A strong match for your search: "${query}"`;
-}
-
-// ─── REGION EXPLORER ────────────────────────────────────────────────────────
-const REGIONS = ['Europe','Asia','New Zealand','Australia','Latin America','North America','Africa & Middle East'];
-document.getElementById('region-links').innerHTML = REGIONS.map((r, i) =>
-  `<a href="#" onclick="event.preventDefault();regionSearch('${r}')"
-      style="color:#1C4A3D;font-size:1.4rem;font-weight:700;text-decoration:none;transition:color .15s;"
-      onmouseover="this.style.color='#FF5900'" onmouseout="this.style.color='#1C4A3D'">${r}</a>`
-  + (i < REGIONS.length - 1 ? `<span style="color:#E5E0D8;margin:0 10px;">/</span>` : '')
-).join('');
-
-function regionSearch(region) {
-  document.getElementById('search-input').value = `${region} tours`;
-  openSearch();
-  doSearch();
-}
-
-// ─── FEATURED TRIPS ─────────────────────────────────────────────────────────
-document.getElementById('featured-grid').innerHTML =
-  TRIPS.slice(0, 4).map((t, i) => renderTripCard(t, { delay: i * 60 })).join('');
-
-// ─── POPULAR TRIPS (in modal) ────────────────────────────────────────────────
-document.getElementById('popular-grid').innerHTML =
-  TRIPS.slice(0, 4).map((t, i) => renderTripCard(t, { delay: i * 60 })).join('');
+function hideImg(el){el.style.display="none";}
+renderPopular();
+renderHomepageCards();
 </script>
 </body>
 </html>

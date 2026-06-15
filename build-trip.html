@@ -1,1325 +1,832 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Contiki — Build Trip</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            go:          { DEFAULT: '#FF5900', alt: '#FF7300' },
-            wander:      { DEFAULT: '#1C4A3D', alt: '#1C6348' },
-            burst:       '#FFE100',
-            dusk:        '#0A0C0A',
-            dawn:        '#FFFAF2',
-            'ui-grey80': '#6B6B6B',
-            'ui-border': '#E5E0D8',
-            'card-dark': '#1C1C1C',
-          },
-          fontFamily: {
-            hero:    ['"Playfair Display"', 'Georgia', 'serif'],
-            display: ['"Inter"', 'system-ui', 'sans-serif'],
-            body:    ['"Inter"', 'system-ui', 'sans-serif'],
-          },
-          borderRadius: { card: '16px', media: '12px', pill: '100px' },
-        },
-      },
-    }
-  </script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Build Your Trip · Contiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-      font-size: 20px; line-height: 1; vertical-align: middle;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --orange:#FF5500;--orange-light:#FF6B1A;--orange-soft:#FFF5EF;--orange-border:#FFD5BC;
+      --dark-green:#1B3A2D;--cream:#FAF8F4;--cream-dark:#F2EFE9;
+      --black:#111;--white:#fff;--muted:#6B6B6B;--border:#E5E0D8;
+      --blue:#2563EB;--blue-soft:#EFF6FF;--blue-border:#BFDBFE;
+      --card-dark:#1E1E1E;
     }
-    #site-nav { transition: background-color .2s ease, backdrop-filter .2s ease, box-shadow .2s ease; }
-    #site-nav.scrolled {
-      background-color: rgba(255,250,242,.78);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 1px 24px rgba(0,0,0,.07);
+    html{font-size:16px}
+    body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--black);min-height:100vh}
+
+    /* NAV */
+    nav{background:var(--cream);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+    .nav-left{display:flex;align-items:center;gap:28px}
+    .nav-link{font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none;display:flex;align-items:center;gap:4px}
+    .nav-link.active{color:var(--orange)}
+    .nav-logo{position:absolute;left:50%;transform:translateX(-50%);font-size:1.6rem;font-weight:800;color:var(--orange);letter-spacing:-0.04em;text-decoration:none;font-style:italic}
+    .nav-right{display:flex;align-items:center;gap:12px}
+    .nav-pill{display:flex;align-items:center;gap:8px;border:1.5px solid var(--orange);border-radius:100px;padding:8px 18px;background:transparent;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none;transition:background 0.15s}
+    .nav-pill:hover{background:rgba(255,85,0,0.06)}
+
+    /* ── HERO SEARCH ── */
+    #search-screen{min-height:calc(100vh - 64px);display:flex;flex-direction:column}
+    .search-hero{background:var(--dark-green);padding:64px 60px 52px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .search-eyebrow{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:12px}
+    .search-title{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:900;font-style:italic;color:var(--orange);line-height:1;margin-bottom:12px}
+    .search-sub{color:rgba(255,255,255,0.5);font-size:0.95rem;max-width:480px;margin:0 auto 36px;line-height:1.55}
+
+    /* Semantic search bar */
+    .search-bar-wrap{width:100%;max-width:680px;position:relative}
+    .search-bar{display:flex;align-items:center;background:white;border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25);border:2px solid transparent;transition:border-color 0.2s}
+    .search-bar:focus-within{border-color:var(--orange)}
+    .search-icon{padding:0 16px;color:var(--muted);display:flex;align-items:center;flex-shrink:0}
+    .search-icon svg{color:var(--orange)}
+    #trip-search-input{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:1rem;color:var(--black);padding:18px 0;background:transparent}
+    #trip-search-input::placeholder{color:#AAA}
+    .search-go-btn{background:var(--orange);color:white;border:none;padding:14px 24px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;white-space:nowrap;flex-shrink:0}
+    .search-go-btn:hover{background:var(--orange-light)}
+    .search-go-btn:disabled{opacity:0.6;cursor:not-allowed}
+
+    /* AI chips */
+    .search-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+    .search-chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);border-radius:100px;padding:6px 14px;font-size:0.78rem;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
+    .search-chip:hover{background:rgba(255,255,255,0.15);color:white}
+
+    /* Status */
+    #search-status{display:none;align-items:center;gap:10px;color:rgba(255,255,255,0.6);font-size:0.85rem;margin-top:16px}
+    #search-status.visible{display:flex}
+    .dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--orange);margin-right:3px;animation:dp 1.2s ease-in-out infinite}
+    .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+    @keyframes dp{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+    /* AI understood strip */
+    #ai-understood{display:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;margin-top:16px;font-size:0.82rem;color:rgba(255,255,255,0.7);text-align:left;max-width:680px;width:100%}
+    #ai-understood.visible{display:block}
+    .ai-understood-label{font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--orange);margin-bottom:4px}
+
+    /* ── RESULTS ── */
+    .results-section{background:var(--cream-dark);padding:40px 60px}
+    .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .results-title{font-size:1rem;font-weight:700;color:var(--dark-green)}
+    .results-title span{color:var(--orange)}
+    .results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+    /* Tour result card */
+    .result-card{background:var(--card-dark);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border:2px solid transparent}
+    .result-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+    .result-card.selected{border-color:var(--orange)}
+    .rc-img{height:160px;position:relative;overflow:hidden}
+    .rc-img img{width:100%;height:100%;object-fit:cover;display:block}
+    .rc-img-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+    .rc-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 60%)}
+    .rc-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--orange);color:white;font-size:0.6rem;font-weight:800;font-style:italic;padding:3px 10px;border-radius:4px;text-transform:lowercase;z-index:1}
+    .rc-title-overlay{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;z-index:1}
+    .rc-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:900;color:white;line-height:1;text-transform:lowercase}
+    .rc-region{font-size:0.58rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-top:2px}
+    .rc-body{padding:12px 14px}
+    .rc-dates{font-size:0.75rem;color:rgba(255,255,255,0.55);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .rc-dates svg{color:var(--orange);flex-shrink:0}
+    .rc-stats{display:flex;gap:12px;font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:8px}
+    .rc-price{font-size:0.9rem;font-weight:800;color:white}
+    .rc-price span{font-size:0.68rem;font-weight:400;color:rgba(255,255,255,0.4);margin-left:3px}
+    .rc-add-btn{width:100%;padding:8px;background:rgba(255,85,0,0.12);color:var(--orange);border:1.5px solid rgba(255,85,0,0.3);border-radius:8px;font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;margin-top:4px}
+    .rc-add-btn:hover,.result-card.selected .rc-add-btn{background:var(--orange);color:white;border-color:var(--orange)}
+    .rc-add-btn.added{background:var(--dark-green);color:white;border-color:var(--dark-green)}
+    .ai-match-reason{font-size:0.72rem;color:#FFB380;background:#1A0800;border-top:1px solid rgba(255,140,0,0.15);padding:8px 12px;display:flex;gap:6px;line-height:1.4}
+
+    /* ── BUILDER ── */
+    #builder-screen{display:none}
+    .builder-top{background:var(--dark-green);padding:20px 60px;display:flex;align-items:center;justify-content:space-between}
+    .builder-top-left{display:flex;align-items:center;gap:16px}
+    .builder-back{background:rgba(255,255,255,0.1);border:none;color:white;border-radius:8px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+    .builder-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;font-style:italic;color:var(--orange)}
+    .builder-sub{font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:2px}
+    .view-pkg-btn{background:var(--orange);color:white;border:none;border-radius:100px;padding:10px 22px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer}
+
+    /* Timeline */
+    .tl-wrap{padding:40px 60px 120px;max-width:860px;margin:0 auto}
+    .tl-track{position:relative;padding-left:52px}
+    .tl-track::before{content:'';position:absolute;left:18px;top:24px;bottom:24px;width:2px;background:linear-gradient(to bottom,var(--orange) 0%,var(--blue) 50%,var(--orange) 100%);opacity:0.25}
+
+    .tl-seg{position:relative;margin-bottom:14px}
+    .tl-dot{position:absolute;left:-38px;top:20px;width:16px;height:16px;border-radius:50%;background:var(--orange);border:3px solid var(--cream);box-shadow:0 0 0 2px var(--orange);z-index:1}
+    .tl-dot.gap-d{background:var(--blue);box-shadow:0 0 0 2px var(--blue)}
+    .tl-dot.transit-d{background:var(--dark-green);box-shadow:0 0 0 2px var(--dark-green)}
+
+    /* Tour on timeline */
+    .tl-tour{background:var(--card-dark);border-radius:14px;overflow:hidden;display:flex;height:96px}
+    .tl-tour-img{width:120px;flex-shrink:0;position:relative;overflow:hidden}
+    .tl-tour-img img{width:100%;height:100%;object-fit:cover;display:block}
+    .tl-tour-img-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+    .tl-tour-img::after{content:'';position:absolute;right:0;top:0;bottom:0;width:32px;background:linear-gradient(to right,transparent,var(--card-dark))}
+    .tl-tour-badge{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--orange);color:white;font-size:0.55rem;font-weight:800;font-style:italic;padding:2px 8px;border-radius:3px;text-transform:lowercase;white-space:nowrap;z-index:1}
+    .tl-tour-body{flex:1;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+    .tl-tour-label{font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:rgba(255,255,255,0.35)}
+    .tl-tour-name{font-weight:700;font-size:0.92rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tl-tour-meta{display:flex;gap:12px;font-size:0.7rem;color:rgba(255,255,255,0.45)}
+    .tl-tour-meta span{display:flex;align-items:center;gap:4px}
+    .tl-tour-meta svg{color:var(--orange)}
+    .tl-tour-actions{display:flex;align-items:center;padding:0 12px}
+    .tl-del{width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:0.75rem;transition:all 0.15s}
+    .tl-del:hover{border-color:#ef4444;color:#ef4444}
+
+    /* GAP — the hero interaction */
+    .tl-gap{border-radius:14px;overflow:hidden;border:1.5px dashed var(--blue-border);background:var(--blue-soft)}
+    .tl-gap-header{display:flex;align-items:center;gap:12px;padding:14px 16px 10px}
+    .tl-gap-icon{width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:0.85rem;flex-shrink:0}
+    .tl-gap-title{font-weight:700;font-size:0.88rem;color:var(--blue)}
+    .tl-gap-sub{font-size:0.72rem;color:#64748B;margin-top:1px}
+    .tl-gap-body{padding:0 16px 16px}
+
+    /* City selector for hotel stay */
+    .stay-selector{display:flex;gap:8px;margin-bottom:14px}
+    .stay-btn{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--blue-border);background:white;font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;color:#64748B;cursor:pointer;transition:all 0.15s;text-align:center}
+    .stay-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
+
+    /* Flight/hotel options */
+    .gap-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#64748B;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .loading-row{display:flex;align-items:center;gap:8px;color:#64748B;font-size:0.8rem;padding:6px 0}
+    .spin{width:13px;height:13px;border:2px solid #CBD5E1;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .flight-opt{display:flex;align-items:center;gap:10px;background:white;border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1.5px solid transparent;cursor:pointer;transition:all 0.15s}
+    .flight-opt:hover{border-color:var(--blue)}
+    .flight-opt.sel{border-color:var(--blue);background:#EFF6FF}
+    .flight-logo{width:26px;height:26px;border-radius:6px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-size:0.58rem;font-weight:700;color:#475569;flex-shrink:0}
+    .flight-info{flex:1;min-width:0}
+    .flight-num{font-size:0.72rem;font-weight:700;color:var(--black)}
+    .flight-times{font-size:0.68rem;color:var(--muted)}
+    .flight-price-tag{font-weight:800;font-size:0.92rem;color:var(--dark-green)}
+    .direct-badge{font-size:0.6rem;color:#16A34A;background:#F0FDF4;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:5px}
+    .no-results{font-size:0.78rem;color:#94A3B8;font-style:italic;padding:6px 0}
+
+    .hotel-opt{display:flex;align-items:center;gap:10px;background:white;border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1.5px solid transparent;cursor:pointer;transition:all 0.15s}
+    .hotel-opt:hover{border-color:var(--orange)}
+    .hotel-opt.sel{border-color:var(--orange);background:var(--orange-soft)}
+    .hotel-thumb{width:38px;height:38px;border-radius:7px;background:#F1F5F9;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .hotel-info{flex:1;min-width:0}
+    .hotel-name{font-weight:700;font-size:0.78rem;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hotel-addr{font-size:0.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hotel-rating{font-size:0.66rem;color:var(--orange);font-weight:600}
+    .maps-link{font-size:0.65rem;color:var(--blue);background:#EFF6FF;padding:3px 7px;border-radius:4px;text-decoration:none;flex-shrink:0}
+
+    /* Transit (pre/post) */
+    .tl-transit{border-radius:14px;overflow:hidden}
+    .tl-transit.outbound{border:1.5px dashed #BBF7D0;background:#F0FDF4}
+    .tl-transit.return{border:1.5px dashed #FECACA;background:#FEF2F2}
+    .tl-transit-header{display:flex;align-items:center;gap:12px;padding:12px 16px 8px}
+    .tl-transit-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0}
+    .tl-transit-title{font-weight:700;font-size:0.85rem}
+    .tl-transit-sub{font-size:0.7rem;margin-top:1px}
+    .tl-transit-body{padding:0 16px 14px}
+
+    /* Sticky footer */
+    .pkg-footer{position:fixed;bottom:0;left:0;right:0;background:var(--dark-green);padding:16px 60px;display:flex;align-items:center;justify-content:space-between;z-index:100;transform:translateY(100%);transition:transform .3s}
+    .pkg-footer.show{transform:translateY(0)}
+    .pkg-stats{display:flex;gap:28px}
+    .pkg-stat-label{font-size:0.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:1px}
+    .pkg-stat-val{font-size:1rem;font-weight:700;color:white}
+    .pkg-cta{background:var(--orange);color:white;border:none;border-radius:100px;padding:11px 24px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.88rem;cursor:pointer}
+
+    /* Package modal */
+    #pkg-modal{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px}
+    #pkg-modal.open{display:flex}
+    .pkg-box{background:white;border-radius:20px;width:100%;max-width:620px;max-height:88vh;overflow-y:auto}
+    .pkg-hero{background:var(--dark-green);padding:28px 32px;border-radius:20px 20px 0 0}
+    .pkg-hero-title{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;font-style:italic;color:var(--orange);margin-bottom:4px}
+    .pkg-hero-sub{color:rgba(255,255,255,.55);font-size:0.82rem}
+    .pkg-hero-stats{display:flex;gap:24px;margin-top:18px}
+    .pkg-hs-label{font-size:0.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}
+    .pkg-hs-val{font-size:1.05rem;font-weight:800;color:white}
+    .pkg-body{padding:24px 28px}
+    .pkg-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .pkg-item:last-child{border-bottom:none}
+    .pkg-item-icon{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .pkg-item-label{font-size:0.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+    .pkg-item-name{font-weight:700;font-size:0.88rem;color:var(--black)}
+    .pkg-item-detail{font-size:0.72rem;color:var(--muted);margin-top:1px}
+    .pkg-item-price{font-weight:700;font-size:0.88rem;color:var(--dark-green);flex-shrink:0;align-self:center}
+    .pkg-total-row{background:var(--cream-dark);border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 18px}
+    .pkg-total-label{font-weight:700;color:var(--dark-green);font-size:0.9rem}
+    .pkg-total-val{font-size:1.35rem;font-weight:800;color:var(--orange)}
+    .pkg-note{font-size:0.72rem;color:var(--muted);margin-bottom:16px;line-height:1.5}
+    .pkg-book-btn{width:100%;padding:14px;background:var(--orange);color:white;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.95rem;cursor:pointer;margin-bottom:8px}
+    .pkg-close-btn{width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:12px;font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;color:var(--muted)}
+
+    @media(max-width:768px){
+      nav{padding:0 16px}.nav-left{display:none}
+      .search-hero{padding:40px 20px 36px}
+      .results-section{padding:28px 16px}
+      .results-grid{grid-template-columns:1fr 1fr}
+      .tl-wrap{padding:24px 16px 120px}
+      .builder-top{padding:16px 20px}
+      .pkg-footer{padding:14px 20px}.pkg-stats{gap:14px}
     }
-    .dot-pulse span { display:inline-block; width:7px; height:7px; border-radius:50%; background:#FF5900;
-      animation:dotpulse 1.2s ease-in-out infinite; }
-    .dot-pulse span:nth-child(2){animation-delay:.2s}
-    .dot-pulse span:nth-child(3){animation-delay:.4s}
-    @keyframes dotpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
-
-    .step-enter { opacity:0; transform:translateY(16px); animation: stepRise .35s ease forwards; }
-    @keyframes stepRise { to { opacity:1; transform:translateY(0); } }
-
-    .trip-card { transition: transform .2s ease, box-shadow .2s ease; }
-    .trip-card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px rgba(0,0,0,.18); }
-
-    #sticky-footer { transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1); }
-    #sticky-footer.visible { transform: translateY(0); }
-
-    #package-overlay { opacity:0; pointer-events:none; transition:opacity .3s ease; }
-    #package-overlay.open { opacity:1; pointer-events:all; }
-    #package-modal { transform:scale(.96) translateY(20px); opacity:0; transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s ease; }
-    #package-modal.open { transform:scale(1) translateY(0); opacity:1; }
-
-    .input-focus:focus { outline: 2px solid #FF5900; }
-    .flight-opt { cursor:pointer; transition: border-color .15s, background .15s; }
-    .flight-opt:hover { background: #f9f6f0; }
-    .hotel-opt { cursor:pointer; transition: border-color .15s, background .15s; }
-    .hotel-opt:hover { background: #f9f6f0; }
+    @media(max-width:480px){.results-grid{grid-template-columns:1fr}}
   </style>
 </head>
-<body class="bg-dawn font-body text-dusk">
-
-<!-- PASSWORD GATE -->
-<div id="password-gate" class="fixed inset-0 z-[9999] bg-dusk flex items-center justify-center">
-  <div style="background:#1a1a1a;border-radius:16px;padding:48px 40px;width:360px;max-width:90vw;">
-    <div class="text-go font-hero italic font-extrabold leading-none mb-2" style="font-size:2rem;">contiki</div>
-    <p class="text-white/40 mb-8" style="font-size:.8rem;">Preview access only</p>
-    <input id="gate-input" type="password" placeholder="Enter password"
-      class="w-full text-white text-sm mb-3 px-4 py-3 rounded-xl outline-none transition-colors"
-      style="background:#111;border:1px solid #333;font-family:inherit;"
-      onfocus="this.style.borderColor='#FF5900'" onblur="this.style.borderColor='#333'"
-      onkeydown="if(event.key==='Enter')checkGate()" />
-    <p id="gate-error" class="mb-3 hidden" style="color:#ff6b6b;font-size:.8rem;">Incorrect password. Try again.</p>
-    <button onclick="checkGate()" class="w-full text-white font-bold py-3 rounded-xl transition-colors"
-      style="background:#FF5900;font-family:inherit;font-size:.95rem;border:none;cursor:pointer;"
-      onmouseover="this.style.background='#FF7300'" onmouseout="this.style.background='#FF5900'">
-      Enter
-    </button>
-  </div>
-</div>
+<body>
 
 <!-- NAV -->
-<header id="site-nav" class="sticky top-0 z-[200] bg-dawn border-b border-ui-border">
-  <div class="relative flex items-center justify-between h-16 px-6 md:px-8">
-    <nav class="hidden md:flex items-center gap-1">
-      <a href="index.html" class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem;font-weight:600;font-family:inherit;text-decoration:none;">
-        Explore Trips
-        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
-      </a>
-      <a href="build-trip.html" class="group flex items-center gap-0.5 px-3 py-2 rounded-lg hover:bg-black/5 transition-colors" style="font-size:.85rem;font-weight:600;font-family:inherit;text-decoration:none;color:#FF5900;">
-        Build Trip
-        <span class="material-symbols-outlined" style="font-size:18px;opacity:.5;">expand_more</span>
-      </a>
-      <button class="group flex items-center gap-0.5 px-3 py-2 rounded-lg text-dusk hover:bg-black/5 transition-colors" style="font-size:.85rem;font-weight:600;font-family:inherit;">
-        About
-        <span class="material-symbols-outlined opacity-50" style="font-size:18px;">expand_more</span>
-      </button>
-    </nav>
-    <a href="index.html" class="absolute left-1/2 -translate-x-1/2 text-go font-hero italic font-extrabold hover:opacity-80 transition-opacity" style="font-size:1.6rem;line-height:1;text-decoration:none;">
-      contiki
+<nav>
+  <div class="nav-left">
+    <a href="/" class="nav-link">Explore Trips <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="/build-trip.html" class="nav-link active">Build Trip <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="#" class="nav-link">About <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+  </div>
+  <a href="/" class="nav-logo">contiki</a>
+  <div class="nav-right">
+    <a href="/" class="nav-pill">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      Search
     </a>
-    <div class="flex items-center gap-2 ml-auto">
-      <button class="hidden md:flex items-center gap-1 px-3 py-2 hover:bg-black/5 transition-colors"
-        style="border-radius:100px;border:1.5px solid #E5E0D8;background:transparent;font-family:inherit;cursor:pointer;">
-        <span class="material-symbols-outlined opacity-60" style="font-size:18px;">person</span>
-        <span class="material-symbols-outlined opacity-40" style="font-size:16px;">expand_more</span>
-      </button>
+  </div>
+</nav>
+
+<!-- ── SEARCH SCREEN ── -->
+<div id="search-screen">
+  <div class="search-hero">
+    <div class="search-eyebrow">Multi-Trip Builder</div>
+    <div class="search-title">Build your<br/>adventure</div>
+    <p class="search-sub">Describe the trips you want to combine — destinations, vibes, timings. We'll find the right Contiki tours and handle everything in between.</p>
+
+    <div class="search-bar-wrap">
+      <div class="search-bar">
+        <div class="search-icon">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+        <input id="trip-search-input" type="text" placeholder="Where and when? e.g. Europe in July then Southeast Asia in September…" autocomplete="off"/>
+        <button class="search-go-btn" id="search-go-btn" onclick="doTripSearch()">
+          Find trips
+          <svg width="13" height="13" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="search-chips">
+        <span class="search-chip" onclick="useChip(this)">Europe July + Asia September</span>
+        <span class="search-chip" onclick="useChip(this)">Safari + Greek Islands summer</span>
+        <span class="search-chip" onclick="useChip(this)">South America + Australia late 2026</span>
+        <span class="search-chip" onclick="useChip(this)">Japan + Morocco autumn</span>
+      </div>
+      <div id="search-status">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span id="search-status-text">Finding matching Contiki tours…</span>
+      </div>
+      <div id="ai-understood">
+        <div class="ai-understood-label">✦ AI understood</div>
+        <div id="ai-understood-text"></div>
+      </div>
     </div>
   </div>
-</header>
 
-<!-- =====================================================
-     09 — ENTRY VIEW (Origin + Start Location)
-     ===================================================== -->
-<div id="entry-view">
-  <div class="py-14 px-6 text-center" style="background:#1C4A3D;">
-    <p style="color:rgba(255,255,255,.4);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">
-      Trip Builder
-    </p>
-    <h1 class="font-hero font-extrabold italic text-go mb-10" style="font-size:clamp(2.2rem,5vw,3.5rem);line-height:1;">
-      Build your adventure
-    </h1>
-
-    <div class="max-w-xl mx-auto flex flex-col gap-4">
-
-      <!-- Step 1: Origin -->
-      <div id="step1-card" class="bg-white rounded-[14px] p-6 text-left step-enter" style="box-shadow:0 25px 50px rgba(0,0,0,.25);">
-        <p class="font-semibold text-dusk mb-3" style="font-size:.95rem;">Where are you coming from?</p>
-        <div class="flex gap-3">
-          <div class="flex-1 flex items-center gap-2 rounded-xl px-4 py-3 border border-ui-border" id="origin-wrap"
-               style="transition:border-color .15s;">
-            <span class="material-symbols-outlined text-go" style="font-size:18px;">flight_takeoff</span>
-            <input id="origin-input" type="text" placeholder="e.g. London"
-              class="flex-1 outline-none bg-transparent text-dusk input-focus"
-              style="font-size:.92rem;font-family:inherit;min-width:0;border:none;"
-              onfocus="document.getElementById('origin-wrap').style.borderColor='#FF5900'"
-              onblur="document.getElementById('origin-wrap').style.borderColor='#E5E0D8'"
-              onkeydown="if(event.key==='Enter')submitOrigin()" />
-          </div>
-          <button onclick="submitOrigin()"
-            class="text-white px-6 py-2 font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
-            style="background:#FF5900;border-radius:100px;border:none;font-size:.88rem;font-family:inherit;cursor:pointer;">
-            Next
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 2: Start Location (hidden until step 1 done) -->
-      <div id="step2-card" class="bg-white rounded-[14px] p-6 text-left" style="box-shadow:0 25px 50px rgba(0,0,0,.25);display:none;">
-        <p class="font-semibold text-dusk mb-1" style="font-size:.95rem;">Where do you want to start your adventure?</p>
-        <p class="text-ui-grey80 mb-3" style="font-size:.8rem;">This is where you'll join your first Contiki tour.</p>
-        <div class="flex gap-3">
-          <div class="flex-1 flex items-center gap-2 rounded-xl px-4 py-3 border border-ui-border" id="start-wrap"
-               style="transition:border-color .15s;">
-            <span class="material-symbols-outlined text-go" style="font-size:18px;">location_on</span>
-            <input id="start-input" type="text" placeholder="e.g. Bangkok"
-              class="flex-1 outline-none bg-transparent text-dusk"
-              style="font-size:.92rem;font-family:inherit;min-width:0;border:none;"
-              onfocus="document.getElementById('start-wrap').style.borderColor='#FF5900'"
-              onblur="document.getElementById('start-wrap').style.borderColor='#E5E0D8'"
-              onkeydown="if(event.key==='Enter')submitStart()" />
-          </div>
-          <button onclick="submitStart()"
-            class="text-white px-6 py-2 font-bold hover:opacity-90 transition-opacity whitespace-nowrap"
-            style="background:#FF5900;border-radius:100px;border:none;font-size:.88rem;font-family:inherit;cursor:pointer;">
-            Next
-          </button>
-        </div>
-      </div>
-
+  <!-- Results -->
+  <div class="results-section" id="results-section" style="display:none">
+    <div class="results-header">
+      <div class="results-title"><span id="results-count">0</span> tours matched — select the ones you want to combine</div>
+      <button class="nav-pill" style="border-radius:100px;padding:9px 18px;font-size:0.82rem;font-weight:700;background:var(--dark-green);color:white;border:none;cursor:pointer" onclick="buildPackage()" id="build-pkg-btn" disabled>Build package →</button>
     </div>
+    <div class="results-grid" id="results-grid"></div>
   </div>
 </div>
 
-<!-- =====================================================
-     10 — BUILDER VIEW (Guided Journey)
-     ===================================================== -->
-<div id="builder-view" class="hidden">
-
-  <!-- Top bar -->
-  <div class="py-4 px-6 flex items-center gap-4" style="background:#1C4A3D;">
-    <button onclick="backToEntry()" class="flex items-center gap-1 px-3 py-2 rounded-lg transition-colors hover:bg-white/10" style="color:rgba(255,255,255,.7);font-size:.85rem;font-family:inherit;background:rgba(255,255,255,.08);border:none;cursor:pointer;">
-      <span class="material-symbols-outlined" style="font-size:18px;">arrow_back</span>
-      Back
-    </button>
-    <div class="flex-1 min-w-0">
-      <p id="builder-title" class="font-hero italic font-extrabold text-go truncate" style="font-size:1.3rem;line-height:1.1;"></p>
-      <p id="builder-sub" class="text-white/50" style="font-size:.78rem;"></p>
+<!-- ── BUILDER SCREEN ── -->
+<div id="builder-screen">
+  <div class="builder-top">
+    <div class="builder-top-left">
+      <button class="builder-back" onclick="goBack()">
+        <svg width="12" height="12" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Back
+      </button>
+      <div>
+        <div class="builder-title" id="builder-title">Your package</div>
+        <div class="builder-sub" id="builder-sub">Loading…</div>
+      </div>
     </div>
-    <button onclick="openPackageModal()" id="view-pkg-btn"
-      class="flex items-center gap-2 px-5 py-2 text-wander font-semibold hover:opacity-90 transition-opacity"
-      style="background:#FFFAF2;border-radius:100px;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;display:none;">
-      View package
-      <span class="material-symbols-outlined" style="font-size:18px;">arrow_forward</span>
-    </button>
+    <button class="view-pkg-btn" onclick="openPkgModal()">View package →</button>
   </div>
 
-  <!-- Steps feed -->
-  <div class="max-w-2xl mx-auto px-4 py-8 pb-32" id="steps-feed"></div>
-
-  <!-- Sticky footer -->
-  <div id="sticky-footer" class="fixed bottom-0 left-0 right-0 z-[100] px-6 py-4 flex items-center justify-between gap-4 flex-wrap" style="background:#1C4A3D;">
-    <div class="flex gap-6">
-      <div class="text-center">
-        <div id="footer-tours" class="text-white font-extrabold" style="font-size:1.3rem;">0</div>
-        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Tours</div>
-      </div>
-      <div class="text-center">
-        <div id="footer-flights" class="text-white font-extrabold" style="font-size:1.3rem;">0</div>
-        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Flights</div>
-      </div>
-      <div class="text-center">
-        <div id="footer-cost" class="text-go font-extrabold" style="font-size:1.3rem;">$0</div>
-        <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Est. cost</div>
-      </div>
-    </div>
-    <button onclick="openPackageModal()" class="flex items-center gap-2 px-6 py-3 text-wander font-bold hover:opacity-90 transition-opacity" style="background:#FFFAF2;border-radius:100px;border:none;font-family:inherit;font-size:.92rem;cursor:pointer;">
-      View package
-      <span class="material-symbols-outlined" style="font-size:20px;">arrow_forward</span>
-    </button>
+  <div class="tl-wrap">
+    <div class="tl-track" id="tl-track"></div>
   </div>
 
-</div>
-
-<!-- =====================================================
-     12 — PACKAGE MODAL
-     ===================================================== -->
-<div id="package-overlay" class="fixed inset-0 z-[400] flex items-center justify-center px-4" style="background:rgba(0,0,0,.6);backdrop-filter:blur(3px);">
-  <div id="package-modal" class="bg-white rounded-[20px] w-full overflow-y-auto" style="max-width:640px;max-height:90vh;">
-
-    <div class="relative p-8" style="background:#1C4A3D;border-radius:20px 20px 0 0;">
-      <h2 class="font-hero italic font-extrabold text-go mb-1" style="font-size:2rem;line-height:1;">Your adventure</h2>
-      <p id="pkg-route" class="text-white/60" style="font-size:.88rem;"></p>
-      <div class="flex gap-8 mt-5">
-        <div class="text-center">
-          <div id="pkg-days" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
-          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Days</div>
-        </div>
-        <div class="text-center">
-          <div id="pkg-tours-count" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
-          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Tours</div>
-        </div>
-        <div class="text-center">
-          <div id="pkg-flights-count" class="text-white font-extrabold" style="font-size:1.6rem;"></div>
-          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Flights</div>
-        </div>
-        <div class="text-center">
-          <div id="pkg-total-top" class="text-go font-extrabold" style="font-size:1.6rem;"></div>
-          <div class="text-white/50" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">Est. cost pp</div>
-        </div>
-      </div>
-      <button onclick="closePackageModal()" class="absolute top-5 right-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" style="width:32px;height:32px;background:rgba(255,255,255,.1);border:none;cursor:pointer;">
-        <span class="material-symbols-outlined text-white" style="font-size:20px;">close</span>
-      </button>
+  <div class="pkg-footer" id="pkg-footer">
+    <div class="pkg-stats">
+      <div><div class="pkg-stat-label">Tours</div><div class="pkg-stat-val" id="stat-tours">0</div></div>
+      <div><div class="pkg-stat-label">Total days</div><div class="pkg-stat-val" id="stat-days">0</div></div>
+      <div><div class="pkg-stat-label">Est. cost</div><div class="pkg-stat-val" id="stat-cost">$0</div></div>
     </div>
-
-    <div id="pkg-items" class="divide-y divide-gray-100 px-6 py-2"></div>
-
-    <div class="mx-6 my-4 px-5 py-4 rounded-xl flex items-center justify-between" style="background:#f5f0e8;">
-      <p class="font-semibold text-dusk" style="font-size:.9rem;">Estimated total per person</p>
-      <p id="pkg-total" class="font-extrabold text-go" style="font-size:1.4rem;"></p>
-    </div>
-
-    <p class="px-6 pb-3 flex items-start gap-2 text-ui-grey80" style="font-size:.78rem;line-height:1.5;">
-      <span style="font-size:1rem;">⚠</span>
-      <span>Prices may change until your trip is booked. Tour prices are from-prices; flights and hotels are indicative.</span>
-    </p>
-
-    <div class="px-6 pb-8 flex flex-col gap-3 mt-1">
-      <button id="save-btn" onclick="saveTrip()" class="w-full py-3.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity" style="background:#FF5900;border:none;font-family:inherit;font-size:.95rem;cursor:pointer;">
-        Save my trip
-      </button>
-      <button class="w-full py-3 font-semibold text-ui-grey80 rounded-pill relative" style="background:#f5f0e8;border:none;font-family:inherit;font-size:.9rem;cursor:default;">
-        Book now
-        <span class="ml-2 px-2 py-0.5 rounded text-white font-bold" style="background:#6B6B6B;font-size:.65rem;vertical-align:middle;">coming soon</span>
-      </button>
-      <button onclick="closePackageModal()" class="w-full py-3 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill" style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.9rem;cursor:pointer;">
-        Back to editing
-      </button>
-    </div>
-
+    <button class="pkg-cta" onclick="openPkgModal()">View package →</button>
   </div>
 </div>
 
-<!-- FOOTER -->
-<footer style="background:#0A0C0A;color:white;padding:48px 32px 24px;">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid gap-8 mb-10" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
-      <div>
-        <a href="index.html" class="font-hero italic font-extrabold text-go block mb-3" style="font-size:1.8rem;line-height:1;text-decoration:none;">contiki</a>
-        <p style="color:rgba(255,255,255,.4);font-size:.82rem;line-height:1.6;max-width:200px;">The world's leading travel company for 18–35s.</p>
-      </div>
-      <div>
-        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">About Contiki</p>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
-          <li><a href="#" class="footer-link">Who We Are</a></li>
-          <li><a href="#" class="footer-link">Reviews</a></li>
-          <li><a href="#" class="footer-link">Careers</a></li>
-        </ul>
-      </div>
-      <div>
-        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Travelling with us</p>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;">
-          <li><a href="#" class="footer-link">My Contiki</a></li>
-          <li><a href="#" class="footer-link">FAQs</a></li>
-          <li><a href="#" class="footer-link">Payment Plans</a></li>
-        </ul>
-      </div>
-    </div>
-    <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;">
-      <p style="color:rgba(255,255,255,.3);font-size:.75rem;">© 2026 Contiki Holidays Ltd. All rights reserved.</p>
-      <div style="display:flex;gap:20px;">
-        <a href="#" class="footer-link">Privacy Policy</a>
-        <a href="#" class="footer-link">Terms &amp; Conditions</a>
-      </div>
-    </div>
-  </div>
-</footer>
-<style>
-  .footer-link{color:rgba(255,255,255,.45);font-size:.82rem;text-decoration:none;transition:color .15s;}
-  .footer-link:hover{color:white;}
-</style>
+<!-- PACKAGE MODAL -->
+<div id="pkg-modal">
+  <div class="pkg-box" id="pkg-box"></div>
+</div>
 
 <script>
-// ─── CITY DATA (city → IATA + lat/lng) ───────────────────────────────────────
-const CITY_DATA = {
-  'london':       { iata:'LHR', lat:51.5074,  lng:-0.1278,   country:'GB' },
-  'paris':        { iata:'CDG', lat:48.8566,  lng:2.3522,    country:'FR' },
-  'amsterdam':    { iata:'AMS', lat:52.3676,  lng:4.9041,    country:'NL' },
-  'berlin':       { iata:'BER', lat:52.5200,  lng:13.4050,   country:'DE' },
-  'rome':         { iata:'FCO', lat:41.9028,  lng:12.4964,   country:'IT' },
-  'florence':     { iata:'FCO', lat:43.7696,  lng:11.2558,   country:'IT' },
-  'athens':       { iata:'ATH', lat:37.9838,  lng:23.7275,   country:'GR' },
-  'prague':       { iata:'PRG', lat:50.0755,  lng:14.4378,   country:'CZ' },
-  'vienna':       { iata:'VIE', lat:48.2082,  lng:16.3738,   country:'AT' },
-  'budapest':     { iata:'BUD', lat:47.4979,  lng:19.0402,   country:'HU' },
-  'barcelona':    { iata:'BCN', lat:41.3851,  lng:2.1734,    country:'ES' },
-  'madrid':       { iata:'MAD', lat:40.4168,  lng:-3.7038,   country:'ES' },
-  'tokyo':        { iata:'NRT', lat:35.6762,  lng:139.6503,  country:'JP' },
-  'kyoto':        { iata:'KIX', lat:35.0116,  lng:135.7681,  country:'JP' },
-  'osaka':        { iata:'KIX', lat:34.6937,  lng:135.5023,  country:'JP' },
-  'hiroshima':    { iata:'KIX', lat:34.3853,  lng:132.4553,  country:'JP' },
-  'bangkok':      { iata:'BKK', lat:13.7563,  lng:100.5018,  country:'TH' },
-  'chiang mai':   { iata:'CNX', lat:18.7883,  lng:98.9853,   country:'TH' },
-  'hanoi':        { iata:'HAN', lat:21.0285,  lng:105.8542,  country:'VN' },
-  'hoi an':       { iata:'HAN', lat:15.8801,  lng:108.3380,  country:'VN' },
-  'ho chi minh':  { iata:'SGN', lat:10.8231,  lng:106.6297,  country:'VN' },
-  'bali':         { iata:'DPS', lat:-8.3405,  lng:115.0920,  country:'ID' },
-  'seminyak':     { iata:'DPS', lat:-8.6905,  lng:115.1689,  country:'ID' },
-  'singapore':    { iata:'SIN', lat:1.3521,   lng:103.8198,  country:'SG' },
-  'kuala lumpur': { iata:'KUL', lat:3.1390,   lng:101.6869,  country:'MY' },
-  'auckland':     { iata:'AKL', lat:-36.8509, lng:174.7645,  country:'NZ' },
-  'queenstown':   { iata:'ZQN', lat:-45.0312, lng:168.6626,  country:'NZ' },
-  'sydney':       { iata:'SYD', lat:-33.8688, lng:151.2093,  country:'AU' },
-  'melbourne':    { iata:'MEL', lat:-37.8136, lng:144.9631,  country:'AU' },
-  'casablanca':   { iata:'CMN', lat:33.5731,  lng:-7.5898,   country:'MA' },
-  'marrakech':    { iata:'RAK', lat:31.6295,  lng:-7.9811,   country:'MA' },
-  'cairo':        { iata:'CAI', lat:30.0444,  lng:31.2357,   country:'EG' },
-  'nairobi':      { iata:'NBO', lat:-1.2921,  lng:36.8219,   country:'KE' },
-  'cape town':    { iata:'CPT', lat:-33.9249, lng:18.4241,   country:'ZA' },
-  'lima':         { iata:'LIM', lat:-12.0464, lng:-77.0428,  country:'PE' },
-  'cusco':        { iata:'CUZ', lat:-13.5319, lng:-71.9675,  country:'PE' },
-  'new york':     { iata:'JFK', lat:40.7128,  lng:-74.0060,  country:'US' },
-  'los angeles':  { iata:'LAX', lat:34.0522,  lng:-118.2437, country:'US' },
-  'miami':        { iata:'MIA', lat:25.7617,  lng:-80.1918,  country:'US' },
-  'cancun':       { iata:'CUN', lat:21.1619,  lng:-86.8515,  country:'MX' },
-  'dubai':        { iata:'DXB', lat:25.2048,  lng:55.2708,   country:'AE' },
-  'istanbul':     { iata:'IST', lat:41.0082,  lng:28.9784,   country:'TR' },
-  'copenhagen':   { iata:'CPH', lat:55.6761,  lng:12.5683,   country:'DK' },
-  'stockholm':    { iata:'ARN', lat:59.3293,  lng:18.0686,   country:'SE' },
-};
-
-function resolveCity(input) {
-  const key = input.toLowerCase().trim();
-  if (CITY_DATA[key]) return { city: toTitleCase(key), ...CITY_DATA[key] };
-  const partial = Object.entries(CITY_DATA).find(([k]) => k.includes(key) || key.includes(k));
-  if (partial) return { city: toTitleCase(partial[0]), ...partial[1] };
-  return { city: toTitleCase(input), iata: null, lat: null, lng: null };
-}
-
-function toTitleCase(s) {
-  return s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
-}
-
-// ─── TRIP DATA ────────────────────────────────────────────────────────────────
-const TRIPS = [
-  { id:'eur-highlights-14', name:'European Highlights', geography:'Europe',
-    destinations:['Paris','Amsterdam','Berlin','Prague','Vienna'],
-    departure_city:'Paris', departure_iata:'CDG', end_city:'Vienna', end_iata:'VIE',
-    duration_days:14, departure_date:'2026-07-05', end_date:'2026-07-19',
-    from_price:2900, currency:'USD', was_price:3225,
-    image:'https://picsum.photos/seed/european-highlights/600/400', tags:['hot'], is_original:true },
-
-  { id:'italy-greece-12', name:'Italian Greek Adventure', geography:'Europe',
-    destinations:['Rome','Florence','Athens','Santorini'],
-    departure_city:'Rome', departure_iata:'FCO', end_city:'Athens', end_iata:'ATH',
-    duration_days:12, departure_date:'2026-07-12', end_date:'2026-07-24',
-    from_price:3100, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/italy-greece/600/400', tags:['new'], is_original:false },
-
-  { id:'japan-discovery-10', name:'Japan Discovery', geography:'Asia',
-    destinations:['Tokyo','Kyoto','Osaka','Hiroshima'],
-    departure_city:'Tokyo', departure_iata:'NRT', end_city:'Osaka', end_iata:'KIX',
-    duration_days:10, departure_date:'2026-08-02', end_date:'2026-08-12',
-    from_price:3400, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/japan-discovery/600/400', tags:['bestseller'], is_original:true },
-
-  { id:'se-asia-18', name:'Southeast Asia Explorer', geography:'Asia',
-    destinations:['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'],
-    departure_city:'Bangkok', departure_iata:'BKK', end_city:'Hanoi', end_iata:'HAN',
-    duration_days:18, departure_date:'2026-09-01', end_date:'2026-09-19',
-    from_price:2650, currency:'USD', was_price:2950,
-    image:'https://picsum.photos/seed/southeast-asia/600/400', tags:['hot','sale'], is_original:false },
-
-  { id:'nz-adventure-8', name:'New Zealand Adventure', geography:'Australasia',
-    destinations:['Auckland','Rotorua','Queenstown','Milford Sound'],
-    departure_city:'Auckland', departure_iata:'AKL', end_city:'Queenstown', end_iata:'ZQN',
-    duration_days:8, departure_date:'2026-10-05', end_date:'2026-10-13',
-    from_price:2200, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/new-zealand/600/400', tags:['new'], is_original:false },
-
-  { id:'bali-7', name:'Bali Breeze', geography:'Asia',
-    destinations:['Seminyak','Ubud','Nusa Penida','Canggu'],
-    departure_city:'Bali', departure_iata:'DPS', end_city:'Bali', end_iata:'DPS',
-    duration_days:7, departure_date:'2026-08-15', end_date:'2026-08-22',
-    from_price:1850, currency:'USD', was_price:2100,
-    image:'https://picsum.photos/seed/bali/600/400', tags:['sale'], is_original:false },
-
-  { id:'morocco-10', name:'Morocco Magic', geography:'Africa',
-    destinations:['Casablanca','Fes','Merzouga','Marrakech'],
-    departure_city:'Casablanca', departure_iata:'CMN', end_city:'Marrakech', end_iata:'RAK',
-    duration_days:10, departure_date:'2026-07-20', end_date:'2026-07-30',
-    from_price:2400, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/morocco/600/400', tags:[], is_original:true },
-
-  { id:'peru-9', name:'Peruvian Wonders', geography:'Latin America',
-    destinations:['Lima','Cusco','Machu Picchu','Sacred Valley'],
-    departure_city:'Lima', departure_iata:'LIM', end_city:'Lima', end_iata:'LIM',
-    duration_days:9, departure_date:'2026-09-15', end_date:'2026-09-24',
-    from_price:2750, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/peru/600/400', tags:['bestseller'], is_original:false },
-
-  { id:'central-europe-8', name:'Central Europe Discovery', geography:'Europe',
-    destinations:['Vienna','Budapest','Krakow','Warsaw'],
-    departure_city:'Vienna', departure_iata:'VIE', end_city:'Warsaw', end_iata:'WAW',
-    duration_days:8, departure_date:'2026-07-22', end_date:'2026-07-30',
-    from_price:2100, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/central-europe/600/400', tags:['new'], is_original:false },
-
-  { id:'thailand-islands-7', name:'Thailand Islands', geography:'Asia',
-    destinations:['Bangkok','Koh Samui','Koh Phangan','Phuket'],
-    departure_city:'Bangkok', departure_iata:'BKK', end_city:'Phuket', end_iata:'HKT',
-    duration_days:7, departure_date:'2026-09-22', end_date:'2026-09-29',
-    from_price:1950, currency:'USD', was_price:2200,
-    image:'https://picsum.photos/seed/thailand-islands/600/400', tags:['sale'], is_original:false },
+// ── DATA ──────────────────────────────────────────────────────────────────────
+// TTC API field names — departure_date / end_date / destinations[] / from_price
+var TOURS = [
+  { id:'eu-highlights', name:'European Highlights', geography:'Europe', destinations:['London','Paris','Barcelona','Rome'], duration_days:14, departure_date:'2026-07-05', end_date:'2026-07-18', from_price:2900, currency:'USD', image:'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=500&q=80', bg:'#1a1a2e', tags:['Hot NR','New Trip'], vibe:'Europe cities culture history nightlife multi-country iconic July summer' },
+  { id:'greek-islands', name:'Hopping the Greek Islands', geography:'Europe', destinations:['Athens','Mykonos','Santorini'], duration_days:16, departure_date:'2026-07-12', end_date:'2026-07-27', from_price:2900, currency:'USD', image:'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=500&q=80', bg:'#0077b6', tags:['New Trip'], vibe:'Greece islands beach summer sun sailing Mediterranean July August' },
+  { id:'south-america', name:'South American Odyssey', geography:'South America', destinations:['Lima','Cusco','La Paz','Uyuni'], duration_days:18, departure_date:'2026-08-03', end_date:'2026-08-20', from_price:2750, currency:'USD', image:'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=500&q=80', bg:'#2d6a4f', tags:[], vibe:'South America adventure hiking Machu Picchu ruins bucket list August' },
+  { id:'southeast-asia', name:'Southeast Asia Encounter', geography:'Asia', destinations:['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'], duration_days:17, departure_date:'2026-09-06', end_date:'2026-09-22', from_price:2200, currency:'USD', image:'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=500&q=80', bg:'#3a0ca3', tags:['New Trip'], vibe:'Asia Southeast Asia budget culture temples food Vietnam Thailand September' },
+  { id:'safari', name:'African Safari Experience', geography:'Africa', destinations:['Nairobi','Amboseli','Masai Mara','Serengeti'], duration_days:12, departure_date:'2026-08-15', end_date:'2026-08-26', from_price:3900, currency:'USD', image:'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=500&q=80', bg:'#7d4e0a', tags:[], vibe:'safari wildlife Africa Kenya Tanzania animals nature August summer' },
+  { id:'japan', name:'Japan Uncovered', geography:'Asia', destinations:['Tokyo','Nikko','Kyoto','Nara','Osaka'], duration_days:11, departure_date:'2026-10-04', end_date:'2026-10-14', from_price:2900, currency:'USD', image:'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=500&q=80', bg:'#590d22', tags:['Hot NR'], vibe:'Japan Tokyo Kyoto culture temples food autumn October unique' },
+  { id:'morocco', name:'Morocco Desert Adventure', geography:'Africa', destinations:['Casablanca','Fes','Sahara','Marrakech'], duration_days:9, departure_date:'2026-09-13', end_date:'2026-09-21', from_price:1550, currency:'USD', image:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=500&q=80', bg:'#7c3d10', tags:[], vibe:'Morocco desert Sahara culture souks Africa September autumn' },
+  { id:'aus-nz', name:'Australia & New Zealand', geography:'Aus & NZ', destinations:['Sydney','Melbourne','Queenstown','Auckland'], duration_days:22, departure_date:'2026-11-08', end_date:'2026-11-29', from_price:4300, currency:'USD', image:'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=500&q=80', bg:'#264653', tags:[], vibe:'Australia New Zealand bungee adventure long bucket list November' },
+  { id:'usa-parks', name:'USA National Parks', geography:'North America', destinations:['Las Vegas','Grand Canyon','Bryce Canyon','Zion'], duration_days:8, departure_date:'2026-07-19', end_date:'2026-07-26', from_price:1300, currency:'USD', image:'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=500&q=80', bg:'#7c2d12', tags:['New Trip'], vibe:'USA national parks road trip canyon desert nature July summer' },
+  { id:'costa-rica', name:'Costa Rica Uncovered', geography:'Latin America', destinations:['San Jose','Arenal','Monteverde','Manuel Antonio'], duration_days:10, departure_date:'2026-08-30', end_date:'2026-09-08', from_price:1900, currency:'USD', image:'https://images.unsplash.com/photo-1518182170546-07661fd94144?w=500&q=80', bg:'#1b4332', tags:['Hot NR'], vibe:'Costa Rica nature jungle adventure wildlife Latin America August September' },
 ];
 
-// ─── JOURNEY STATE ────────────────────────────────────────────────────────────
-const journey = {
-  origin: null,          // { city, iata, lat, lng }
-  startLocation: null,   // { city, iata, lat, lng }
-  outboundFlight: null,  // offer | { skipped: true }
-  segments: [],          // [ {type:'trip', tour} | {type:'gap', ...} ]
-  returnFlight: null,    // offer | { skipped: true }
-};
+// IATA lookup
+var IATA_MAP = {'london':'LHR','new york':'JFK','nyc':'JFK','sydney':'SYD','melbourne':'MEL','los angeles':'LAX','paris':'CDG','rome':'FCO','barcelona':'BCN','amsterdam':'AMS','berlin':'TXL','athens':'ATH','mykonos':'JMK','santorini':'JTR','tokyo':'NRT','osaka':'KIX','kyoto':'KIX','bangkok':'BKK','chiang mai':'CNX','hanoi':'HAN','hoi an':'DAD','luang prabang':'LPQ','nairobi':'NBO','casablanca':'CMN','marrakech':'RAK','fes':'FEZ','lima':'LIM','cusco':'CUZ','la paz':'LPB','san jose':'SJO','queenstown':'ZQN','auckland':'AKL','las vegas':'LAS','grand canyon':'FLG','dubai':'DXB','singapore':'SIN','seoul':'ICN','hong kong':'HKG','serengeti':'JRO'};
+function toIATA(city){ var k=(city||'').toLowerCase().trim(); if(IATA_MAP[k]) return IATA_MAP[k]; var m=Object.keys(IATA_MAP).find(function(c){return k.includes(c)||c.includes(k);}); return m?IATA_MAP[m]:k.slice(0,3).toUpperCase(); }
 
-// ─── PASSWORD GATE ────────────────────────────────────────────────────────────
-function checkGate() {
-  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
-    document.getElementById('password-gate').style.display = 'none';
-    localStorage.setItem('contiki-auth', '1');
-  } else {
-    document.getElementById('gate-error').classList.remove('hidden');
-    document.getElementById('gate-input').value = '';
-  }
-}
-if (localStorage.getItem('contiki-auth') === '1') {
-  document.getElementById('password-gate').style.display = 'none';
-}
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var selectedTours = [];  // ordered by departure_date
+var gaps = [];           // auto-generated between tours
+var aiSummary = '';
 
-// ─── NAV SCROLL ───────────────────────────────────────────────────────────────
-const nav = document.getElementById('site-nav');
-window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 10), { passive:true });
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+document.getElementById('trip-search-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doTripSearch(); });
+function useChip(el){ document.getElementById('trip-search-input').value=el.textContent; doTripSearch(); }
 
-// ─── ENTRY FLOW (09) ──────────────────────────────────────────────────────────
-function submitOrigin() {
-  const val = document.getElementById('origin-input').value.trim();
-  if (!val) { document.getElementById('origin-input').focus(); return; }
-  journey.origin = resolveCity(val);
+async function doTripSearch() {
+  var query = document.getElementById('trip-search-input').value.trim();
+  if (!query) return;
 
-  // Lock step 1
-  const card = document.getElementById('step1-card');
-  card.style.opacity = '.6';
-  card.querySelector('input').disabled = true;
-  card.querySelector('button').disabled = true;
+  document.getElementById('search-go-btn').disabled = true;
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('search-status').className = 'visible';
+  document.getElementById('ai-understood').className = '';
 
-  // Reveal step 2
-  const s2 = document.getElementById('step2-card');
-  s2.style.display = 'block';
-  s2.classList.add('step-enter');
-  setTimeout(() => document.getElementById('start-input').focus(), 50);
-}
-
-function submitStart() {
-  const val = document.getElementById('start-input').value.trim();
-  if (!val) { document.getElementById('start-input').focus(); return; }
-  journey.startLocation = resolveCity(val);
-
-  // Transition to builder
-  document.getElementById('entry-view').classList.add('hidden');
-  document.getElementById('builder-view').classList.remove('hidden');
-  initBuilder();
-}
-
-function backToEntry() {
-  document.getElementById('builder-view').classList.add('hidden');
-  document.getElementById('entry-view').classList.remove('hidden');
-  document.getElementById('sticky-footer').classList.remove('visible');
-  // Reset journey
-  journey.outboundFlight = null;
-  journey.segments = [];
-  journey.returnFlight = null;
-  document.getElementById('steps-feed').innerHTML = '';
-  // Re-enable step 1
-  const card = document.getElementById('step1-card');
-  card.style.opacity = '1';
-  card.querySelector('input').disabled = false;
-  card.querySelector('button').disabled = false;
-  document.getElementById('step2-card').style.display = 'none';
-  document.getElementById('origin-input').value = '';
-  document.getElementById('start-input').value = '';
-}
-
-// ─── BUILDER INIT (10) ───────────────────────────────────────────────────────
-function initBuilder() {
-  const o = journey.origin.city;
-  const s = journey.startLocation.city;
-  document.getElementById('builder-title').textContent = `${o} → ${s} and beyond`;
-  document.getElementById('builder-sub').textContent = 'Building your adventure step by step';
-  document.getElementById('sticky-footer').classList.add('visible');
-  updateFooter();
-
-  // Step 3: outbound flight if different cities
-  const sameCity = o.toLowerCase() === s.toLowerCase();
-  if (!sameCity && journey.origin.iata && journey.startLocation.iata) {
-    appendStep(renderFlightStep('outbound'));
-    loadFlights('outbound', journey.origin.iata, journey.startLocation.iata,
-      '2026-07-01', null, 'outbound-flights-list');
-  } else {
-    // Same city — skip straight to first trip
-    journey.outboundFlight = { skipped: true };
-    appendStep(renderTripSelectionStep(journey.startLocation.city, 'first'));
-  }
-}
-
-// ─── STEP RENDERING HELPERS ───────────────────────────────────────────────────
-function appendStep(html, delay = 0) {
-  const feed = document.getElementById('steps-feed');
-  const wrapper = document.createElement('div');
-  wrapper.className = 'step-enter mb-4';
-  wrapper.style.animationDelay = delay + 'ms';
-  wrapper.innerHTML = html;
-  feed.appendChild(wrapper);
-  setTimeout(() => wrapper.scrollIntoView({ behavior:'smooth', block:'nearest' }), 100);
-}
-
-function removeActiveStep(id) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.style.transition = 'opacity .2s ease, transform .2s ease';
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(-8px)';
-    setTimeout(() => el.remove(), 220);
-  }
-}
-
-// ─── RESOLVED SEGMENT CARDS ──────────────────────────────────────────────────
-function resolvedFlight(label, from, to, flight, price, isReturn = false) {
-  return `
-    <div class="flex items-center gap-3 rounded-xl px-4 py-3 mb-2" style="background:#EFF6FF;border:1px solid #BFDBFE;">
-      <div class="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style="background:#2563EB;">
-        <span class="material-symbols-outlined text-white" style="font-size:16px;">${isReturn ? 'flight_land' : 'flight_takeoff'}</span>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-semibold text-dusk" style="font-size:.85rem;">${label}</p>
-        <p style="font-size:.75rem;color:#3B82F6;">${from} → ${to} · ${flight}</p>
-      </div>
-      <p class="font-bold" style="color:#16A34A;font-size:.9rem;">$${price}</p>
-    </div>`;
-}
-
-function resolvedTripCard(tour) {
-  return `
-    <div class="flex gap-3 rounded-xl overflow-hidden mb-2" style="background:#1C1C1C;padding:8px;">
-      <div class="flex-shrink-0 overflow-hidden" style="width:110px;height:74px;border-radius:10px;">
-        <img src="${tour.image}" alt="${tour.name}" style="width:100%;height:100%;object-fit:cover;"
-             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
-      </div>
-      <div class="flex-1 min-w-0 py-1">
-        <p class="font-display font-bold text-white truncate" style="font-size:.88rem;">${tour.name}</p>
-        <p class="text-white/50" style="font-size:.72rem;">${fmtDate(tour.departure_date)} – ${fmtDate(tour.end_date)} · ${tour.duration_days} days</p>
-        <p class="text-go font-semibold" style="font-size:.8rem;margin-top:2px;">From $${tour.from_price.toLocaleString()} pp</p>
-      </div>
-      <div class="self-start p-1 rounded" style="background:rgba(255,89,0,.15);">
-        <span class="material-symbols-outlined text-go" style="font-size:16px;">check_circle</span>
-      </div>
-    </div>`;
-}
-
-// ─── OUTBOUND / RETURN FLIGHT STEP ───────────────────────────────────────────
-function renderFlightStep(type) {
-  const isReturn = type === 'return';
-  const from = isReturn ? lastTripEndCity() : journey.origin.city;
-  const to   = isReturn ? journey.origin.city : journey.startLocation.city;
-  const label = isReturn ? `Return flight back to ${to}` : `Outbound flight to ${to}`;
-  return `
-    <div id="flight-step-${type}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #BFDBFE;box-shadow:0 4px 16px rgba(0,0,0,.06);">
-      <div class="flex items-center gap-2 mb-4">
-        <div class="w-9 h-9 flex items-center justify-center rounded-full" style="background:#2563EB;">
-          <span class="material-symbols-outlined text-white" style="font-size:18px;">${isReturn ? 'flight_land' : 'flight_takeoff'}</span>
-        </div>
-        <div>
-          <p class="font-semibold text-dusk" style="font-size:.95rem;">${label}</p>
-          <p style="font-size:.75rem;color:#6B6B6B;">${from} → ${to}</p>
-        </div>
-      </div>
-      <div id="${type}-flights-list">
-        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.83rem;">
-          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
-          Searching flights…
-        </div>
-      </div>
-      <button onclick="skipFlight('${type}')"
-        class="mt-3 text-ui-grey80 hover:text-dusk transition-colors"
-        style="background:none;border:none;font-size:.8rem;font-family:inherit;cursor:pointer;text-decoration:underline;">
-        Skip — I'll arrange my own
-      </button>
-    </div>`;
-}
-
-async function loadFlights(type, originIata, destIata, date, tripBStart, listId) {
-  let flights;
   try {
-    const res = await fetch('/api/flights', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+    var res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, trips: TOURS.map(function(t){
+        return { id:t.id, title:t.name, region:t.geography, days:t.duration_days, price:t.from_price,
+          route:t.destinations.join(' → '), vibe:t.vibe,
+          dates: t.departure_date + ' to ' + t.end_date };
+      })})
+    });
+    var data = await res.json();
+
+    document.getElementById('search-status').className = '';
+    aiSummary = data.summary || '';
+    document.getElementById('ai-understood-text').textContent = aiSummary;
+    document.getElementById('ai-understood').className = 'visible';
+
+    // Use full trip objects from server directly (live TTC data).
+    // Fall back to local TOURS array only for mock/offline mode.
+    var matches = (data.matches || []).filter(Boolean).map(function(m){
+      if (m.title || m.name) {
+        return Object.assign({}, m, {
+          title:    m.title || m.name,
+          aiReason: m.aiReason || m.reason || '',
+          score:    m.score || 0,
+          photo:    m.photo || m.image || null,
+          bgColor:  m.bgColor || '#1C1C1C',
+          tags:     m.tags || [],
+        });
+      }
+      var local = TOURS.find(function(t){ return String(t.id)===String(m.id); });
+      return local ? Object.assign({}, local, { aiReason: m.reason || '', score: m.score || 0 }) : null;
+    }).filter(Boolean);
+
+    renderResults(matches);
+  } catch(e) {
+    document.getElementById('search-status').className = '';
+    // Fallback: show all tours
+    renderResults(TOURS);
+  }
+  document.getElementById('search-go-btn').disabled = false;
+}
+
+function renderResults(tours) {
+  document.getElementById('results-count').textContent = tours.length;
+  document.getElementById('results-grid').innerHTML = tours.map(resultCardHTML).join('');
+  document.getElementById('results-section').style.display = 'block';
+  updateBuildBtn();
+}
+
+function resultCardHTML(t) {
+  var words = t.name.split(' ');
+  var line1 = words[0]; var line2 = words.slice(1).join(' ');
+  var wasPrice = Math.round(t.from_price * 1.105 / 25) * 25;
+  var tagsHTML = (t.tags||[]).map(function(tag){
+    return tag==='Black Friday Sale'
+      ? '<span style="background:#FFD600;color:#111;font-size:0.58rem;font-weight:800;padding:2px 6px;border-radius:4px">'+tag+'</span>'
+      : '<span style="border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.58rem;padding:2px 6px;border-radius:4px">'+tag+'</span>';
+  }).join('');
+
+  return '<div class="result-card" id="rc-'+t.id+'" onclick="toggleTour(\''+t.id+'\')">'+
+    '<div class="rc-img" style="background:'+t.bg+'">'+
+      '<img src="'+t.image+'" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0" onerror="imgErr(this)" />'+
+      '<div class="rc-badge">originals</div>'+
+      '<div class="rc-title-overlay">'+
+        '<div class="rc-title">'+line1.toLowerCase()+'</div>'+
+        (line2?'<div class="rc-region">'+line2.toUpperCase()+'</div>':'')+''+
+      '</div>'+
+    '</div>'+
+    '<div class="rc-body">'+
+      '<div class="rc-dates">'+
+        '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+
+        fmtDate(t.departure_date)+' – '+fmtDate(t.end_date)+
+      '</div>'+
+      '<div class="rc-stats">'+
+        '<span>'+t.duration_days+' days</span>'+
+        '<span>'+t.destinations.length+' destinations</span>'+
+      '</div>'+
+      (tagsHTML?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'+tagsHTML+'</div>':'')+
+      '<div class="rc-price">$'+t.from_price.toLocaleString()+'<span>pp · Was $'+wasPrice.toLocaleString()+'</span></div>'+
+      '<button class="rc-add-btn" id="btn-'+t.id+'">+ Add to package</button>'+
+    '</div>'+
+    (t.aiReason?'<div class="ai-match-reason"><span>✦</span><span>'+t.aiReason+'</span></div>':'')+
+  '</div>';
+}
+
+function imgErr(el){ el.style.display='none'; }
+
+function toggleTour(id) {
+  var idx = selectedTours.findIndex(function(t){ return t.id===id; });
+  var tour = TOURS.find(function(t){ return t.id===id; });
+  if (!tour) return;
+
+  if (idx >= 0) {
+    selectedTours.splice(idx, 1);
+    document.getElementById('rc-'+id).classList.remove('selected');
+    document.getElementById('btn-'+id).textContent = '+ Add to package';
+    document.getElementById('btn-'+id).classList.remove('added');
+  } else {
+    selectedTours.push(tour);
+    document.getElementById('rc-'+id).classList.add('selected');
+    document.getElementById('btn-'+id).textContent = '✓ Added';
+    document.getElementById('btn-'+id).classList.add('added');
+  }
+  // Keep sorted by departure date
+  selectedTours.sort(function(a,b){ return a.departure_date.localeCompare(b.departure_date); });
+  updateBuildBtn();
+}
+
+function updateBuildBtn() {
+  var btn = document.getElementById('build-pkg-btn');
+  btn.disabled = selectedTours.length < 2;
+  btn.textContent = selectedTours.length < 2
+    ? 'Select at least 2 tours'
+    : 'Build package with '+selectedTours.length+' tours →';
+}
+
+// ── BUILD PACKAGE ─────────────────────────────────────────────────────────────
+function buildPackage() {
+  if (selectedTours.length < 2) return;
+  document.getElementById('search-screen').style.display = 'none';
+  document.getElementById('builder-screen').style.display = 'block';
+  window._preGapLoaded = false;
+
+  // Build gap objects between consecutive tours
+  gaps = [];
+  for (var i=0; i<selectedTours.length-1; i++) {
+    var curr = selectedTours[i];
+    var next = selectedTours[i+1];
+    var gapDays = diffDays(curr.end_date, next.departure_date);
+    var gap = {
+      id: 'gap-'+i,
+      idx: i,
+      fromCity: curr.destinations[curr.destinations.length-1],
+      toCity: next.destinations[0],
+      fromDate: curr.end_date,
+      toDate: next.departure_date,
+      nextSegStart: next.departure_date,
+      days: gapDays,
+      stayCity: null, // user chooses: fromCity or toCity
+      flights: null, hotels: null,
+      loadingFlights: true, loadingHotels: false,
+      selectedFlight: null, selectedHotel: null,
+    };
+    gaps.push(gap);
+    loadGapFlights(gap);
+  }
+
+  updateBuilder();
+  renderTimeline();
+}
+
+function goBack() {
+  document.getElementById('builder-screen').style.display = 'none';
+  document.getElementById('search-screen').style.display = 'block';
+}
+
+// ── GAP DATA ──────────────────────────────────────────────────────────────────
+async function loadGapFlights(gap) {
+  try {
+    var res = await fetch('/api/flights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        origin: originIata, destination: destIata,
-        departure_date: date,
-        trip_b_start_iso: tripBStart,
-        min_buffer_hours: 4, city_transfer_minutes: 120,
+        origin: toIATA(gap.fromCity),
+        destination: toIATA(gap.toCity),
+        departure_date: gap.fromDate,
+        trip_b_start_iso: gap.nextSegStart + 'T00:00:00Z',
+        min_buffer_hours: 4,
+        city_transfer_minutes: 120,
       }),
     });
-    if (!res.ok) throw new Error();
-    flights = await res.json();
-  } catch {
-    flights = mockFlights(originIata, destIata);
-  }
-
-  const list = document.getElementById(listId);
-  if (!list) return;
-
-  list.innerHTML = flights.slice(0, 4).map((f, i) => {
-    const sel = i === 0;
-    return `
-      <div onclick="selectFlightOption('${type}', this, '${f.offer_id}', ${f.price})"
-        class="flight-opt flex items-center justify-between rounded-xl p-3 mb-2"
-        style="background:#F8FAFF;border:1.5px solid ${sel?'#3B82F6':'transparent'};"
-        data-offer="${f.offer_id}" data-price="${f.price}">
-        <div class="flex items-center gap-3">
-          <span class="font-semibold px-2 py-0.5 rounded" style="background:#EFF6FF;color:#1D4ED8;font-size:.72rem;">${f.airline.length > 12 ? f.airline.slice(0,10)+'…' : f.airline}</span>
-          <div>
-            <p class="font-semibold text-dusk" style="font-size:.85rem;">${f.flight} <span class="text-green-600 font-semibold" style="font-size:.7rem;">Direct</span></p>
-            <p style="font-size:.73rem;color:#6B6B6B;">${f.departing_at} → ${f.arriving_at}</p>
-          </div>
-        </div>
-        <p class="font-extrabold" style="font-size:.95rem;color:#16A34A;">$${f.price}</p>
-      </div>`;
-  }).join('') + `
-    <button onclick="confirmFlightSelection('${type}')"
-      class="w-full py-2.5 text-white font-bold rounded-pill hover:opacity-90 mt-2 transition-opacity"
-      style="background:#FF5900;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
-      Confirm flight
-    </button>`;
-
-  // Pre-select cheapest
-  if (flights.length) {
-    if (type === 'outbound') {
-      journey._pendingOutbound = { offer_id: flights[0].offer_id, flight: flights[0].flight, airline: flights[0].airline, price: flights[0].price, from: journey.origin.city, to: journey.startLocation.city };
-    } else {
-      journey._pendingReturn = { offer_id: flights[0].offer_id, flight: flights[0].flight, airline: flights[0].airline, price: flights[0].price, from: lastTripEndCity(), to: journey.origin.city };
-    }
-    updateFooter();
-  }
+    var data = await res.json();
+    gap.flights = data.offers || [];
+    gap.direct_possible = data.direct_possible;
+    if (gap.flights.length) gap.selectedFlight = gap.flights[0];
+  } catch(e) { gap.flights = []; }
+  gap.loadingFlights = false;
+  renderTimeline();
+  updateBuilder();
 }
 
-function selectFlightOption(type, el, offerId, price) {
-  const list = el.closest('[id$="-flights-list"]') || el.parentElement;
-  list.querySelectorAll('.flight-opt').forEach(opt => opt.style.borderColor = 'transparent');
-  el.style.borderColor = '#3B82F6';
-  const flightEl = el.querySelector('.font-semibold');
-  const flightCode = flightEl ? flightEl.textContent.split(' ')[0] : '';
-  const airline = el.querySelector('[style*="#EFF6FF"]')?.textContent?.trim() || '';
-  if (type === 'outbound') {
-    journey._pendingOutbound = { offer_id: offerId, flight: flightCode, airline, price, from: journey.origin.city, to: journey.startLocation.city };
-  } else {
-    journey._pendingReturn = { offer_id: offerId, flight: flightCode, airline, price, from: lastTripEndCity(), to: journey.origin.city };
-  }
-  updateFooter();
-}
+async function loadGapHotels(gap) {
+  if (!gap.stayCity) return;
+  gap.loadingHotels = true;
+  gap.hotels = null;
+  renderTimeline();
 
-function confirmFlightSelection(type) {
-  if (type === 'outbound') {
-    journey.outboundFlight = journey._pendingOutbound || { skipped: true };
-    removeActiveStep('flight-step-outbound');
-    if (journey.outboundFlight && !journey.outboundFlight.skipped) {
-      setTimeout(() => appendStep(resolvedFlight('Outbound flight', journey.outboundFlight.from, journey.outboundFlight.to, journey.outboundFlight.flight, journey.outboundFlight.price)), 250);
-    }
-    setTimeout(() => appendStep(renderTripSelectionStep(journey.startLocation.city, 'first')), 350);
-  } else {
-    journey.returnFlight = journey._pendingReturn || { skipped: true };
-    removeActiveStep('flight-step-return');
-    if (journey.returnFlight && !journey.returnFlight.skipped) {
-      setTimeout(() => appendStep(resolvedFlight('Return flight', journey.returnFlight.from, journey.returnFlight.to, journey.returnFlight.flight, journey.returnFlight.price, true)), 250);
-    }
-    setTimeout(() => renderDoneState(), 350);
-  }
-  updateFooter();
-}
-
-function skipFlight(type) {
-  if (type === 'outbound') {
-    journey.outboundFlight = { skipped: true };
-    removeActiveStep('flight-step-outbound');
-    setTimeout(() => appendStep(renderTripSelectionStep(journey.startLocation.city, 'first')), 300);
-  } else {
-    journey.returnFlight = { skipped: true };
-    removeActiveStep('flight-step-return');
-    setTimeout(() => renderDoneState(), 300);
-  }
-  updateFooter();
-}
-
-// ─── TRIP SELECTION STEP ──────────────────────────────────────────────────────
-function renderTripSelectionStep(fromCity, role) {
-  const label = role === 'first'
-    ? `Contiki trips starting in ${fromCity}`
-    : `Trips you can reach from ${fromCity}`;
-  const trips = role === 'first'
-    ? getTripsFromCity(fromCity)
-    : getReachableTrips(fromCity);
-
-  const stepId = `trip-selection-${Date.now()}`;
-  return `
-    <div id="${stepId}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #E5E0D8;box-shadow:0 4px 16px rgba(0,0,0,.06);">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="material-symbols-outlined text-go" style="font-size:22px;">map</span>
-        <p class="font-semibold text-dusk" style="font-size:.95rem;">${label}</p>
-      </div>
-      <p class="text-ui-grey80 mb-4" style="font-size:.8rem;">Select one tour to add to your adventure.</p>
-      <div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
-        ${trips.map(t => renderPickCard(t, stepId)).join('')}
-      </div>
-      ${trips.length === 0 ? `<p class="text-ui-grey80 text-sm">No tours found departing from ${fromCity} — try a different start city.</p>` : ''}
-    </div>`;
-}
-
-function renderPickCard(trip, stepId) {
-  const words = trip.name.split(' ');
-  const line1 = words[0].toLowerCase();
-  const line2 = words.slice(1).join(' ').toUpperCase();
-  const tagHtml = trip.tags.slice(0,2).map(t => {
-    if (t==='sale' || t==='hot') return `<span style="background:#FFE100;color:#0A0C0A;font-weight:800;font-size:.55rem;padding:2px 7px;border-radius:4px;">${t==='sale'?'Sale':'Hot'}</span>`;
-    return `<span style="border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.65);font-size:.55rem;padding:2px 7px;border-radius:4px;">${t==='new'?'New':t==='bestseller'?'Bestseller':t}</span>`;
-  }).join('');
-  const alreadyAdded = journey.segments.some(s => s.type === 'trip' && s.tour.id === trip.id);
-  return `
-    <div class="rounded-card overflow-hidden" style="background:#1C1C1C;${alreadyAdded?'opacity:.4;pointer-events:none;':''}">
-      <div class="relative overflow-hidden" style="border-radius:12px 12px 0 0;height:160px;">
-        <img src="${trip.image}" alt="${trip.name}" style="width:100%;height:100%;object-fit:cover;"
-             onerror="this.parentElement.style.background='#2a2a2a';this.style.display='none'" />
-        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.78),transparent 60%);"></div>
-        ${trip.is_original ? `<div class="absolute top-2 left-1/2 -translate-x-1/2 font-hero italic font-extrabold text-white" style="background:#FF5900;font-size:.6rem;padding:3px 12px;border-radius:5px;white-space:nowrap;">originals</div>` : ''}
-        <div class="absolute bottom-2 left-3 right-3">
-          <div class="font-hero font-extrabold text-white" style="font-size:1.2rem;line-height:.95;">${line1}</div>
-          <div class="font-display font-bold text-white/75 uppercase" style="font-size:.5rem;letter-spacing:.2em;margin-top:2px;">${line2}</div>
-        </div>
-        <div class="absolute top-2 right-2 px-2 py-0.5 rounded-lg text-white font-semibold" style="background:rgba(0,0,0,.6);font-size:.65rem;">
-          ${fmtDate(trip.departure_date)}
-        </div>
-      </div>
-      <div style="padding:8px 12px 12px;">
-        ${trip.tags.length ? `<div style="display:flex;gap:5px;margin-bottom:5px;">${tagHtml}</div>` : ''}
-        <div class="flex items-center gap-2 text-white/50 mb-2" style="font-size:.7rem;">
-          <span><span class="material-symbols-outlined" style="font-size:12px;color:#FF5900;">calendar_today</span> ${trip.duration_days}d</span>
-          <span><span class="material-symbols-outlined" style="font-size:12px;color:#FF5900;">public</span> ${trip.destinations.length} stops</span>
-        </div>
-        <div class="flex items-baseline gap-1 mb-2">
-          <span class="text-white/40" style="font-size:.72rem;">From</span>
-          <span class="font-extrabold text-white" style="font-size:1.1rem;">$${trip.from_price.toLocaleString()}</span>
-          ${trip.was_price ? `<span style="text-decoration:line-through;color:rgba(255,255,255,.3);font-size:.72rem;">$${trip.was_price.toLocaleString()}</span>` : ''}
-        </div>
-        <button onclick="pickTrip('${trip.id}', '${stepId}')"
-          class="w-full py-2 text-white font-bold hover:opacity-90 transition-opacity"
-          style="background:#FF5900;border:none;border-radius:100px;font-size:.82rem;font-family:inherit;cursor:pointer;">
-          ${alreadyAdded ? '✓ Added' : 'Select this trip →'}
-        </button>
-      </div>
-    </div>`;
-}
-
-function pickTrip(tripId, stepId) {
-  const trip = TRIPS.find(t => t.id === tripId);
-  if (!trip) return;
-
-  const prevTrip = lastTripSegment();
-
-  // Remove selection step
-  const stepEl = document.getElementById(stepId);
-  if (stepEl) {
-    stepEl.style.transition = 'opacity .2s';
-    stepEl.style.opacity = '0';
-    setTimeout(() => stepEl.remove(), 220);
-  }
-
-  setTimeout(() => {
-    // If there's a previous trip, insert gap first
-    if (prevTrip) {
-      const gapId = `gap-${prevTrip.tour.id}__${trip.id}`;
-      appendStep(renderGapCard(gapId, prevTrip.tour, trip));
-      loadGapFlights(gapId, prevTrip.tour, trip);
-      loadGapHotels(gapId, trip);
-    }
-
-    // Add trip to journey
-    journey.segments.push({ type: 'trip', tour: trip });
-
-    // Resolved trip card
-    appendStep(resolvedTripCard(trip), prevTrip ? 100 : 0);
-
-    // "Add another?" prompt
-    setTimeout(() => appendStep(renderAddAnotherPrompt(trip)), 200);
-
-    updateFooter();
-    updateBuilderTitle();
-  }, 250);
-}
-
-// ─── GAP CARD (11) ───────────────────────────────────────────────────────────
-function renderGapCard(gapId, tourA, tourB) {
-  const from = tourA.end_city;
-  const to   = tourB.departure_city;
-  const fromDate = tourA.end_date;
-  const toDate   = tourB.departure_date;
-  const days = Math.max(1, Math.round((new Date(toDate) - new Date(fromDate)) / 86400000));
-  return `
-    <div id="${gapId}" class="rounded-[14px] p-4 mb-1" style="border:1.5px dashed #BFDBFE;background:#EFF6FF;">
-      <div class="flex items-center gap-2 mb-3">
-        <div class="w-8 h-8 flex items-center justify-center rounded-full" style="background:#DBEAFE;">
-          <span class="material-symbols-outlined" style="font-size:16px;color:#2563EB;">connecting_airports</span>
-        </div>
-        <div>
-          <p class="font-semibold" style="font-size:.88rem;color:#1D4ED8;">Connecting · ${from} → ${to}</p>
-          <p style="font-size:.72rem;color:#3B82F6;">${fmtDate(fromDate)} – ${fmtDate(toDate)} · ${days} day${days!==1?'s':''} gap</p>
-        </div>
-      </div>
-
-      <!-- Flight section -->
-      <p class="font-bold mb-2" style="font-size:.72rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">✈ Feasible flight</p>
-      <div id="${gapId}-flights">
-        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.82rem;">
-          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
-          Checking flights ${from} → ${to}…
-        </div>
-      </div>
-
-      <!-- Hotels section -->
-      <p class="font-bold mt-3 mb-2" style="font-size:.72rem;color:#374151;text-transform:uppercase;letter-spacing:.06em;">🏨 Hotels near ${to} (your next start)</p>
-      <div id="${gapId}-hotels">
-        <div class="flex items-center gap-2 text-ui-grey80" style="font-size:.82rem;">
-          <div class="dot-pulse flex gap-1"><span></span><span></span><span></span></div>
-          Finding hotels near ${to}…
-        </div>
-      </div>
-    </div>`;
-}
-
-async function loadGapFlights(gapId, tourA, tourB) {
-  const originIata = tourA.end_iata;
-  const destIata   = tourB.departure_iata;
-  const date       = tourA.end_date;
-  const tripBStart = tourB.departure_date + 'T00:00:00Z';
-
-  let flights;
   try {
-    const res = await fetch('/api/flights', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ origin: originIata, destination: destIata,
-        departure_date: date, trip_b_start_iso: tripBStart,
-        min_buffer_hours: 4, city_transfer_minutes: 120 }),
+    var res = await fetch('/api/hotels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: gap.stayCity,
+        check_in: gap.fromDate,
+        check_out: gap.toDate,
+      }),
     });
-    if (!res.ok) throw new Error();
-    flights = await res.json();
-  } catch {
-    flights = mockFlights(originIata, destIata);
-  }
-
-  const container = document.getElementById(`${gapId}-flights`);
-  if (!container) return;
-
-  if (!flights.length) {
-    container.innerHTML = `<p style="font-size:.8rem;color:#6B6B6B;">No feasible direct flight found — you may need to adjust dates.</p>`;
-    return;
-  }
-
-  // Init gap segment in journey
-  const gapSeg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
-  const cheapest = flights[0];
-  if (gapSeg) {
-    gapSeg.selectedFlight = cheapest;
-  } else {
-    journey.segments.push({ type:'gap', gapId, tourAId: tourA.id, tourBId: tourB.id,
-      fromCity: tourA.end_city, toCity: tourB.departure_city,
-      fromDate: tourA.end_date, toDate: tourB.departure_date,
-      selectedFlight: cheapest, selectedHotel: null });
-  }
-
-  container.innerHTML = flights.slice(0, 3).map((f, i) => {
-    const sel = i === 0;
-    return `
-      <div onclick="selectGapFlight('${gapId}', this, ${JSON.stringify(f).replace(/"/g,'&quot;')})"
-        class="flight-opt flex items-center justify-between rounded-xl p-3 mb-1"
-        style="background:white;border:1.5px solid ${sel?'#3B82F6':'transparent'};">
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 rounded font-semibold" style="background:#EFF6FF;color:#1D4ED8;font-size:.7rem;">${f.airline.length > 10 ? f.airline.slice(0,8)+'…' : f.airline}</span>
-          <div>
-            <p class="font-semibold text-dusk" style="font-size:.82rem;">${f.flight} <span style="color:#16A34A;font-size:.68rem;">Direct</span></p>
-            <p style="font-size:.7rem;color:#6B6B6B;">${f.departing_at} → ${f.arriving_at}</p>
-          </div>
-        </div>
-        <p class="font-extrabold" style="font-size:.9rem;color:#16A34A;">$${f.price}</p>
-      </div>`;
-  }).join('');
-
-  updateFooter();
+    var data = await res.json();
+    gap.hotels = data.hotels || [];
+    if (gap.hotels.length) gap.selectedHotel = gap.hotels[0];
+  } catch(e) { gap.hotels = []; }
+  gap.loadingHotels = false;
+  renderTimeline();
+  updateBuilder();
 }
 
-function selectGapFlight(gapId, el, flight) {
-  el.parentElement.querySelectorAll('.flight-opt').forEach(o => o.style.borderColor = 'transparent');
-  el.style.borderColor = '#3B82F6';
-  const seg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
-  if (seg) { seg.selectedFlight = flight; updateFooter(); }
-}
+// ── RENDER TIMELINE ───────────────────────────────────────────────────────────
+function renderTimeline() {
+  var track = document.getElementById('tl-track');
+  var html = '';
 
-async function loadGapHotels(gapId, tourB) {
-  const city = tourB.departure_city;
-  const cityData = resolveCity(city);
-  const checkIn  = tourB.departure_date;
-  const checkOut = tourB.departure_date; // indicative 1 night
-
-  let hotels;
-  try {
-    const body = { location: city, check_in: checkIn, check_out: checkOut };
-    if (cityData.lat) { body.lat = cityData.lat; body.lng = cityData.lng; body.radius_meters = 5000; }
-    const res = await fetch('/api/hotels', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    hotels = data.hotels || data; // handle both old array and new { hotels: [] }
-  } catch {
-    hotels = mockHotels(city);
-  }
-
-  const container = document.getElementById(`${gapId}-hotels`);
-  if (!container) return;
-
-  if (!hotels.length) {
-    container.innerHTML = `<p style="font-size:.8rem;color:#6B6B6B;">No hotels found near ${city}.</p>`;
-    return;
-  }
-
-  // Store first as selected
-  const seg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
-  if (seg && !seg.selectedHotel) seg.selectedHotel = hotels[0];
-
-  container.innerHTML = hotels.slice(0, 3).map((h, i) => {
-    const sel = i === 0;
-    const stars = h.rating ? '★'.repeat(Math.min(5, Math.round(h.rating))) : '';
-    const priceStr = h.price_per_night ? `$${h.price_per_night}/nt` : '';
-    return `
-      <div onclick="selectGapHotel('${gapId}', this, '${h.id}')"
-        class="hotel-opt flex items-center justify-between rounded-xl p-3 mb-1"
-        style="background:white;border:1.5px solid ${sel?'#FF5900':'transparent'};">
-        <div class="flex items-center gap-2">
-          <div class="flex items-center justify-center w-7 h-7 rounded-lg" style="background:#FFF7ED;font-size:.9rem;">🏨</div>
-          <div>
-            <p class="font-semibold text-dusk" style="font-size:.82rem;">${h.name}</p>
-            <p style="font-size:.7rem;color:#6B6B6B;">${h.cancellation === 'FREE_CANCELLATION' ? '✓ Free cancel · ' : ''}${stars}</p>
-          </div>
-        </div>
-        <p class="font-bold text-go" style="font-size:.85rem;">${priceStr}</p>
-      </div>`;
-  }).join('');
-}
-
-function selectGapHotel(gapId, el, hotelId) {
-  el.parentElement.querySelectorAll('.hotel-opt').forEach(o => o.style.borderColor = 'transparent');
-  el.style.borderColor = '#FF5900';
-  const seg = journey.segments.find(s => s.type === 'gap' && s.gapId === gapId);
-  if (seg) seg.selectedHotel = { id: hotelId };
-}
-
-// ─── ADD ANOTHER / GOING HOME PROMPTS ────────────────────────────────────────
-function renderAddAnotherPrompt(lastTour) {
-  const promptId = `add-another-${Date.now()}`;
-  return `
-    <div id="${promptId}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #E5E0D8;box-shadow:0 4px 16px rgba(0,0,0,.06);">
-      <p class="font-semibold text-dusk mb-1" style="font-size:.95rem;">Add another trip?</p>
-      <p class="text-ui-grey80 mb-4" style="font-size:.8rem;">Your last trip ends in <strong>${lastTour.end_city}</strong>. We'll find tours reachable from there.</p>
-      <div class="flex gap-3">
-        <button onclick="addAnotherTrip('${lastTour.id}', '${promptId}')"
-          class="flex-1 py-2.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity"
-          style="background:#FF5900;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
-          Yes, add another →
-        </button>
-        <button onclick="doneAdding('${promptId}')"
-          class="flex-1 py-2.5 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill"
-          style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.88rem;cursor:pointer;">
-          No, I'm done
-        </button>
-      </div>
-    </div>`;
-}
-
-function addAnotherTrip(lastTourId, promptId) {
-  const lastTour = TRIPS.find(t => t.id === lastTourId);
-  removeActiveStep(promptId);
-  setTimeout(() => appendStep(renderTripSelectionStep(lastTour.end_city, 'next')), 300);
-}
-
-function doneAdding(promptId) {
-  removeActiveStep(promptId);
-  setTimeout(() => appendStep(renderGoingHomePrompt()), 300);
-}
-
-function renderGoingHomePrompt() {
-  const promptId = `going-home-${Date.now()}`;
-  const last = lastTripSegment();
-  return `
-    <div id="${promptId}" class="rounded-[14px] p-5" style="background:white;border:1.5px solid #E5E0D8;box-shadow:0 4px 16px rgba(0,0,0,.06);">
-      <p class="font-semibold text-dusk mb-1" style="font-size:.95rem;">Are you heading home after?</p>
-      <p class="text-ui-grey80 mb-4" style="font-size:.8rem;">We'll find a return flight from <strong>${last ? last.tour.end_city : '...'}</strong> back to <strong>${journey.origin.city}</strong>.</p>
-      <div class="flex gap-3">
-        <button onclick="goingHome('${promptId}')"
-          class="flex-1 py-2.5 text-white font-bold rounded-pill hover:opacity-90 transition-opacity"
-          style="background:#FF5900;border:none;font-family:inherit;font-size:.88rem;cursor:pointer;">
-          Yes, find return flight
-        </button>
-        <button onclick="notGoingHome('${promptId}')"
-          class="flex-1 py-2.5 font-semibold text-dusk hover:bg-black/5 transition-colors rounded-pill"
-          style="background:transparent;border:1.5px solid #E5E0D8;font-family:inherit;font-size:.88rem;cursor:pointer;">
-          No, ending here
-        </button>
-      </div>
-    </div>`;
-}
-
-function goingHome(promptId) {
-  removeActiveStep(promptId);
-  const last = lastTripSegment();
-  setTimeout(() => {
-    appendStep(renderFlightStep('return'));
-    const endIata = last ? last.tour.end_iata : null;
-    if (endIata && journey.origin.iata) {
-      loadFlights('return', endIata, journey.origin.iata,
-        last.tour.end_date, null, 'return-flights-list');
+  for (var i=0; i<selectedTours.length; i++) {
+    var tour = selectedTours[i];
+    html += tourSegHTML(tour, i);
+    if (i < selectedTours.length-1 && gaps[i]) {
+      html += gapSegHTML(gaps[i]);
     }
-  }, 300);
-}
-
-function notGoingHome(promptId) {
-  removeActiveStep(promptId);
-  journey.returnFlight = { skipped: true };
-  setTimeout(() => renderDoneState(), 300);
-}
-
-function renderDoneState() {
-  appendStep(`
-    <div class="rounded-[14px] p-6 text-center" style="background:#1C4A3D;">
-      <div class="text-4xl mb-3">🎉</div>
-      <p class="font-hero italic font-extrabold text-go mb-1" style="font-size:1.4rem;">Your adventure is ready!</p>
-      <p class="text-white/60 mb-5" style="font-size:.85rem;">Review and save your full package below.</p>
-      <button onclick="openPackageModal()"
-        class="px-8 py-3 text-wander font-bold rounded-pill hover:opacity-90 transition-opacity"
-        style="background:#FFFAF2;border:none;font-family:inherit;font-size:.95rem;cursor:pointer;">
-        View &amp; save package →
-      </button>
-    </div>`);
-  document.getElementById('view-pkg-btn').style.display = 'flex';
-  updateFooter();
-}
-
-// ─── PACKAGE MODAL (12) ──────────────────────────────────────────────────────
-function openPackageModal() {
-  const trips = journey.segments.filter(s => s.type === 'trip').map(s => s.tour);
-  const gaps  = journey.segments.filter(s => s.type === 'gap');
-  const totalDays = trips.reduce((s, t) => s + t.duration_days, 0);
-  let total = trips.reduce((s, t) => s + t.from_price, 0);
-  let flightCount = 0;
-
-  if (journey.outboundFlight && !journey.outboundFlight.skipped) {
-    total += journey.outboundFlight.price; flightCount++;
-  }
-  gaps.forEach(g => {
-    if (g.selectedFlight?.price) { total += g.selectedFlight.price; flightCount++; }
-  });
-  if (journey.returnFlight && !journey.returnFlight.skipped) {
-    total += journey.returnFlight.price; flightCount++;
   }
 
-  const cities = [journey.origin?.city];
-  trips.forEach(t => { if (t.departure_city !== cities[cities.length-1]) cities.push(t.departure_city); });
-  if (trips.length) cities.push(trips[trips.length-1].end_city);
-  if (journey.returnFlight && !journey.returnFlight.skipped) cities.push(journey.origin?.city);
-  const route = cities.filter(Boolean).join(' → ');
+  track.innerHTML = html;
+}
 
-  document.getElementById('pkg-route').textContent = route;
-  document.getElementById('pkg-days').textContent = totalDays;
-  document.getElementById('pkg-tours-count').textContent = trips.length;
-  document.getElementById('pkg-flights-count').textContent = flightCount;
-  document.getElementById('pkg-total-top').textContent = `$${total.toLocaleString()}`;
-  document.getElementById('pkg-total').textContent = `$${total.toLocaleString()} pp`;
+function tourSegHTML(t, i) {
+  return '<div class="tl-seg"><div class="tl-dot"></div>'+
+    '<div class="tl-tour">'+
+      '<div class="tl-tour-img" style="background:'+t.bg+'">'+
+        '<img src="'+t.image+'" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block" onerror="imgErr(this)" />'+
+        '<div class="tl-tour-badge">originals</div>'+
+      '</div>'+
+      '<div class="tl-tour-body">'+
+        '<div>'+
+          '<div class="tl-tour-label">Contiki Tour · '+t.geography+'</div>'+
+          '<div class="tl-tour-name">'+t.name+'</div>'+
+        '</div>'+
+        '<div class="tl-tour-meta">'+
+          '<span><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+fmtDate(t.departure_date)+' – '+fmtDate(t.end_date)+'</span>'+
+          '<span style="color:var(--orange);font-weight:700">$'+t.from_price.toLocaleString()+' pp</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="tl-tour-actions">'+
+        '<button class="tl-del" onclick="removeTour(\''+t.id+'\')">✕</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
 
-  let items = '';
+function gapSegHTML(gap) {
+  var flightsHTML = '';
+  var hotelsHTML = '';
+  var staySelectorHTML = '';
 
-  // Outbound flight
-  if (journey.outboundFlight && !journey.outboundFlight.skipped) {
-    const f = journey.outboundFlight;
-    items += pkgRow('✈️', '#EFF6FF', `Outbound flight · ${f.from} → ${f.to}`, f.flight, `$${f.price}`, 'price');
+  // Flight section
+  if (gap.loadingFlights) {
+    flightsHTML = '<div class="loading-row"><div class="spin"></div>Searching flights '+gap.fromCity+' → '+gap.toCity+'…</div>';
+  } else if (gap.flights && gap.flights.length) {
+    flightsHTML = '<div class="gap-section-label">'+
+      '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-7.73-7.73 2 2 0 011.72-2.18h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 8.91"/></svg>'+
+      'Available flights</div>'+
+      gap.flights.map(function(f, fi){
+        var sel = gap.selectedFlight && gap.selectedFlight.offer_id===f.offer_id;
+        var dep = f.departing_at ? f.departing_at.replace('T',' ').slice(0,16) : '';
+        var arr = f.arriving_at ? f.arriving_at.replace('T',' ').slice(0,16) : '';
+        return '<div class="flight-opt'+(sel?' sel':'')+'" onclick="selFlight('+gap.idx+','+fi+')">'+
+          '<div class="flight-logo">'+(f.flight||'FL').slice(0,2)+'</div>'+
+          '<div class="flight-info">'+
+            '<div class="flight-num">'+(f.flight||f.airline||'Flight')+'<span class="direct-badge">Direct</span></div>'+
+            '<div class="flight-times">'+dep+' → '+arr+'</div>'+
+          '</div>'+
+          '<div class="flight-price-tag">$'+Math.round(f.price||0)+'</div>'+
+        '</div>';
+      }).join('');
+  } else if (!gap.loadingFlights) {
+    flightsHTML = '<div class="gap-section-label">✈️ Flights</div><p class="no-results">No direct flights found for these dates.</p>';
   }
 
-  // Trips and gaps in order
-  for (let i = 0; i < trips.length; i++) {
-    const t = trips[i];
-    items += pkgRow('🗺️', '#1C1C1C', t.name, `${fmtDate(t.departure_date)} – ${fmtDate(t.end_date)}`, `$${t.from_price.toLocaleString()}`, 'price', true);
+  // Stay city selector — user picks where to stay during gap
+  if (gap.days > 0) {
+    staySelectorHTML = '<div class="gap-section-label" style="margin-top:14px">🏨 Where would you like to stay during the gap?</div>'+
+      '<div class="stay-selector">'+
+        '<div class="stay-btn'+(gap.stayCity===gap.fromCity?' active':'')+'" onclick="setStayCity('+gap.idx+',\''+gap.fromCity+'\')">'+
+          '📍 '+gap.fromCity+'<br><span style="font-size:0.65rem;font-weight:400;opacity:0.7">End of Tour '+(gap.idx+1)+'</span>'+
+        '</div>'+
+        '<div class="stay-btn'+(gap.stayCity===gap.toCity?' active':'')+'" onclick="setStayCity('+gap.idx+',\''+gap.toCity+'\')">'+
+          '📍 '+gap.toCity+'<br><span style="font-size:0.65rem;font-weight:400;opacity:0.7">Start of Tour '+(gap.idx+2)+'</span>'+
+        '</div>'+
+      '</div>';
+  }
 
-    // Gap after this trip (before next)
-    if (i < trips.length - 1) {
-      const gap = gaps.find(g => g.tourAId === t.id && g.tourBId === trips[i+1].id);
-      if (gap?.selectedFlight?.price) {
-        items += pkgRow('✈️', '#EFF6FF', `Connection flight · ${gap.fromCity} → ${gap.toCity}`, `${gap.selectedFlight.flight || 'Direct'}`, `$${gap.selectedFlight.price}`, 'price');
+  // Hotels section
+  if (gap.stayCity) {
+    if (gap.loadingHotels) {
+      hotelsHTML = '<div class="loading-row"><div class="spin"></div>Finding hotels near '+gap.stayCity+'…</div>';
+    } else if (gap.hotels && gap.hotels.length) {
+      hotelsHTML = '<div class="gap-section-label">Hotels near '+gap.stayCity+'</div>'+
+        gap.hotels.map(function(h, hi){
+          var sel = gap.selectedHotel && gap.selectedHotel.id===h.id;
+          var stars = h.price_level ? '£'.repeat(Math.min(h.price_level,4)) : '';
+          return '<div class="hotel-opt'+(sel?' sel':'')+'" onclick="selHotel('+gap.idx+','+hi+')">'+
+            '<div class="hotel-thumb">🏨</div>'+
+            '<div class="hotel-info">'+
+              '<div class="hotel-name">'+h.name+'</div>'+
+              '<div class="hotel-addr">'+(h.address||'')+'</div>'+
+              '<div class="hotel-rating">'+(h.rating ? h.rating+' ★' : '')+' '+stars+(h.reviews?' · '+(h.reviews>=1000?(h.reviews/1000).toFixed(1)+'k':h.reviews)+' reviews':'')+'</div>'+
+            '</div>'+
+            (h.maps_url && h.maps_url!=='#' ? '<a href="'+h.maps_url+'" target="_blank" class="maps-link" onclick="event.stopPropagation()">View →</a>' : '')+
+          '</div>';
+        }).join('');
+    } else if (!gap.loadingHotels) {
+      hotelsHTML = '<p class="no-results">No hotels found. Try the other city.</p>';
+    }
+  }
+
+  return '<div class="tl-seg" id="'+gap.id+'"><div class="tl-dot gap-d"></div>'+
+    '<div class="tl-gap">'+
+      '<div class="tl-gap-header">'+
+        '<div class="tl-gap-icon">✈</div>'+
+        '<div>'+
+          '<div class="tl-gap-title">'+gap.days+'-day gap · '+gap.fromCity+' → '+gap.toCity+'</div>'+
+          '<div class="tl-gap-sub">'+fmtDate(gap.fromDate)+' – '+fmtDate(gap.toDate)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="tl-gap-body">'+flightsHTML+staySelectorHTML+hotelsHTML+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────────────
+function selFlight(gapIdx, flightIdx) {
+  var gap = gaps[gapIdx];
+  if (gap && gap.flights) { gap.selectedFlight = gap.flights[flightIdx]; renderTimeline(); updateBuilder(); }
+}
+
+function selHotel(gapIdx, hotelIdx) {
+  var gap = gaps[gapIdx];
+  if (gap && gap.hotels) { gap.selectedHotel = gap.hotels[hotelIdx]; renderTimeline(); updateBuilder(); }
+}
+
+function setStayCity(gapIdx, city) {
+  var gap = gaps[gapIdx];
+  if (!gap) return;
+  gap.stayCity = city;
+  gap.hotels = null;
+  gap.selectedHotel = null;
+  renderTimeline();
+  loadGapHotels(gap);
+}
+
+function removeTour(id) {
+  selectedTours = selectedTours.filter(function(t){ return t.id!==id; });
+  if (selectedTours.length < 2) { goBack(); return; }
+  // Rebuild gaps
+  gaps = [];
+  for (var i=0; i<selectedTours.length-1; i++) {
+    var curr = selectedTours[i]; var next = selectedTours[i+1];
+    var gap = {
+      id:'gap-'+i, idx:i,
+      fromCity: curr.destinations[curr.destinations.length-1],
+      toCity: next.destinations[0],
+      fromDate: curr.end_date, toDate: next.departure_date,
+      nextSegStart: next.departure_date,
+      days: diffDays(curr.end_date, next.departure_date),
+      stayCity: null, flights:null, hotels:null,
+      loadingFlights:true, loadingHotels:false,
+      selectedFlight:null, selectedHotel:null,
+    };
+    gaps.push(gap);
+    loadGapFlights(gap);
+  }
+  updateBuilder();
+  renderTimeline();
+}
+
+// ── BUILDER HEADER + FOOTER ───────────────────────────────────────────────────
+function updateBuilder() {
+  var totalDays = selectedTours.reduce(function(n,t){ return n+t.duration_days; },0);
+  var tourCost = selectedTours.reduce(function(n,t){ return n+t.from_price; },0);
+  var flightCost = gaps.filter(function(g){ return g.selectedFlight; }).reduce(function(n,g){ return n+Math.round(g.selectedFlight.price||0); },0);
+
+  document.getElementById('stat-tours').textContent = selectedTours.length;
+  document.getElementById('stat-days').textContent = totalDays;
+  document.getElementById('stat-cost').textContent = '$'+(tourCost+flightCost).toLocaleString();
+  document.getElementById('pkg-footer').className = 'pkg-footer show';
+
+  var cities = selectedTours.map(function(t){ return t.geography; }).join(' + ');
+  document.getElementById('builder-title').textContent = cities;
+  document.getElementById('builder-sub').textContent =
+    selectedTours[0].departure_date.slice(0,7).replace('-','/') + ' – ' +
+    selectedTours[selectedTours.length-1].end_date.slice(0,7).replace('-','/');
+}
+
+// ── PACKAGE MODAL ─────────────────────────────────────────────────────────────
+function openPkgModal() {
+  var totalDays = selectedTours.reduce(function(n,t){ return n+t.duration_days; },0);
+  var tourCost = selectedTours.reduce(function(n,t){ return n+t.from_price; },0);
+  var flightCost = gaps.filter(function(g){ return g.selectedFlight; }).reduce(function(n,g){ return n+Math.round(g.selectedFlight.price||0); },0);
+  var total = tourCost + flightCost;
+
+  var itemsHTML = '';
+
+  for (var i=0; i<selectedTours.length; i++) {
+    var t = selectedTours[i];
+    itemsHTML += '<div class="pkg-item">'+
+      '<div class="pkg-item-icon" style="background:#1E1E1E;color:white">🗺️</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="pkg-item-label">Contiki Tour · '+t.geography+'</div>'+
+        '<div class="pkg-item-name">'+t.name+'</div>'+
+        '<div class="pkg-item-detail">'+fmtDate(t.departure_date)+' – '+fmtDate(t.end_date)+' · '+t.duration_days+' days</div>'+
+      '</div>'+
+      '<div class="pkg-item-price">$'+t.from_price.toLocaleString()+'</div>'+
+    '</div>';
+
+    if (i < selectedTours.length-1 && gaps[i]) {
+      var g = gaps[i];
+      if (g.selectedFlight) {
+        itemsHTML += '<div class="pkg-item">'+
+          '<div class="pkg-item-icon" style="background:#EFF6FF;color:#2563EB">✈️</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div class="pkg-item-label">Flight · '+g.fromCity+' → '+g.toCity+'</div>'+
+            '<div class="pkg-item-name">'+(g.selectedFlight.flight||g.selectedFlight.airline||'Flight')+'</div>'+
+            '<div class="pkg-item-detail">'+fmtDate(g.fromDate)+(g.selectedFlight._mock?' · Subject to availability':'')+'</div>'+
+          '</div>'+
+          '<div class="pkg-item-price">$'+Math.round(g.selectedFlight.price)+'</div>'+
+        '</div>';
       }
-      if (gap?.selectedHotel) {
-        items += pkgRow('🏨', '#FFF7ED', `Hotel near ${gap.toCity}`, `${gap.fromDate ? Math.max(1, Math.round((new Date(gap.toDate) - new Date(gap.fromDate)) / 86400000)) : 1} night(s) · indicative`, '—', 'muted');
+      if (g.selectedHotel && g.stayCity) {
+        itemsHTML += '<div class="pkg-item">'+
+          '<div class="pkg-item-icon" style="background:var(--orange-soft);color:var(--orange)">🏨</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div class="pkg-item-label">Hotel · '+g.stayCity+'</div>'+
+            '<div class="pkg-item-name">'+g.selectedHotel.name+'</div>'+
+            '<div class="pkg-item-detail">'+fmtDate(g.fromDate)+' – '+fmtDate(g.toDate)+' · '+g.days+' nights</div>'+
+          '</div>'+
+          '<div class="pkg-item-price">—</div>'+
+        '</div>';
       }
     }
   }
 
-  // Return flight
-  if (journey.returnFlight && !journey.returnFlight.skipped) {
-    const f = journey.returnFlight;
-    items += pkgRow('✈️', '#EFF6FF', `Return flight · ${f.from} → ${f.to}`, f.flight, `$${f.price}`, 'price');
-  }
+  document.getElementById('pkg-box').innerHTML =
+    '<div class="pkg-hero">'+
+      '<div class="pkg-hero-title">Your package</div>'+
+      '<div class="pkg-hero-sub">'+selectedTours.length+' Contiki tours · '+gaps.filter(function(g){return g.selectedFlight;}).length+' flights included</div>'+
+      '<div class="pkg-hero-stats">'+
+        '<div><div class="pkg-hs-label">Total days</div><div class="pkg-hs-val">'+totalDays+'</div></div>'+
+        '<div><div class="pkg-hs-label">Tours</div><div class="pkg-hs-val">'+selectedTours.length+'</div></div>'+
+        '<div><div class="pkg-hs-label">Est. cost</div><div class="pkg-hs-val">$'+total.toLocaleString()+'</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="pkg-body">'+
+      itemsHTML+
+      '<div class="pkg-total-row"><span class="pkg-total-label">Estimated total per person</span><span class="pkg-total-val">$'+total.toLocaleString()+'</span></div>'+
+      '<p class="pkg-note">Tour prices are from prices and may vary by departure date. Flight prices are estimates from Duffel and subject to availability. Hotel pricing is indicative only.</p>'+
+      '<button class="pkg-book-btn">Enquire &amp; book →</button>'+
+      '<button class="pkg-close-btn" onclick="closePkgModal()">Back to editing</button>'+
+    '</div>';
 
-  document.getElementById('pkg-items').innerHTML = items;
-  document.getElementById('package-overlay').classList.add('open');
-  document.getElementById('package-modal').classList.add('open');
+  document.getElementById('pkg-modal').classList.add('open');
 }
 
-function pkgRow(icon, iconBg, label, sub, price, priceStyle, dark = false) {
-  const bg = dark ? '#1C1C1C' : iconBg;
-  const textColor = dark ? '#fff' : '#1D4ED8';
-  return `
-    <div class="flex items-center justify-between py-3">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${bg};font-size:.9rem;">${icon}</div>
-        <div>
-          <p class="font-semibold" style="font-size:.88rem;color:${dark?'#1C1C1C':'#0A0C0A'}">${label}</p>
-          <p style="font-size:.73rem;color:#6B6B6B;">${sub}</p>
-        </div>
-      </div>
-      <p class="font-bold" style="font-size:.9rem;color:${priceStyle==='price'?'#0A0C0A':'#9CA3AF'};">${price}</p>
-    </div>`;
-}
+function closePkgModal() { document.getElementById('pkg-modal').classList.remove('open'); }
 
-function closePackageModal() {
-  document.getElementById('package-overlay').classList.remove('open');
-  document.getElementById('package-modal').classList.remove('open');
-}
-
-function saveTrip() {
-  try {
-    localStorage.setItem('contiki-saved-journey', JSON.stringify(journey));
-  } catch {}
-  const btn = document.getElementById('save-btn');
-  btn.textContent = '✓ Saved!';
-  btn.style.background = '#1C4A3D';
-  setTimeout(() => { btn.textContent = 'Save my trip'; btn.style.background = '#FF5900'; }, 2500);
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closePackageModal(); });
-
-// ─── FOOTER TOTALS ────────────────────────────────────────────────────────────
-function updateFooter() {
-  const trips = journey.segments.filter(s => s.type === 'trip').map(s => s.tour);
-  const gaps  = journey.segments.filter(s => s.type === 'gap');
-  let total = trips.reduce((s, t) => s + t.from_price, 0);
-  let flightCount = 0;
-
-  if (journey.outboundFlight && !journey.outboundFlight.skipped) {
-    const p = journey.outboundFlight.price || journey._pendingOutbound?.price || 0;
-    total += p; flightCount++;
-  } else if (journey._pendingOutbound) {
-    total += journey._pendingOutbound.price; flightCount++;
-  }
-  gaps.forEach(g => {
-    if (g.selectedFlight?.price) { total += g.selectedFlight.price; flightCount++; }
-  });
-  if (journey.returnFlight && !journey.returnFlight.skipped) {
-    total += journey.returnFlight.price; flightCount++;
-  } else if (journey._pendingReturn) {
-    total += journey._pendingReturn.price; flightCount++;
-  }
-
-  document.getElementById('footer-tours').textContent   = trips.length;
-  document.getElementById('footer-flights').textContent = flightCount;
-  document.getElementById('footer-cost').textContent    = `$${total.toLocaleString()}`;
-}
-
-function updateBuilderTitle() {
-  const trips = journey.segments.filter(s => s.type === 'trip').map(s => s.tour);
-  if (!trips.length) return;
-  const geos = [...new Set(trips.map(t => t.geography))];
-  document.getElementById('builder-title').textContent = geos.join(' + ');
-  document.getElementById('builder-sub').textContent = `${trips.length} tour${trips.length!==1?'s':''} · building…`;
-}
-
-// ─── TRIP FILTERING ───────────────────────────────────────────────────────────
-function getTripsFromCity(city) {
-  const key = city.toLowerCase();
-  const added = new Set(journey.segments.filter(s=>s.type==='trip').map(s=>s.tour.id));
-  const exact = TRIPS.filter(t => !added.has(t.id) && t.departure_city.toLowerCase() === key);
-  if (exact.length) return exact;
-  // Fallback: same region or any (for demo robustness)
-  return TRIPS.filter(t => !added.has(t.id)).slice(0, 6);
-}
-
-function getReachableTrips(endCity) {
-  const key = endCity.toLowerCase();
-  const added = new Set(journey.segments.filter(s=>s.type==='trip').map(s=>s.tour.id));
-  const remaining = TRIPS.filter(t => !added.has(t.id));
-  // Score by region proximity
-  const endTrip = lastTripSegment()?.tour;
-  return remaining.sort((a, b) => {
-    const aScore = a.departure_city.toLowerCase() === key ? 3
-      : (endTrip && a.geography === endTrip.geography) ? 2 : 1;
-    const bScore = b.departure_city.toLowerCase() === key ? 3
-      : (endTrip && b.geography === endTrip.geography) ? 2 : 1;
-    return bScore - aScore;
-  });
-}
-
-// ─── JOURNEY HELPERS ──────────────────────────────────────────────────────────
-function lastTripSegment() {
-  const trips = journey.segments.filter(s => s.type === 'trip');
-  return trips.length ? trips[trips.length - 1] : null;
-}
-
-function lastTripEndCity() {
-  const last = lastTripSegment();
-  return last ? last.tour.end_city : journey.startLocation?.city || '';
-}
-
-// ─── DATE HELPER ──────────────────────────────────────────────────────────────
-function fmtDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' });
-}
-
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-function mockFlights(origin, dest) {
-  const carriers = [
-    { code:'BA', name:'British Airways' },
-    { code:'LH', name:'Lufthansa' },
-    { code:'EK', name:'Emirates' },
-    { code:'TG', name:'Thai Airways' },
-    { code:'QR', name:'Qatar Airways' },
-  ];
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-  return [
-    { offer_id:'mock-1', flight:`${carriers[0].code}${204+Math.floor(Math.random()*100)}`, airline:carriers[0].name, departing_at:'09:15', arriving_at:'14:30', price:Math.floor(350+Math.random()*400), currency:'USD', _mock:true },
-    { offer_id:'mock-2', flight:`${pick(carriers).code}${300+Math.floor(Math.random()*200)}`, airline:pick(carriers).name, departing_at:'13:45', arriving_at:'19:00', price:Math.floor(280+Math.random()*350), currency:'USD', _mock:true },
-    { offer_id:'mock-3', flight:`${pick(carriers).code}${500+Math.floor(Math.random()*200)}`, airline:pick(carriers).name, departing_at:'17:30', arriving_at:'23:15', price:Math.floor(420+Math.random()*500), currency:'USD', _mock:true },
-  ].sort((a,b) => a.price - b.price);
-}
-
-function mockHotels(city) {
-  return [
-    { id:'mock-h1', name:`Hotel Centrale ${city}`, address:`City Centre, ${city}`, rating:4, price_per_night:145, currency:'USD', room_type:'Standard Double', cancellation:'FREE_CANCELLATION', offer_id:null },
-    { id:'mock-h2', name:`${city} Boutique Hotel`, address:`Old Town, ${city}`, rating:4, price_per_night:189, currency:'USD', room_type:'Superior Room', cancellation:'FREE_CANCELLATION', offer_id:null },
-    { id:'mock-h3', name:`Budget Stay ${city}`, address:`Near Station, ${city}`, rating:3, price_per_night:89, currency:'USD', room_type:'Twin Room', cancellation:'NON_REFUNDABLE', offer_id:null },
-  ];
-}
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmtDate(d){ return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function diffDays(a,b){ return Math.round((new Date(b)-new Date(a))/864e5); }
 </script>
 </body>
 </html>
