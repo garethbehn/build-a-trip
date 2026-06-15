@@ -25,8 +25,8 @@ export default async function handler(req) {
 
   const liteKey = process.env.LITEAPI_KEY;
   if (!liteKey) {
-    return new Response(JSON.stringify(mockHotels(location)), {
-      status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+    return new Response(JSON.stringify({ error: 'LITEAPI_KEY not configured' }), {
+      status: 503, headers: { 'Content-Type': 'application/json', ...cors() },
     });
   }
 
@@ -58,8 +58,8 @@ export default async function handler(req) {
     }
 
     if (!hotelIds.length) {
-      return new Response(JSON.stringify(mockHotels(location)), {
-        status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+      return new Response(JSON.stringify({ error: 'No hotels found for location', location }), {
+        status: 404, headers: { 'Content-Type': 'application/json', ...cors() },
       });
     }
 
@@ -77,13 +77,14 @@ export default async function handler(req) {
         occupancies: [{ adults: 1 }],
         currency: 'USD',
         guestNationality: 'GB',
+        includeHotelData: true,  // ensures hotel name, address, photos included in response
       }),
     });
 
     if (!ratesRes.ok) {
-      console.error('LiteAPI rates error:', ratesRes.status);
-      return new Response(JSON.stringify(mockHotels(location)), {
-        status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+      const err = await ratesRes.text().catch(() => '');
+      return new Response(JSON.stringify({ error: `LiteAPI rates error ${ratesRes.status}`, detail: err.slice(0,200) }), {
+        status: ratesRes.status, headers: { 'Content-Type': 'application/json', ...cors() },
       });
     }
 
@@ -98,16 +99,16 @@ export default async function handler(req) {
         const price = cheapestRoom?.retailRate?.total?.[0];
         return {
           id: h.hotelId,
-          name: h.hotel?.name || h.hotelId,
-          address: [h.hotel?.address, h.hotel?.city, h.hotel?.country].filter(Boolean).join(', '),
-          rating: h.hotel?.stars || null,
+          name: h.hotel?.name || h.hotelData?.name || h.name || h.hotelId,
+          address: [h.hotel?.address || h.hotelData?.address, h.hotel?.city || h.hotelData?.city, h.hotel?.country || h.hotelData?.country].filter(Boolean).join(', '),
+          rating: h.hotel?.stars || h.hotelData?.starRating || h.hotel?.starRating || null,
           reviews: null, // LiteAPI doesn't return review count in rates endpoint
           price_per_night: price?.amount || null,
           currency: price?.currency || 'USD',
           room_type: cheapestRoom?.name || null,
           cancellation: cheapestRoom?.cancellationPolicies?.[0]?.type || null,
           offer_id: cheapestRoom?.offerId || null,
-          photo: h.hotel?.main_photo || null,
+          photo: h.hotel?.main_photo || h.hotelData?.hotelImages?.[0]?.url || h.hotel?.thumbnail || null,
           maps_url: h.hotel?.latitude && h.hotel?.longitude
             ? `https://www.google.com/maps/search/?api=1&query=${h.hotel.latitude},${h.hotel.longitude}`
             : null,
@@ -119,9 +120,8 @@ export default async function handler(req) {
     });
 
   } catch (e) {
-    console.error('LiteAPI error:', e.message);
-    return new Response(JSON.stringify(mockHotels(location)), {
-      status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+    return new Response(JSON.stringify({ error: 'LiteAPI error', detail: e.message }), {
+      status: 500, headers: { 'Content-Type': 'application/json', ...cors() },
     });
   }
 }
@@ -169,17 +169,6 @@ function cityToCountryCode(city) {
 function formatDate(d) { return d.toISOString().split('T')[0]; }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 
-function mockHotels(location) {
-  return {
-    hotels: [
-      { id: 'mock-h1', name: `Hotel Centrale ${location}`, address: `City Centre, ${location}`, rating: 4, price_per_night: 145, currency: 'USD', room_type: 'Standard Double', cancellation: 'FREE_CANCELLATION', offer_id: null, photo: null, maps_url: '#' },
-      { id: 'mock-h2', name: `${location} Boutique Hotel`, address: `Old Town, ${location}`, rating: 4, price_per_night: 189, currency: 'USD', room_type: 'Superior Room', cancellation: 'FREE_CANCELLATION', offer_id: null, photo: null, maps_url: '#' },
-      { id: 'mock-h3', name: `Budget Stay ${location}`, address: `Near Station, ${location}`, rating: 3, price_per_night: 89, currency: 'USD', room_type: 'Twin Room', cancellation: 'NON_REFUNDABLE', offer_id: null, photo: null, maps_url: '#' },
-    ],
-    location,
-    _mock: true,
-  };
-}
 
 function cors() {
   return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };

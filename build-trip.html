@@ -4,1751 +4,829 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Build Your Trip · Contiki</title>
-
-  <!-- Fonts: Playfair Display (Mencken fallback) + Inter (Halyard fallback) -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700;1,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <!-- Material Symbols — wght 300, FILL 0, opsz 24 -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" rel="stylesheet"/>
-
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-    /* ── DESIGN SYSTEM TOKENS ─────────────────────────────────────────────── */
-    :root {
-      /* Brand colours */
-      --go:         #FF5900;
-      --go-alt:     #FF7300;
-      --wander:     #1C4A3D;
-      --wander-alt: #1C6348;
-      --burst:      #FFE100;
-      --dusk:       #0A0C0A;
-      --dawn:       #FFFAF2;
-      --ui-grey80:  #6B6B6B;
-      --ui-border:  #E5E0D8;
-      --card-dark:  #1C1C1C;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --orange:#FF5500;--orange-light:#FF6B1A;--orange-soft:#FFF5EF;--orange-border:#FFD5BC;
+      --dark-green:#1B3A2D;--cream:#FAF8F4;--cream-dark:#F2EFE9;
+      --black:#111;--white:#fff;--muted:#6B6B6B;--border:#E5E0D8;
+      --blue:#2563EB;--blue-soft:#EFF6FF;--blue-border:#BFDBFE;
+      --card-dark:#1E1E1E;
+    }
+    html{font-size:16px}
+    body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--black);min-height:100vh}
 
-      /* Informational (flight/hotel accents — not brand, but needed for segment types) */
-      --flight-green: #16A34A;
-      --flight-green-soft: #DCFCE7;
-      --flight-green-border: #86EFAC;
-      --hotel-blue: #2563EB;
-      --hotel-blue-soft: #EFF6FF;
-      --hotel-blue-border: #BFDBFE;
+    /* NAV */
+    nav{background:var(--cream);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+    .nav-left{display:flex;align-items:center;gap:28px}
+    .nav-link{font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none;display:flex;align-items:center;gap:4px}
+    .nav-link.active{color:var(--orange)}
+    .nav-logo{position:absolute;left:50%;transform:translateX(-50%);font-size:1.6rem;font-weight:800;color:var(--orange);letter-spacing:-0.04em;text-decoration:none;font-style:italic}
+    .nav-right{display:flex;align-items:center;gap:12px}
+    .nav-pill{display:flex;align-items:center;gap:8px;border:1.5px solid var(--orange);border-radius:100px;padding:8px 18px;background:transparent;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:600;color:var(--black);text-decoration:none;transition:background 0.15s}
+    .nav-pill:hover{background:rgba(255,85,0,0.06)}
 
-      /* Shadows */
-      --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
-      --shadow-md:  0 4px 6px rgba(0,0,0,0.07);
-      --shadow-lg:  0 10px 15px rgba(0,0,0,0.1);
-      --shadow-xl:  0 20px 25px rgba(0,0,0,0.1);
-      --shadow-2xl: 0 25px 50px rgba(0,0,0,0.25);
+    /* ── HERO SEARCH ── */
+    #search-screen{min-height:calc(100vh - 64px);display:flex;flex-direction:column}
+    .search-hero{background:var(--dark-green);padding:64px 60px 52px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .search-eyebrow{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:12px}
+    .search-title{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:900;font-style:italic;color:var(--orange);line-height:1;margin-bottom:12px}
+    .search-sub{color:rgba(255,255,255,0.5);font-size:0.95rem;max-width:480px;margin:0 auto 36px;line-height:1.55}
 
-      /* Radii */
-      --r-sm:   6px;
-      --r-md:   12px;
-      --r-lg:   16px;
-      --r-pill: 100px;
+    /* Semantic search bar */
+    .search-bar-wrap{width:100%;max-width:680px;position:relative}
+    .search-bar{display:flex;align-items:center;background:white;border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25);border:2px solid transparent;transition:border-color 0.2s}
+    .search-bar:focus-within{border-color:var(--orange)}
+    .search-icon{padding:0 16px;color:var(--muted);display:flex;align-items:center;flex-shrink:0}
+    .search-icon svg{color:var(--orange)}
+    #trip-search-input{flex:1;border:none;outline:none;font-family:'Inter',sans-serif;font-size:1rem;color:var(--black);padding:18px 0;background:transparent}
+    #trip-search-input::placeholder{color:#AAA}
+    .search-go-btn{background:var(--orange);color:white;border:none;padding:14px 24px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background 0.15s;white-space:nowrap;flex-shrink:0}
+    .search-go-btn:hover{background:var(--orange-light)}
+    .search-go-btn:disabled{opacity:0.6;cursor:not-allowed}
 
-      /* Motion */
-      --t-fast:  0.15s ease;
-      --t-base:  0.2s ease;
-      --t-modal: 0.3s cubic-bezier(0.4,0,0.2,1);
-    }
+    /* AI chips */
+    .search-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+    .search-chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);border-radius:100px;padding:6px 14px;font-size:0.78rem;cursor:pointer;transition:all 0.15s;font-family:'Inter',sans-serif}
+    .search-chip:hover{background:rgba(255,255,255,0.15);color:white}
 
-    /* ── RESET + BASE ─────────────────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--dawn);
-      color: var(--dusk);
-      min-height: 100vh;
-    }
-    a { text-decoration: none; color: inherit; }
-    button { font-family: inherit; cursor: pointer; }
+    /* Status */
+    #search-status{display:none;align-items:center;gap:10px;color:rgba(255,255,255,0.6);font-size:0.85rem;margin-top:16px}
+    #search-status.visible{display:flex}
+    .dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--orange);margin-right:3px;animation:dp 1.2s ease-in-out infinite}
+    .dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+    @keyframes dp{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
 
-    /* ── MATERIAL ICONS ───────────────────────────────────────────────────── */
-    .icon {
-      font-family: 'Material Symbols Outlined';
-      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-      font-size: 20px;
-      line-height: 1;
-      vertical-align: middle;
-      display: inline-block;
-    }
+    /* AI understood strip */
+    #ai-understood{display:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;margin-top:16px;font-size:0.82rem;color:rgba(255,255,255,0.7);text-align:left;max-width:680px;width:100%}
+    #ai-understood.visible{display:block}
+    .ai-understood-label{font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--orange);margin-bottom:4px}
 
-    /* ── PASSWORD GATE ────────────────────────────────────────────────────── */
-    #gate {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--dusk);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .gate-box {
-      background: #1a1a1a;
-      border-radius: var(--r-lg);
-      padding: 48px 40px;
-      width: 360px; max-width: 90vw;
-    }
-    .gate-logo {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic; font-weight: 900;
-      font-size: 2rem; color: var(--go);
-      margin-bottom: 6px;
-    }
-    .gate-sub { color: rgba(255,255,255,.4); font-size: .8rem; margin-bottom: 28px; }
-    .gate-input {
-      width: 100%; background: #111;
-      border: 1px solid #333; border-radius: var(--r-md);
-      color: white; font-size: .9rem; font-family: inherit;
-      padding: 14px 16px; outline: none;
-      transition: border-color var(--t-fast);
-      margin-bottom: 10px;
-    }
-    .gate-input:focus { border-color: var(--go); }
-    .gate-error { color: #ff6b6b; font-size: .8rem; margin-bottom: 10px; display: none; }
-    .gate-btn {
-      width: 100%; background: var(--go); color: white;
-      border: none; border-radius: var(--r-md);
-      padding: 14px; font-size: .95rem; font-weight: 700;
-      transition: background var(--t-fast);
-    }
-    .gate-btn:hover { background: var(--go-alt); }
+    /* ── RESULTS ── */
+    .results-section{background:var(--cream-dark);padding:40px 60px}
+    .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .results-title{font-size:1rem;font-weight:700;color:var(--dark-green)}
+    .results-title span{color:var(--orange)}
+    .results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 
-    /* ── NAV ──────────────────────────────────────────────────────────────── */
-    #nav {
-      position: sticky; top: 0; z-index: 200;
-      background: var(--dawn);
-      border-bottom: 1px solid var(--ui-border);
-      height: 64px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 32px;
-      transition: background var(--t-base), box-shadow var(--t-base);
-    }
-    #nav.scrolled {
-      background: rgba(255,250,242,.82);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 1px 24px rgba(0,0,0,.07);
-    }
-    .nav-links { display: flex; align-items: center; gap: 4px; }
-    .nav-link {
-      display: flex; align-items: center; gap: 4px;
-      padding: 8px 12px; border-radius: var(--r-md);
-      font-size: .85rem; font-weight: 600; color: var(--dusk);
-      border: none; background: none;
-      transition: background var(--t-fast);
-    }
-    .nav-link:hover { background: rgba(0,0,0,.05); }
-    .nav-link.active { color: var(--go); }
-    .nav-logo {
-      position: absolute; left: 50%; transform: translateX(-50%);
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic; font-weight: 900;
-      font-size: 1.6rem; color: var(--go);
-      transition: opacity var(--t-fast);
-    }
-    .nav-logo:hover { opacity: .8; }
-    .nav-right { display: flex; align-items: center; gap: 8px; }
-    .nav-pill {
-      display: flex; align-items: center; gap: 6px;
-      border: 1.5px solid var(--ui-border);
-      border-radius: var(--r-pill);
-      padding: 8px 14px; background: none;
-      font-size: .85rem; font-weight: 600; color: var(--dusk);
-      transition: background var(--t-fast);
-    }
-    .nav-pill:hover { background: rgba(0,0,0,.04); }
+    /* Tour result card */
+    .result-card{background:var(--card-dark);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border:2px solid transparent}
+    .result-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+    .result-card.selected{border-color:var(--orange)}
+    .rc-img{height:160px;position:relative;overflow:hidden}
+    .rc-img img{width:100%;height:100%;object-fit:cover;display:block}
+    .rc-img-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+    .rc-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.75) 0%,transparent 60%)}
+    .rc-badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--orange);color:white;font-size:0.6rem;font-weight:800;font-style:italic;padding:3px 10px;border-radius:4px;text-transform:lowercase;z-index:1}
+    .rc-title-overlay{position:absolute;bottom:0;left:0;right:0;padding:10px 12px;z-index:1}
+    .rc-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:900;color:white;line-height:1;text-transform:lowercase}
+    .rc-region{font-size:0.58rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.7);margin-top:2px}
+    .rc-body{padding:12px 14px}
+    .rc-dates{font-size:0.75rem;color:rgba(255,255,255,0.55);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+    .rc-dates svg{color:var(--orange);flex-shrink:0}
+    .rc-stats{display:flex;gap:12px;font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:8px}
+    .rc-price{font-size:0.9rem;font-weight:800;color:white}
+    .rc-price span{font-size:0.68rem;font-weight:400;color:rgba(255,255,255,0.4);margin-left:3px}
+    .rc-add-btn{width:100%;padding:8px;background:rgba(255,85,0,0.12);color:var(--orange);border:1.5px solid rgba(255,85,0,0.3);border-radius:8px;font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;margin-top:4px}
+    .rc-add-btn:hover,.result-card.selected .rc-add-btn{background:var(--orange);color:white;border-color:var(--orange)}
+    .rc-add-btn.added{background:var(--dark-green);color:white;border-color:var(--dark-green)}
+    .ai-match-reason{font-size:0.72rem;color:#FFB380;background:#1A0800;border-top:1px solid rgba(255,140,0,0.15);padding:8px 12px;display:flex;gap:6px;line-height:1.4}
 
-    /* ── 09 ENTRY VIEW ────────────────────────────────────────────────────── */
-    #entry-view {
-      min-height: calc(100vh - 64px);
-      background: var(--wander);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 64px 24px;
-    }
-    .entry-eyebrow {
-      color: rgba(255,255,255,.4);
-      font-size: .72rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .12em;
-      margin-bottom: 12px;
-    }
-    .entry-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic; font-weight: 900;
-      font-size: clamp(2.4rem, 6vw, 3.8rem);
-      color: var(--go);
-      line-height: 1;
-      margin-bottom: 48px;
-    }
-    .entry-steps { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 16px; }
+    /* ── BUILDER ── */
+    #builder-screen{display:none}
+    .builder-top{background:var(--dark-green);padding:20px 60px;display:flex;align-items:center;justify-content:space-between}
+    .builder-top-left{display:flex;align-items:center;gap:16px}
+    .builder-back{background:rgba(255,255,255,0.1);border:none;color:white;border-radius:8px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+    .builder-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;font-style:italic;color:var(--orange)}
+    .builder-sub{font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:2px}
+    .view-pkg-btn{background:var(--orange);color:white;border:none;border-radius:100px;padding:10px 22px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer}
 
-    /* Prompt card */
-    .prompt-card {
-      background: white;
-      border-radius: 14px;
-      padding: 24px;
-      box-shadow: var(--shadow-2xl);
-    }
-    .prompt-label {
-      font-size: .95rem; font-weight: 600; color: var(--dusk);
-      margin-bottom: 12px;
-    }
-    .prompt-row { display: flex; gap: 10px; align-items: center; }
-    .prompt-input-wrap {
-      flex: 1; display: flex; align-items: center; gap: 10px;
-      border: 1.5px solid var(--ui-border);
-      border-radius: var(--r-md);
-      padding: 12px 14px;
-      transition: border-color var(--t-fast);
-    }
-    .prompt-input-wrap:focus-within { border-color: var(--go); }
-    .prompt-input-wrap .icon { color: var(--go); flex-shrink: 0; }
-    .prompt-input {
-      flex: 1; border: none; outline: none;
-      font-family: inherit; font-size: .92rem; color: var(--dusk);
-      background: transparent; min-width: 0;
-    }
-    .prompt-input::placeholder { color: #BBB; }
-    .btn-primary {
-      background: var(--go); color: white;
-      border: none; border-radius: var(--r-pill);
-      padding: 12px 24px; font-size: .88rem; font-weight: 700;
-      white-space: nowrap;
-      transition: background var(--t-fast), opacity var(--t-fast);
-    }
-    .btn-primary:hover { background: var(--go-alt); }
-    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-secondary {
-      background: none; color: var(--dusk);
-      border: 1.5px solid var(--ui-border);
-      border-radius: var(--r-pill);
-      padding: 11px 22px; font-size: .88rem; font-weight: 600;
-      transition: background var(--t-fast);
-    }
-    .btn-secondary:hover { background: rgba(0,0,0,.04); }
+    /* Timeline */
+    .tl-wrap{padding:40px 60px 120px;max-width:860px;margin:0 auto}
+    .tl-track{position:relative;padding-left:52px}
+    .tl-track::before{content:'';position:absolute;left:18px;top:24px;bottom:24px;width:2px;background:linear-gradient(to bottom,var(--orange) 0%,var(--blue) 50%,var(--orange) 100%);opacity:0.25}
 
-    /* Step 2 hidden initially */
-    #step2-card { display: none; }
+    .tl-seg{position:relative;margin-bottom:14px}
+    .tl-dot{position:absolute;left:-38px;top:20px;width:16px;height:16px;border-radius:50%;background:var(--orange);border:3px solid var(--cream);box-shadow:0 0 0 2px var(--orange);z-index:1}
+    .tl-dot.gap-d{background:var(--blue);box-shadow:0 0 0 2px var(--blue)}
+    .tl-dot.transit-d{background:var(--dark-green);box-shadow:0 0 0 2px var(--dark-green)}
 
-    /* ── 10 BUILDER VIEW ──────────────────────────────────────────────────── */
-    #builder-view { display: none; }
+    /* Tour on timeline */
+    .tl-tour{background:var(--card-dark);border-radius:14px;overflow:hidden;display:flex;height:96px}
+    .tl-tour-img{width:120px;flex-shrink:0;position:relative;overflow:hidden}
+    .tl-tour-img img{width:100%;height:100%;object-fit:cover;display:block}
+    .tl-tour-img-bg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
+    .tl-tour-img::after{content:'';position:absolute;right:0;top:0;bottom:0;width:32px;background:linear-gradient(to right,transparent,var(--card-dark))}
+    .tl-tour-badge{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--orange);color:white;font-size:0.55rem;font-weight:800;font-style:italic;padding:2px 8px;border-radius:3px;text-transform:lowercase;white-space:nowrap;z-index:1}
+    .tl-tour-body{flex:1;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+    .tl-tour-label{font-size:0.6rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:rgba(255,255,255,0.35)}
+    .tl-tour-name{font-weight:700;font-size:0.92rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tl-tour-meta{display:flex;gap:12px;font-size:0.7rem;color:rgba(255,255,255,0.45)}
+    .tl-tour-meta span{display:flex;align-items:center;gap:4px}
+    .tl-tour-meta svg{color:var(--orange)}
+    .tl-tour-actions{display:flex;align-items:center;padding:0 12px}
+    .tl-del{width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:0.75rem;transition:all 0.15s}
+    .tl-del:hover{border-color:#ef4444;color:#ef4444}
 
-    /* Builder top bar */
-    #builder-bar {
-      background: var(--wander);
-      padding: 14px 24px;
-      display: flex; align-items: center; gap: 16px;
-      position: sticky; top: 64px; z-index: 100;
-    }
-    .builder-back {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,.1); border: none; color: rgba(255,255,255,.75);
-      border-radius: var(--r-md); padding: 8px 14px; font-size: .85rem; font-weight: 600;
-      transition: background var(--t-fast);
-    }
-    .builder-back:hover { background: rgba(255,255,255,.18); }
-    .builder-title-wrap { flex: 1; min-width: 0; }
-    #builder-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic; font-weight: 900;
-      font-size: 1.3rem; color: var(--go); line-height: 1.1;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    #builder-sub { color: rgba(255,255,255,.45); font-size: .75rem; margin-top: 2px; }
-    #bar-pkg-btn {
-      display: none;
-      align-items: center; gap: 8px;
-      background: var(--dawn); color: var(--wander);
-      border: none; border-radius: var(--r-pill);
-      padding: 10px 20px; font-size: .88rem; font-weight: 700;
-      transition: opacity var(--t-fast);
-    }
-    #bar-pkg-btn:hover { opacity: .88; }
+    /* GAP — the hero interaction */
+    .tl-gap{border-radius:14px;overflow:hidden;border:1.5px dashed var(--blue-border);background:var(--blue-soft)}
+    .tl-gap-header{display:flex;align-items:center;gap:12px;padding:14px 16px 10px}
+    .tl-gap-icon{width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:white;font-size:0.85rem;flex-shrink:0}
+    .tl-gap-title{font-weight:700;font-size:0.88rem;color:var(--blue)}
+    .tl-gap-sub{font-size:0.72rem;color:#64748B;margin-top:1px}
+    .tl-gap-body{padding:0 16px 16px}
 
-    /* Timeline feed */
-    #feed-wrap {
-      max-width: 680px; margin: 0 auto;
-      padding: 32px 24px 120px;
-    }
+    /* City selector for hotel stay */
+    .stay-selector{display:flex;gap:8px;margin-bottom:14px}
+    .stay-btn{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--blue-border);background:white;font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;color:#64748B;cursor:pointer;transition:all 0.15s;text-align:center}
+    .stay-btn.active{background:var(--blue);color:white;border-color:var(--blue)}
 
-    /* Timeline track */
-    #timeline {
-      position: relative;
-      padding-left: 44px;
-    }
-    #timeline::before {
-      content: '';
-      position: absolute;
-      left: 7px; top: 0; bottom: 0;
-      width: 2px;
-      background: linear-gradient(to bottom, var(--go), #3B82F6, var(--go));
-    }
+    /* Flight/hotel options */
+    .gap-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#64748B;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .loading-row{display:flex;align-items:center;gap:8px;color:#64748B;font-size:0.8rem;padding:6px 0}
+    .spin{width:13px;height:13px;border:2px solid #CBD5E1;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* Timeline item */
-    .tl-item {
-      position: relative;
-      margin-bottom: 12px;
-    }
-    .tl-dot {
-      position: absolute;
-      left: -37px; top: 14px;
-      width: 16px; height: 16px;
-      border-radius: 50%;
-      border: 2.5px solid var(--dawn);
-      flex-shrink: 0;
-    }
-    .tl-dot--orange { background: var(--go); box-shadow: 0 0 10px rgba(255,89,0,.45); }
-    .tl-dot--green  { background: var(--flight-green); box-shadow: 0 0 10px rgba(22,163,74,.4); }
-    .tl-dot--blue   { background: var(--hotel-blue); box-shadow: 0 0 10px rgba(37,99,235,.35); }
+    .flight-opt{display:flex;align-items:center;gap:10px;background:white;border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1.5px solid transparent;cursor:pointer;transition:all 0.15s}
+    .flight-opt:hover{border-color:var(--blue)}
+    .flight-opt.sel{border-color:var(--blue);background:#EFF6FF}
+    .flight-logo{width:26px;height:26px;border-radius:6px;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-size:0.58rem;font-weight:700;color:#475569;flex-shrink:0}
+    .flight-info{flex:1;min-width:0}
+    .flight-num{font-size:0.72rem;font-weight:700;color:var(--black)}
+    .flight-times{font-size:0.68rem;color:var(--muted)}
+    .flight-price-tag{font-weight:800;font-size:0.92rem;color:var(--dark-green)}
+    .direct-badge{font-size:0.6rem;color:#16A34A;background:#F0FDF4;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:5px}
+    .no-results{font-size:0.78rem;color:#94A3B8;font-style:italic;padding:6px 0}
 
-    /* Step card (active prompt) */
-    .step-card {
-      background: white;
-      border-radius: var(--r-lg);
-      box-shadow: var(--shadow-xl);
-      padding: 20px;
-      border: 1.5px solid var(--ui-border);
-    }
-    .step-heading {
-      font-size: .95rem; font-weight: 700; color: var(--dusk);
-      margin-bottom: 4px;
-    }
-    .step-sub {
-      font-size: .8rem; color: var(--ui-grey80);
-      margin-bottom: 14px; line-height: 1.5;
-    }
+    .hotel-opt{display:flex;align-items:center;gap:10px;background:white;border-radius:10px;padding:10px 12px;margin-bottom:6px;border:1.5px solid transparent;cursor:pointer;transition:all 0.15s}
+    .hotel-opt:hover{border-color:var(--orange)}
+    .hotel-opt.sel{border-color:var(--orange);background:var(--orange-soft)}
+    .hotel-thumb{width:38px;height:38px;border-radius:7px;background:#F1F5F9;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .hotel-info{flex:1;min-width:0}
+    .hotel-name{font-weight:700;font-size:0.78rem;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hotel-addr{font-size:0.66rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hotel-rating{font-size:0.66rem;color:var(--orange);font-weight:600}
+    .maps-link{font-size:0.65rem;color:var(--blue);background:#EFF6FF;padding:3px 7px;border-radius:4px;text-decoration:none;flex-shrink:0}
 
-    /* Resolved segment (compact) */
-    .seg-resolved {
-      border-radius: var(--r-md);
-      padding: 10px 14px;
-      display: flex; align-items: center; gap: 12px;
-    }
-    .seg-resolved--trip  { background: var(--card-dark); }
-    .seg-resolved--flight { background: var(--flight-green-soft); border: 1px solid var(--flight-green-border); }
-    .seg-resolved--hotel  { background: var(--hotel-blue-soft); border: 1px solid var(--hotel-blue-border); }
-    .seg-icon {
-      width: 36px; height: 36px; border-radius: var(--r-md);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; font-size: .95rem;
-    }
-    .seg-label { font-weight: 600; font-size: .85rem; }
-    .seg-detail { font-size: .72rem; margin-top: 2px; }
-    .seg-price { margin-left: auto; font-weight: 700; font-size: .88rem; white-space: nowrap; }
+    /* Transit (pre/post) */
+    .tl-transit{border-radius:14px;overflow:hidden}
+    .tl-transit.outbound{border:1.5px dashed #BBF7D0;background:#F0FDF4}
+    .tl-transit.return{border:1.5px dashed #FECACA;background:#FEF2F2}
+    .tl-transit-header{display:flex;align-items:center;gap:12px;padding:12px 16px 8px}
+    .tl-transit-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0}
+    .tl-transit-title{font-weight:700;font-size:0.85rem}
+    .tl-transit-sub{font-size:0.7rem;margin-top:1px}
+    .tl-transit-body{padding:0 16px 14px}
 
-    /* Gap card */
-    .gap-card {
-      border: 1.5px dashed var(--hotel-blue-border);
-      background: var(--hotel-blue-soft);
-      border-radius: var(--r-lg);
-      padding: 16px;
-    }
-    .gap-header {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
-    }
-    .gap-header-icon {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: var(--hotel-blue-soft);
-      border: 1.5px solid var(--hotel-blue-border);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .gap-section-label {
-      font-size: .7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .07em; color: #374151; margin-bottom: 8px; margin-top: 14px;
-    }
-    .gap-section-label:first-of-type { margin-top: 0; }
+    /* Sticky footer */
+    .pkg-footer{position:fixed;bottom:0;left:0;right:0;background:var(--dark-green);padding:16px 60px;display:flex;align-items:center;justify-content:space-between;z-index:100;transform:translateY(100%);transition:transform .3s}
+    .pkg-footer.show{transform:translateY(0)}
+    .pkg-stats{display:flex;gap:28px}
+    .pkg-stat-label{font-size:0.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:1px}
+    .pkg-stat-val{font-size:1rem;font-weight:700;color:white}
+    .pkg-cta{background:var(--orange);color:white;border:none;border-radius:100px;padding:11px 24px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.88rem;cursor:pointer}
 
-    /* Flight options */
-    .flight-opt {
-      display: flex; align-items: center; justify-content: space-between;
-      background: white; border-radius: var(--r-md);
-      border: 1.5px solid transparent;
-      padding: 10px 12px; margin-bottom: 6px;
-      cursor: pointer;
-      transition: border-color var(--t-fast), background var(--t-fast);
-    }
-    .flight-opt:hover { background: #f8f9ff; }
-    .flight-opt.selected { border-color: var(--flight-green); }
-    .flight-opt-left { display: flex; align-items: center; gap: 10px; }
-    .airline-badge {
-      background: var(--flight-green-soft); color: var(--flight-green);
-      font-size: .7rem; font-weight: 700;
-      padding: 3px 8px; border-radius: var(--r-sm);
-      white-space: nowrap;
-    }
-    .flight-code { font-weight: 600; font-size: .85rem; color: var(--dusk); }
-    .flight-times { font-size: .72rem; color: var(--ui-grey80); margin-top: 1px; }
-    .flight-direct { color: var(--flight-green); font-size: .68rem; font-weight: 700; margin-left: 6px; }
-    .flight-price { font-weight: 800; font-size: .95rem; color: var(--flight-green); }
+    /* Package modal */
+    #pkg-modal{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px}
+    #pkg-modal.open{display:flex}
+    .pkg-box{background:white;border-radius:20px;width:100%;max-width:620px;max-height:88vh;overflow-y:auto}
+    .pkg-hero{background:var(--dark-green);padding:28px 32px;border-radius:20px 20px 0 0}
+    .pkg-hero-title{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;font-style:italic;color:var(--orange);margin-bottom:4px}
+    .pkg-hero-sub{color:rgba(255,255,255,.55);font-size:0.82rem}
+    .pkg-hero-stats{display:flex;gap:24px;margin-top:18px}
+    .pkg-hs-label{font-size:0.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px}
+    .pkg-hs-val{font-size:1.05rem;font-weight:800;color:white}
+    .pkg-body{padding:24px 28px}
+    .pkg-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .pkg-item:last-child{border-bottom:none}
+    .pkg-item-icon{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .pkg-item-label{font-size:0.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+    .pkg-item-name{font-weight:700;font-size:0.88rem;color:var(--black)}
+    .pkg-item-detail{font-size:0.72rem;color:var(--muted);margin-top:1px}
+    .pkg-item-price{font-weight:700;font-size:0.88rem;color:var(--dark-green);flex-shrink:0;align-self:center}
+    .pkg-total-row{background:var(--cream-dark);border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 18px}
+    .pkg-total-label{font-weight:700;color:var(--dark-green);font-size:0.9rem}
+    .pkg-total-val{font-size:1.35rem;font-weight:800;color:var(--orange)}
+    .pkg-note{font-size:0.72rem;color:var(--muted);margin-bottom:16px;line-height:1.5}
+    .pkg-book-btn{width:100%;padding:14px;background:var(--orange);color:white;border:none;border-radius:12px;font-family:'Inter',sans-serif;font-weight:700;font-size:0.95rem;cursor:pointer;margin-bottom:8px}
+    .pkg-close-btn{width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:12px;font-family:'Inter',sans-serif;font-weight:600;font-size:0.85rem;cursor:pointer;color:var(--muted)}
 
-    /* Hotel options */
-    .hotel-opt {
-      display: flex; align-items: center; justify-content: space-between;
-      background: white; border-radius: var(--r-md);
-      border: 1.5px solid transparent;
-      padding: 10px 12px; margin-bottom: 6px;
-      cursor: pointer;
-      transition: border-color var(--t-fast), background var(--t-fast);
+    @media(max-width:768px){
+      nav{padding:0 16px}.nav-left{display:none}
+      .search-hero{padding:40px 20px 36px}
+      .results-section{padding:28px 16px}
+      .results-grid{grid-template-columns:1fr 1fr}
+      .tl-wrap{padding:24px 16px 120px}
+      .builder-top{padding:16px 20px}
+      .pkg-footer{padding:14px 20px}.pkg-stats{gap:14px}
     }
-    .hotel-opt:hover { background: #fdf8ff; }
-    .hotel-opt.selected { border-color: var(--go); }
-    .hotel-opt-left { display: flex; align-items: center; gap: 10px; }
-    .hotel-icon {
-      width: 34px; height: 34px; border-radius: var(--r-md);
-      background: #FFF7ED; display: flex; align-items: center; justify-content: center; font-size: .95rem;
-    }
-    .hotel-name { font-weight: 600; font-size: .85rem; color: var(--dusk); }
-    .hotel-meta { font-size: .72rem; color: var(--ui-grey80); margin-top: 1px; }
-    .hotel-price { font-weight: 700; font-size: .88rem; color: var(--go); white-space: nowrap; }
-
-    /* Trip pick cards */
-    .trip-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-    }
-    .trip-pick-card {
-      background: var(--card-dark);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-      border: 2px solid transparent;
-      transition: transform var(--t-base), border-color var(--t-fast);
-      cursor: pointer;
-    }
-    .trip-pick-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-xl); }
-    .trip-pick-card.unavailable { opacity: .4; pointer-events: none; }
-    .tpc-img {
-      height: 150px; position: relative; overflow: hidden;
-    }
-    .tpc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .tpc-img-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,.8), transparent 60%);
-    }
-    .tpc-originals {
-      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-      background: var(--go); color: white;
-      font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
-      font-size: .6rem; padding: 3px 10px; border-radius: var(--r-sm);
-      white-space: nowrap; z-index: 1;
-    }
-    .tpc-date-badge {
-      position: absolute; top: 8px; right: 8px;
-      background: rgba(0,0,0,.65); color: white;
-      font-size: .65rem; font-weight: 600;
-      padding: 3px 8px; border-radius: var(--r-sm);
-    }
-    .tpc-title-overlay {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 8px 12px; z-index: 1;
-    }
-    .tpc-name-big {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 1.2rem; font-weight: 900; color: white; line-height: .95;
-    }
-    .tpc-region {
-      font-size: .52rem; font-weight: 700; letter-spacing: .18em;
-      text-transform: uppercase; color: rgba(255,255,255,.65); margin-top: 3px;
-    }
-    .tpc-body { padding: 10px 12px 12px; }
-    .tpc-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; }
-    .tag-sale { background: var(--burst); color: var(--dusk); font-size: .58rem; font-weight: 800; padding: 2px 8px; border-radius: var(--r-sm); }
-    .tag-outline { border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.65); font-size: .58rem; padding: 2px 8px; border-radius: var(--r-sm); }
-    .tpc-stats { display: flex; gap: 10px; font-size: .7rem; color: rgba(255,255,255,.5); margin-bottom: 8px; }
-    .tpc-stat { display: flex; align-items: center; gap: 4px; }
-    .tpc-stat .icon { font-size: 12px; color: var(--go); }
-    .tpc-price { display: flex; align-items: baseline; gap: 4px; margin-bottom: 10px; }
-    .tpc-from { font-size: .72rem; color: rgba(255,255,255,.4); }
-    .tpc-amount { font-size: 1.1rem; font-weight: 800; color: white; }
-    .tpc-was { font-size: .7rem; text-decoration: line-through; color: rgba(255,255,255,.3); }
-    .tpc-select-btn {
-      width: 100%; padding: 8px 0;
-      background: transparent; color: var(--go);
-      border: 1.5px solid var(--go); border-radius: var(--r-pill);
-      font-size: .8rem; font-weight: 700;
-      transition: background var(--t-fast), color var(--t-fast);
-    }
-    .tpc-select-btn:hover { background: var(--go); color: white; }
-
-    /* Prompt decision cards */
-    .decision-card {
-      background: white;
-      border: 1.5px solid var(--ui-border);
-      border-radius: var(--r-lg);
-      box-shadow: var(--shadow-xl);
-      padding: 20px;
-    }
-    .decision-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    .decision-actions .btn-primary,
-    .decision-actions .btn-secondary { flex: 1; min-width: 140px; text-align: center; }
-
-    /* Loading dots */
-    .loading { display: flex; align-items: center; gap: 8px; color: var(--ui-grey80); font-size: .83rem; }
-    .dots span {
-      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-      background: var(--go);
-      animation: dp 1.2s ease-in-out infinite;
-    }
-    .dots span:nth-child(2) { animation-delay: .2s; }
-    .dots span:nth-child(3) { animation-delay: .4s; }
-    @keyframes dp { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
-
-    /* Step slide-in animation */
-    .step-enter {
-      opacity: 0; transform: translateY(16px);
-      animation: stepIn .35s ease forwards;
-    }
-    @keyframes stepIn { to { opacity: 1; transform: translateY(0); } }
-
-    /* ── STICKY FOOTER ────────────────────────────────────────────────────── */
-    #sticky-footer {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
-      background: var(--wander);
-      padding: 14px 24px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-      transform: translateY(100%);
-      transition: transform var(--t-modal);
-    }
-    #sticky-footer.visible { transform: translateY(0); }
-    .footer-stats { display: flex; gap: 24px; }
-    .footer-stat { text-align: center; }
-    .footer-stat-val { font-size: 1.3rem; font-weight: 800; color: white; line-height: 1; }
-    .footer-stat-val.accent { color: var(--go); }
-    .footer-stat-lbl { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.45); margin-top: 3px; }
-    .footer-pkg-btn {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--dawn); color: var(--wander);
-      border: none; border-radius: var(--r-pill);
-      padding: 12px 22px; font-size: .92rem; font-weight: 700;
-      transition: opacity var(--t-fast);
-    }
-    .footer-pkg-btn:hover { opacity: .88; }
-
-    /* ── 12 PACKAGE MODAL ─────────────────────────────────────────────────── */
-    #pkg-overlay {
-      position: fixed; inset: 0; z-index: 400;
-      background: rgba(0,0,0,.62);
-      backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center;
-      padding: 16px;
-      opacity: 0; pointer-events: none;
-      transition: opacity var(--t-modal);
-    }
-    #pkg-overlay.open { opacity: 1; pointer-events: all; }
-    #pkg-modal {
-      background: white;
-      border-radius: 20px;
-      width: 100%; max-width: 640px;
-      max-height: 90vh; overflow-y: auto;
-      transform: scale(.96) translateY(20px);
-      opacity: 0;
-      transition: transform var(--t-modal), opacity var(--t-modal);
-    }
-    #pkg-modal.open { transform: scale(1) translateY(0); opacity: 1; }
-    .pkg-hero {
-      background: var(--wander);
-      border-radius: 20px 20px 0 0;
-      padding: 32px;
-      position: relative;
-    }
-    .pkg-hero-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic; font-weight: 900;
-      font-size: 2rem; color: var(--go); line-height: 1;
-      margin-bottom: 4px;
-    }
-    .pkg-route { color: rgba(255,255,255,.55); font-size: .85rem; margin-bottom: 20px; }
-    .pkg-stats { display: flex; gap: 28px; }
-    .pkg-stat-val { font-size: 1.5rem; font-weight: 800; color: white; line-height: 1; }
-    .pkg-stat-val.accent { color: var(--go); }
-    .pkg-stat-lbl { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.4); margin-top: 3px; }
-    .pkg-close {
-      position: absolute; top: 16px; right: 16px;
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(255,255,255,.1); border: none; color: white;
-      display: flex; align-items: center; justify-content: center;
-      transition: background var(--t-fast);
-    }
-    .pkg-close:hover { background: rgba(255,255,255,.2); }
-    .pkg-items { padding: 8px 24px; }
-    .pkg-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid #F3F4F6;
-    }
-    .pkg-item:last-child { border-bottom: none; }
-    .pkg-item-icon {
-      width: 34px; height: 34px; border-radius: var(--r-md);
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; font-size: .9rem;
-    }
-    .pkg-item-label { font-weight: 600; font-size: .88rem; color: var(--dusk); }
-    .pkg-item-sub { font-size: .73rem; color: var(--ui-grey80); margin-top: 2px; }
-    .pkg-item-price { margin-left: auto; font-weight: 700; font-size: .9rem; white-space: nowrap; }
-    .pkg-total-row {
-      margin: 4px 24px 16px;
-      background: #F5F0E8;
-      border-radius: var(--r-md);
-      padding: 16px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .pkg-total-label { font-weight: 600; color: var(--dusk); font-size: .9rem; }
-    .pkg-total-val { font-weight: 800; color: var(--go); font-size: 1.4rem; }
-    .pkg-caveat {
-      margin: 0 24px 16px;
-      display: flex; align-items: flex-start; gap: 8px;
-      color: var(--ui-grey80); font-size: .78rem; line-height: 1.5;
-    }
-    .pkg-caveat-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
-    .pkg-ctas { padding: 0 24px 32px; display: flex; flex-direction: column; gap: 10px; }
-    .pkg-save-btn {
-      background: var(--go); color: white; border: none;
-      border-radius: var(--r-pill); padding: 14px;
-      font-size: .95rem; font-weight: 700;
-      transition: background var(--t-fast);
-    }
-    .pkg-save-btn:hover { background: var(--go-alt); }
-    .pkg-book-btn {
-      background: #F3F4F6; color: var(--ui-grey80); border: none;
-      border-radius: var(--r-pill); padding: 14px;
-      font-size: .9rem; font-weight: 600;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      cursor: default;
-    }
-    .coming-soon {
-      background: var(--ui-grey80); color: white;
-      font-size: .6rem; font-weight: 800; padding: 2px 7px;
-      border-radius: var(--r-sm); vertical-align: middle;
-    }
-    .pkg-back-btn {
-      background: none; color: var(--dusk);
-      border: 1.5px solid var(--ui-border);
-      border-radius: var(--r-pill); padding: 13px;
-      font-size: .9rem; font-weight: 600;
-      transition: background var(--t-fast);
-    }
-    .pkg-back-btn:hover { background: rgba(0,0,0,.04); }
-
-    /* Done state card */
-    .done-card {
-      background: var(--wander);
-      border-radius: var(--r-lg);
-      padding: 28px 24px;
-      text-align: center;
-    }
-    .done-emoji { font-size: 2.5rem; margin-bottom: 12px; }
-    .done-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic; font-weight: 900;
-      font-size: 1.5rem; color: var(--go);
-      margin-bottom: 6px;
-    }
-    .done-sub { color: rgba(255,255,255,.55); font-size: .88rem; margin-bottom: 20px; }
-
-    /* ── FOOTER ───────────────────────────────────────────────────────────── */
-    #footer {
-      background: var(--dusk); color: white;
-      padding: 48px 32px 24px;
-    }
-    .footer-grid {
-      max-width: 1100px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 32px;
-      margin-bottom: 40px;
-    }
-    .footer-logo { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 1.8rem; color: var(--go); }
-    .footer-tagline { color: rgba(255,255,255,.35); font-size: .82rem; line-height: 1.6; margin-top: 8px; max-width: 200px; }
-    .footer-col-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 14px; }
-    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .footer-links a { color: rgba(255,255,255,.4); font-size: .82rem; transition: color var(--t-fast); }
-    .footer-links a:hover { color: white; }
-    .footer-bottom {
-      max-width: 1100px; margin: 0 auto;
-      border-top: 1px solid rgba(255,255,255,.08);
-      padding-top: 20px;
-      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px;
-    }
-    .footer-copy { color: rgba(255,255,255,.25); font-size: .75rem; }
-    .footer-legal { display: flex; gap: 20px; }
-    .footer-legal a { color: rgba(255,255,255,.35); font-size: .75rem; transition: color var(--t-fast); }
-    .footer-legal a:hover { color: white; }
-
-    /* ── RESPONSIVE ───────────────────────────────────────────────────────── */
-    @media (max-width: 640px) {
-      #builder-bar { top: 56px; }
-      .trip-grid { grid-template-columns: 1fr 1fr; }
-      .footer-stats { gap: 14px; }
-      .footer-stat-val { font-size: 1.1rem; }
-    }
-    @media (max-width: 480px) {
-      .trip-grid { grid-template-columns: 1fr; }
-      #feed-wrap { padding: 20px 16px 100px; }
-      .entry-title { font-size: 2.2rem; }
-    }
+    @media(max-width:480px){.results-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 
-<!-- ── PASSWORD GATE ──────────────────────────────────────────────────────── -->
-<div id="gate">
-  <div class="gate-box">
-    <div class="gate-logo">contiki</div>
-    <p class="gate-sub">Preview access only</p>
-    <input id="gate-input" class="gate-input" type="password" placeholder="Enter password"
-      onkeydown="if(event.key==='Enter')checkGate()"/>
-    <p id="gate-error" class="gate-error">Incorrect password. Try again.</p>
-    <button class="gate-btn" onclick="checkGate()">Enter</button>
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="/" class="nav-link">Explore Trips <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="/build-trip.html" class="nav-link active">Build Trip <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a href="#" class="nav-link">About <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
   </div>
-</div>
-
-<!-- ── NAV ────────────────────────────────────────────────────────────────── -->
-<nav id="nav">
-  <div class="nav-links">
-    <a href="index.html" class="nav-link">
-      Explore Trips <span class="icon" style="font-size:18px;opacity:.5;">expand_more</span>
-    </a>
-    <a href="build-trip.html" class="nav-link active">
-      Build Trip <span class="icon" style="font-size:18px;opacity:.5;">expand_more</span>
-    </a>
-    <button class="nav-link">
-      About <span class="icon" style="font-size:18px;opacity:.5;">expand_more</span>
-    </button>
-  </div>
-  <a href="index.html" class="nav-logo">contiki</a>
+  <a href="/" class="nav-logo">contiki</a>
   <div class="nav-right">
-    <button class="nav-pill">
-      <span class="icon" style="font-size:18px;opacity:.6;">person</span>
-      <span class="icon" style="font-size:16px;opacity:.4;">expand_more</span>
-    </button>
+    <a href="/" class="nav-pill">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      Search
+    </a>
   </div>
 </nav>
 
-<!-- ── 09 ENTRY VIEW ──────────────────────────────────────────────────────── -->
-<div id="entry-view">
-  <p class="entry-eyebrow">Trip Builder</p>
-  <h1 class="entry-title">Build your adventure</h1>
+<!-- ── SEARCH SCREEN ── -->
+<div id="search-screen">
+  <div class="search-hero">
+    <div class="search-eyebrow">Multi-Trip Builder</div>
+    <div class="search-title">Build your<br/>adventure</div>
+    <p class="search-sub">Describe the trips you want to combine — destinations, vibes, timings. We'll find the right Contiki tours and handle everything in between.</p>
 
-  <div class="entry-steps">
-
-    <!-- Step 1: Origin -->
-    <div class="prompt-card" id="step1-card">
-      <p class="prompt-label">Where are you coming from?</p>
-      <div class="prompt-row">
-        <div class="prompt-input-wrap" id="origin-wrap">
-          <span class="icon">flight_takeoff</span>
-          <input class="prompt-input" id="origin-input" type="text"
-            placeholder="e.g. London"
-            onkeydown="if(event.key==='Enter')submitOrigin()"/>
+    <div class="search-bar-wrap">
+      <div class="search-bar">
+        <div class="search-icon">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </div>
-        <button class="btn-primary" onclick="submitOrigin()">Next</button>
+        <input id="trip-search-input" type="text" placeholder="Where and when? e.g. Europe in July then Southeast Asia in September…" autocomplete="off"/>
+        <button class="search-go-btn" id="search-go-btn" onclick="doTripSearch()">
+          Find trips
+          <svg width="13" height="13" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="search-chips">
+        <span class="search-chip" onclick="useChip(this)">Europe July + Asia September</span>
+        <span class="search-chip" onclick="useChip(this)">Safari + Greek Islands summer</span>
+        <span class="search-chip" onclick="useChip(this)">South America + Australia late 2026</span>
+        <span class="search-chip" onclick="useChip(this)">Japan + Morocco autumn</span>
+      </div>
+      <div id="search-status">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span id="search-status-text">Finding matching Contiki tours…</span>
+      </div>
+      <div id="ai-understood">
+        <div class="ai-understood-label">✦ AI understood</div>
+        <div id="ai-understood-text"></div>
       </div>
     </div>
+  </div>
 
-    <!-- Step 2: Start location (revealed after Step 1) -->
-    <div class="prompt-card" id="step2-card">
-      <p class="prompt-label">Where do you want to start your adventure?</p>
-      <p style="font-size:.8rem;color:var(--ui-grey80);margin-bottom:12px;">This is where you'll join your first Contiki tour.</p>
-      <div class="prompt-row">
-        <div class="prompt-input-wrap" id="start-wrap">
-          <span class="icon">location_on</span>
-          <input class="prompt-input" id="start-input" type="text"
-            placeholder="e.g. Bangkok"
-            onkeydown="if(event.key==='Enter')submitStart()"/>
-        </div>
-        <button class="btn-primary" onclick="submitStart()">Next</button>
-      </div>
+  <!-- Results -->
+  <div class="results-section" id="results-section" style="display:none">
+    <div class="results-header">
+      <div class="results-title"><span id="results-count">0</span> tours matched — select the ones you want to combine</div>
+      <button class="nav-pill" style="border-radius:100px;padding:9px 18px;font-size:0.82rem;font-weight:700;background:var(--dark-green);color:white;border:none;cursor:pointer" onclick="buildPackage()" id="build-pkg-btn" disabled>Build package →</button>
     </div>
-
+    <div class="results-grid" id="results-grid"></div>
   </div>
 </div>
 
-<!-- ── 10 BUILDER VIEW ────────────────────────────────────────────────────── -->
-<div id="builder-view">
-
-  <!-- Top bar -->
-  <div id="builder-bar">
-    <button class="builder-back" onclick="backToEntry()">
-      <span class="icon" style="font-size:18px;">arrow_back</span> Back
-    </button>
-    <div class="builder-title-wrap">
-      <div id="builder-title">Your adventure</div>
-      <div id="builder-sub">Building step by step…</div>
-    </div>
-    <button id="bar-pkg-btn" onclick="openPkgModal()">
-      View package <span class="icon" style="font-size:18px;">arrow_forward</span>
-    </button>
-  </div>
-
-  <!-- Timeline feed -->
-  <div id="feed-wrap">
-    <div id="timeline"></div>
-  </div>
-
-  <!-- Sticky footer -->
-  <div id="sticky-footer">
-    <div class="footer-stats">
-      <div class="footer-stat">
-        <div class="footer-stat-val" id="ft-tours">0</div>
-        <div class="footer-stat-lbl">Tours</div>
-      </div>
-      <div class="footer-stat">
-        <div class="footer-stat-val" id="ft-flights">0</div>
-        <div class="footer-stat-lbl">Flights</div>
-      </div>
-      <div class="footer-stat">
-        <div class="footer-stat-val" id="ft-nights">0</div>
-        <div class="footer-stat-lbl">Nights</div>
-      </div>
-      <div class="footer-stat">
-        <div class="footer-stat-val accent" id="ft-cost">$0</div>
-        <div class="footer-stat-lbl">Est. cost</div>
-      </div>
-    </div>
-    <button class="footer-pkg-btn" onclick="openPkgModal()">
-      View package <span class="icon" style="font-size:20px;">arrow_forward</span>
-    </button>
-  </div>
-
-</div>
-
-<!-- ── 12 PACKAGE MODAL ───────────────────────────────────────────────────── -->
-<div id="pkg-overlay">
-  <div id="pkg-modal">
-
-    <div class="pkg-hero">
-      <p class="pkg-hero-title">Your adventure</p>
-      <p class="pkg-route" id="pkg-route"></p>
-      <div class="pkg-stats">
-        <div class="footer-stat">
-          <div class="pkg-stat-val" id="pkg-days">—</div>
-          <div class="pkg-stat-lbl">Days</div>
-        </div>
-        <div class="footer-stat">
-          <div class="pkg-stat-val" id="pkg-tours">—</div>
-          <div class="pkg-stat-lbl">Tours</div>
-        </div>
-        <div class="footer-stat">
-          <div class="pkg-stat-val" id="pkg-flights-n">—</div>
-          <div class="pkg-stat-lbl">Flights</div>
-        </div>
-        <div class="footer-stat">
-          <div class="pkg-stat-val accent" id="pkg-total-top">—</div>
-          <div class="pkg-stat-lbl">Est. pp</div>
-        </div>
-      </div>
-      <button class="pkg-close" onclick="closePkgModal()">
-        <span class="icon" style="font-size:18px;">close</span>
+<!-- ── BUILDER SCREEN ── -->
+<div id="builder-screen">
+  <div class="builder-top">
+    <div class="builder-top-left">
+      <button class="builder-back" onclick="goBack()">
+        <svg width="12" height="12" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Back
       </button>
+      <div>
+        <div class="builder-title" id="builder-title">Your package</div>
+        <div class="builder-sub" id="builder-sub">Loading…</div>
+      </div>
     </div>
+    <button class="view-pkg-btn" onclick="openPkgModal()">View package →</button>
+  </div>
 
-    <div class="pkg-items" id="pkg-items"></div>
+  <div class="tl-wrap">
+    <div class="tl-track" id="tl-track"></div>
+  </div>
 
-    <div class="pkg-total-row">
-      <span class="pkg-total-label">Estimated total per person</span>
-      <span class="pkg-total-val" id="pkg-total"></span>
+  <div class="pkg-footer" id="pkg-footer">
+    <div class="pkg-stats">
+      <div><div class="pkg-stat-label">Tours</div><div class="pkg-stat-val" id="stat-tours">0</div></div>
+      <div><div class="pkg-stat-label">Total days</div><div class="pkg-stat-val" id="stat-days">0</div></div>
+      <div><div class="pkg-stat-label">Est. cost</div><div class="pkg-stat-val" id="stat-cost">$0</div></div>
     </div>
-
-    <div class="pkg-caveat">
-      <span class="pkg-caveat-icon">⚠</span>
-      <span>Prices may change until your trip is booked. Tour prices are from-prices; flights and hotels are indicative.</span>
-    </div>
-
-    <div class="pkg-ctas">
-      <button class="pkg-save-btn" id="save-btn" onclick="saveTrip()">Save my trip</button>
-      <button class="pkg-book-btn">
-        Book now <span class="coming-soon">coming soon</span>
-      </button>
-      <button class="pkg-back-btn" onclick="closePkgModal()">Back to editing</button>
-    </div>
-
+    <button class="pkg-cta" onclick="openPkgModal()">View package →</button>
   </div>
 </div>
 
-<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
-<footer id="footer">
-  <div class="footer-grid">
-    <div>
-      <a href="index.html" class="footer-logo">contiki</a>
-      <p class="footer-tagline">The world's leading travel company for 18–35s.</p>
-    </div>
-    <div>
-      <p class="footer-col-title">About Contiki</p>
-      <ul class="footer-links">
-        <li><a href="#">Who We Are</a></li>
-        <li><a href="#">Reviews</a></li>
-        <li><a href="#">Careers</a></li>
-      </ul>
-    </div>
-    <div>
-      <p class="footer-col-title">Travelling with us</p>
-      <ul class="footer-links">
-        <li><a href="#">My Contiki</a></li>
-        <li><a href="#">FAQs</a></li>
-        <li><a href="#">Payment Plans</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p class="footer-copy">© 2026 Contiki Holidays Ltd. All rights reserved.</p>
-    <div class="footer-legal">
-      <a href="#">Privacy Policy</a>
-      <a href="#">Terms &amp; Conditions</a>
-    </div>
-  </div>
-</footer>
+<!-- PACKAGE MODAL -->
+<div id="pkg-modal">
+  <div class="pkg-box" id="pkg-box"></div>
+</div>
 
 <script>
-'use strict';
-
-// ── DESIGN TOKEN COLOURS (mirrored in JS for dynamic styles) ─────────────────
-const C = {
-  go:      '#FF5900',
-  wander:  '#1C4A3D',
-  dawn:    '#FFFAF2',
-  dusk:    '#0A0C0A',
-  grey80:  '#6B6B6B',
-  border:  '#E5E0D8',
-  dark:    '#1C1C1C',
-  fGreen:  '#16A34A',
-  fGreenS: '#DCFCE7',
-  fGreenB: '#86EFAC',
-  hBlue:   '#2563EB',
-  hBlueS:  '#EFF6FF',
-  hBlueB:  '#BFDBFE',
-};
-
-// ── CITY DATA ─────────────────────────────────────────────────────────────────
-const CITIES = {
-  'london':       { iata:'LHR', lat:51.5074,  lng:-0.1278  },
-  'paris':        { iata:'CDG', lat:48.8566,  lng:2.3522   },
-  'amsterdam':    { iata:'AMS', lat:52.3676,  lng:4.9041   },
-  'berlin':       { iata:'BER', lat:52.5200,  lng:13.4050  },
-  'rome':         { iata:'FCO', lat:41.9028,  lng:12.4964  },
-  'athens':       { iata:'ATH', lat:37.9838,  lng:23.7275  },
-  'vienna':       { iata:'VIE', lat:48.2082,  lng:16.3738  },
-  'prague':       { iata:'PRG', lat:50.0755,  lng:14.4378  },
-  'budapest':     { iata:'BUD', lat:47.4979,  lng:19.0402  },
-  'barcelona':    { iata:'BCN', lat:41.3851,  lng:2.1734   },
-  'madrid':       { iata:'MAD', lat:40.4168,  lng:-3.7038  },
-  'istanbul':     { iata:'IST', lat:41.0082,  lng:28.9784  },
-  'tokyo':        { iata:'NRT', lat:35.6762,  lng:139.6503 },
-  'osaka':        { iata:'KIX', lat:34.6937,  lng:135.5023 },
-  'kyoto':        { iata:'KIX', lat:35.0116,  lng:135.7681 },
-  'bangkok':      { iata:'BKK', lat:13.7563,  lng:100.5018 },
-  'chiang mai':   { iata:'CNX', lat:18.7883,  lng:98.9853  },
-  'hanoi':        { iata:'HAN', lat:21.0285,  lng:105.8542 },
-  'singapore':    { iata:'SIN', lat:1.3521,   lng:103.8198 },
-  'bali':         { iata:'DPS', lat:-8.3405,  lng:115.0920 },
-  'phuket':       { iata:'HKT', lat:7.8804,   lng:98.3923  },
-  'auckland':     { iata:'AKL', lat:-36.8509, lng:174.7645 },
-  'queenstown':   { iata:'ZQN', lat:-45.0312, lng:168.6626 },
-  'sydney':       { iata:'SYD', lat:-33.8688, lng:151.2093 },
-  'melbourne':    { iata:'MEL', lat:-37.8136, lng:144.9631 },
-  'casablanca':   { iata:'CMN', lat:33.5731,  lng:-7.5898  },
-  'marrakech':    { iata:'RAK', lat:31.6295,  lng:-7.9811  },
-  'nairobi':      { iata:'NBO', lat:-1.2921,  lng:36.8219  },
-  'cape town':    { iata:'CPT', lat:-33.9249, lng:18.4241  },
-  'lima':         { iata:'LIM', lat:-12.0464, lng:-77.0428 },
-  'cusco':        { iata:'CUZ', lat:-13.5319, lng:-71.9675 },
-  'new york':     { iata:'JFK', lat:40.7128,  lng:-74.0060 },
-  'los angeles':  { iata:'LAX', lat:34.0522,  lng:-118.2437},
-  'miami':        { iata:'MIA', lat:25.7617,  lng:-80.1918 },
-  'dubai':        { iata:'DXB', lat:25.2048,  lng:55.2708  },
-  'copenhagen':   { iata:'CPH', lat:55.6761,  lng:12.5683  },
-  'stockholm':    { iata:'ARN', lat:59.3293,  lng:18.0686  },
-};
-
-function resolveCity(raw) {
-  const k = raw.toLowerCase().trim();
-  if (CITIES[k]) return { city: titleCase(k), ...CITIES[k] };
-  const match = Object.entries(CITIES).find(([c]) => k.includes(c) || c.includes(k));
-  if (match) return { city: titleCase(match[0]), ...match[1] };
-  return { city: titleCase(raw), iata: null, lat: null, lng: null };
-}
-function titleCase(s) { return s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1)); }
-function fmtDate(iso) { return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric' }); }
-
-// ── TRIP CATALOGUE ────────────────────────────────────────────────────────────
-const TRIPS = [
-  { id:'eur-14', name:'European Highlights', geography:'Europe',
-    destinations:['Paris','Amsterdam','Berlin','Prague','Vienna'],
-    dep_city:'Paris',   dep_iata:'CDG', end_city:'Vienna',     end_iata:'VIE',
-    duration_days:14, departure_date:'2026-07-05', end_date:'2026-07-19',
-    from_price:2900, currency:'USD', was_price:3225,
-    image:'https://picsum.photos/seed/euro-high/600/400', tags:['hot'], is_original:true },
-
-  { id:'ita-gr-12', name:'Italian Greek Adventure', geography:'Europe',
-    destinations:['Rome','Florence','Athens','Santorini'],
-    dep_city:'Rome',    dep_iata:'FCO', end_city:'Athens',      end_iata:'ATH',
-    duration_days:12, departure_date:'2026-07-12', end_date:'2026-07-24',
-    from_price:3100, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/ita-gr/600/400', tags:['new'], is_original:false },
-
-  { id:'ceu-8', name:'Central Europe Discovery', geography:'Europe',
-    destinations:['Vienna','Budapest','Krakow','Warsaw'],
-    dep_city:'Vienna',  dep_iata:'VIE', end_city:'Warsaw',      end_iata:'WAW',
-    duration_days:8, departure_date:'2026-07-22', end_date:'2026-07-30',
-    from_price:2100, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/ceu/600/400', tags:['new'], is_original:false },
-
-  { id:'japan-10', name:'Japan Discovery', geography:'Asia',
-    destinations:['Tokyo','Kyoto','Osaka','Hiroshima'],
-    dep_city:'Tokyo',   dep_iata:'NRT', end_city:'Osaka',       end_iata:'KIX',
-    duration_days:10, departure_date:'2026-08-02', end_date:'2026-08-12',
-    from_price:3400, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/japan/600/400', tags:['bestseller'], is_original:true },
-
-  { id:'sea-18', name:'Southeast Asia Explorer', geography:'Asia',
-    destinations:['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'],
-    dep_city:'Bangkok', dep_iata:'BKK', end_city:'Hanoi',       end_iata:'HAN',
-    duration_days:18, departure_date:'2026-09-01', end_date:'2026-09-19',
-    from_price:2650, currency:'USD', was_price:2950,
-    image:'https://picsum.photos/seed/sea/600/400', tags:['hot','sale'], is_original:false },
-
-  { id:'thai-7', name:'Thailand Islands', geography:'Asia',
-    destinations:['Bangkok','Koh Samui','Koh Phangan','Phuket'],
-    dep_city:'Bangkok', dep_iata:'BKK', end_city:'Phuket',      end_iata:'HKT',
-    duration_days:7,  departure_date:'2026-09-22', end_date:'2026-09-29',
-    from_price:1950, currency:'USD', was_price:2200,
-    image:'https://picsum.photos/seed/thai-isl/600/400', tags:['sale'], is_original:false },
-
-  { id:'bali-7', name:'Bali Breeze', geography:'Asia',
-    destinations:['Seminyak','Ubud','Nusa Penida','Canggu'],
-    dep_city:'Bali',    dep_iata:'DPS', end_city:'Bali',        end_iata:'DPS',
-    duration_days:7,  departure_date:'2026-08-15', end_date:'2026-08-22',
-    from_price:1850, currency:'USD', was_price:2100,
-    image:'https://picsum.photos/seed/bali/600/400', tags:['sale'], is_original:false },
-
-  { id:'nz-8', name:'New Zealand Adventure', geography:'Australasia',
-    destinations:['Auckland','Rotorua','Queenstown','Milford Sound'],
-    dep_city:'Auckland', dep_iata:'AKL', end_city:'Queenstown', end_iata:'ZQN',
-    duration_days:8,  departure_date:'2026-10-05', end_date:'2026-10-13',
-    from_price:2200, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/nz/600/400', tags:['new'], is_original:false },
-
-  { id:'mor-10', name:'Morocco Magic', geography:'Africa',
-    destinations:['Casablanca','Fes','Merzouga','Marrakech'],
-    dep_city:'Casablanca', dep_iata:'CMN', end_city:'Marrakech', end_iata:'RAK',
-    duration_days:10, departure_date:'2026-07-20', end_date:'2026-07-30',
-    from_price:2400, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/morocco/600/400', tags:[], is_original:true },
-
-  { id:'peru-9', name:'Peruvian Wonders', geography:'Latin America',
-    destinations:['Lima','Cusco','Machu Picchu','Sacred Valley'],
-    dep_city:'Lima',    dep_iata:'LIM', end_city:'Lima',        end_iata:'LIM',
-    duration_days:9,  departure_date:'2026-09-15', end_date:'2026-09-24',
-    from_price:2750, currency:'USD', was_price:null,
-    image:'https://picsum.photos/seed/peru/600/400', tags:['bestseller'], is_original:false },
+// ── DATA ──────────────────────────────────────────────────────────────────────
+// TTC API field names — departure_date / end_date / destinations[] / from_price
+var TOURS = [
+  { id:'eu-highlights', name:'European Highlights', geography:'Europe', destinations:['London','Paris','Barcelona','Rome'], duration_days:14, departure_date:'2026-07-05', end_date:'2026-07-18', from_price:2900, currency:'USD', image:'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=500&q=80', bg:'#1a1a2e', tags:['Hot NR','New Trip'], vibe:'Europe cities culture history nightlife multi-country iconic July summer' },
+  { id:'greek-islands', name:'Hopping the Greek Islands', geography:'Europe', destinations:['Athens','Mykonos','Santorini'], duration_days:16, departure_date:'2026-07-12', end_date:'2026-07-27', from_price:2900, currency:'USD', image:'https://images.unsplash.com/photo-1533105079780-92b9be482077?w=500&q=80', bg:'#0077b6', tags:['New Trip'], vibe:'Greece islands beach summer sun sailing Mediterranean July August' },
+  { id:'south-america', name:'South American Odyssey', geography:'South America', destinations:['Lima','Cusco','La Paz','Uyuni'], duration_days:18, departure_date:'2026-08-03', end_date:'2026-08-20', from_price:2750, currency:'USD', image:'https://images.unsplash.com/photo-1526392060635-9d6019884377?w=500&q=80', bg:'#2d6a4f', tags:[], vibe:'South America adventure hiking Machu Picchu ruins bucket list August' },
+  { id:'southeast-asia', name:'Southeast Asia Encounter', geography:'Asia', destinations:['Bangkok','Chiang Mai','Luang Prabang','Hanoi','Hoi An'], duration_days:17, departure_date:'2026-09-06', end_date:'2026-09-22', from_price:2200, currency:'USD', image:'https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=500&q=80', bg:'#3a0ca3', tags:['New Trip'], vibe:'Asia Southeast Asia budget culture temples food Vietnam Thailand September' },
+  { id:'safari', name:'African Safari Experience', geography:'Africa', destinations:['Nairobi','Amboseli','Masai Mara','Serengeti'], duration_days:12, departure_date:'2026-08-15', end_date:'2026-08-26', from_price:3900, currency:'USD', image:'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=500&q=80', bg:'#7d4e0a', tags:[], vibe:'safari wildlife Africa Kenya Tanzania animals nature August summer' },
+  { id:'japan', name:'Japan Uncovered', geography:'Asia', destinations:['Tokyo','Nikko','Kyoto','Nara','Osaka'], duration_days:11, departure_date:'2026-10-04', end_date:'2026-10-14', from_price:2900, currency:'USD', image:'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=500&q=80', bg:'#590d22', tags:['Hot NR'], vibe:'Japan Tokyo Kyoto culture temples food autumn October unique' },
+  { id:'morocco', name:'Morocco Desert Adventure', geography:'Africa', destinations:['Casablanca','Fes','Sahara','Marrakech'], duration_days:9, departure_date:'2026-09-13', end_date:'2026-09-21', from_price:1550, currency:'USD', image:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=500&q=80', bg:'#7c3d10', tags:[], vibe:'Morocco desert Sahara culture souks Africa September autumn' },
+  { id:'aus-nz', name:'Australia & New Zealand', geography:'Aus & NZ', destinations:['Sydney','Melbourne','Queenstown','Auckland'], duration_days:22, departure_date:'2026-11-08', end_date:'2026-11-29', from_price:4300, currency:'USD', image:'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=500&q=80', bg:'#264653', tags:[], vibe:'Australia New Zealand bungee adventure long bucket list November' },
+  { id:'usa-parks', name:'USA National Parks', geography:'North America', destinations:['Las Vegas','Grand Canyon','Bryce Canyon','Zion'], duration_days:8, departure_date:'2026-07-19', end_date:'2026-07-26', from_price:1300, currency:'USD', image:'https://images.unsplash.com/photo-1474044159687-1ee9f3a51722?w=500&q=80', bg:'#7c2d12', tags:['New Trip'], vibe:'USA national parks road trip canyon desert nature July summer' },
+  { id:'costa-rica', name:'Costa Rica Uncovered', geography:'Latin America', destinations:['San Jose','Arenal','Monteverde','Manuel Antonio'], duration_days:10, departure_date:'2026-08-30', end_date:'2026-09-08', from_price:1900, currency:'USD', image:'https://images.unsplash.com/photo-1518182170546-07661fd94144?w=500&q=80', bg:'#1b4332', tags:['Hot NR'], vibe:'Costa Rica nature jungle adventure wildlife Latin America August September' },
 ];
 
-// ── JOURNEY STATE ─────────────────────────────────────────────────────────────
-const J = {
-  origin:        null,   // { city, iata, lat, lng }
-  startLocation: null,   // { city, iata, lat, lng }
-  outboundFlight: null,  // offer | { skipped:true }
-  segments:      [],     // [ {type:'trip', tour} | {type:'gap', gapId, ...} ]
-  returnFlight:  null,   // offer | { skipped:true }
-  _pending: {},          // temporary flight selections before confirm
-};
+// IATA lookup
+var IATA_MAP = {'london':'LHR','new york':'JFK','nyc':'JFK','sydney':'SYD','melbourne':'MEL','los angeles':'LAX','paris':'CDG','rome':'FCO','barcelona':'BCN','amsterdam':'AMS','berlin':'TXL','athens':'ATH','mykonos':'JMK','santorini':'JTR','tokyo':'NRT','osaka':'KIX','kyoto':'KIX','bangkok':'BKK','chiang mai':'CNX','hanoi':'HAN','hoi an':'DAD','luang prabang':'LPQ','nairobi':'NBO','casablanca':'CMN','marrakech':'RAK','fes':'FEZ','lima':'LIM','cusco':'CUZ','la paz':'LPB','san jose':'SJO','queenstown':'ZQN','auckland':'AKL','las vegas':'LAS','grand canyon':'FLG','dubai':'DXB','singapore':'SIN','seoul':'ICN','hong kong':'HKG','serengeti':'JRO'};
+function toIATA(city){ var k=(city||'').toLowerCase().trim(); if(IATA_MAP[k]) return IATA_MAP[k]; var m=Object.keys(IATA_MAP).find(function(c){return k.includes(c)||c.includes(k);}); return m?IATA_MAP[m]:k.slice(0,3).toUpperCase(); }
 
-// ── GATE ──────────────────────────────────────────────────────────────────────
-function checkGate() {
-  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
-    document.getElementById('gate').style.display = 'none';
-    localStorage.setItem('ct-auth', '1');
-  } else {
-    document.getElementById('gate-error').style.display = 'block';
-    document.getElementById('gate-input').value = '';
-  }
-}
-if (localStorage.getItem('ct-auth') === '1') document.getElementById('gate').style.display = 'none';
+// ── STATE ─────────────────────────────────────────────────────────────────────
+var selectedTours = [];  // ordered by departure_date
+var gaps = [];           // auto-generated between tours
+var aiSummary = '';
 
-// ── NAV SCROLL ────────────────────────────────────────────────────────────────
-window.addEventListener('scroll', () => {
-  document.getElementById('nav').classList.toggle('scrolled', scrollY > 8);
-}, { passive: true });
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+document.getElementById('trip-search-input').addEventListener('keydown', function(e){ if(e.key==='Enter') doTripSearch(); });
+function useChip(el){ document.getElementById('trip-search-input').value=el.textContent; doTripSearch(); }
 
-// ── ENTRY FLOW ────────────────────────────────────────────────────────────────
-function submitOrigin() {
-  const val = document.getElementById('origin-input').value.trim();
-  if (!val) return document.getElementById('origin-input').focus();
-  J.origin = resolveCity(val);
-  // Dim step 1
-  const c = document.getElementById('step1-card');
-  c.style.opacity = '.55';
-  c.querySelector('input').disabled = true;
-  c.querySelector('button').disabled = true;
-  // Reveal step 2
-  const s2 = document.getElementById('step2-card');
-  s2.style.display = 'block';
-  s2.classList.add('step-enter');
-  requestAnimationFrame(() => document.getElementById('start-input').focus());
-}
+async function doTripSearch() {
+  var query = document.getElementById('trip-search-input').value.trim();
+  if (!query) return;
 
-function submitStart() {
-  const val = document.getElementById('start-input').value.trim();
-  if (!val) return document.getElementById('start-input').focus();
-  J.startLocation = resolveCity(val);
-  document.getElementById('entry-view').style.display = 'none';
-  document.getElementById('builder-view').style.display = 'block';
-  initBuilder();
-}
+  document.getElementById('search-go-btn').disabled = true;
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('search-status').className = 'visible';
+  document.getElementById('ai-understood').className = '';
 
-function backToEntry() {
-  document.getElementById('builder-view').style.display = 'none';
-  document.getElementById('entry-view').style.display = 'flex';
-  document.getElementById('sticky-footer').classList.remove('visible');
-  document.getElementById('bar-pkg-btn').style.display = 'none';
-  // Reset
-  J.outboundFlight = null; J.segments = []; J.returnFlight = null; J._pending = {};
-  document.getElementById('timeline').innerHTML = '';
-  const c = document.getElementById('step1-card');
-  c.style.opacity = '1';
-  c.querySelector('input').disabled = false;
-  c.querySelector('button').disabled = false;
-  document.getElementById('step2-card').style.display = 'none';
-  document.getElementById('origin-input').value = '';
-  document.getElementById('start-input').value = '';
-}
-
-// ── BUILDER INIT ──────────────────────────────────────────────────────────────
-function initBuilder() {
-  const o = J.origin.city, s = J.startLocation.city;
-  document.getElementById('builder-title').textContent = `${o} → ${s} and beyond`;
-  document.getElementById('builder-sub').textContent   = 'Building your adventure…';
-  document.getElementById('sticky-footer').classList.add('visible');
-  updateFooter();
-
-  const sameCity = o.toLowerCase() === s.toLowerCase();
-  if (!sameCity && J.origin.iata && J.startLocation.iata) {
-    addToTimeline('green', renderFlightStep('outbound'));
-    loadFlights('outbound', J.origin.iata, J.startLocation.iata,
-      '2026-07-01', null, 'ob-flights');
-  } else {
-    J.outboundFlight = { skipped: true };
-    addToTimeline('orange', renderTripStep(J.startLocation.city, 'first'));
-  }
-}
-
-// ── TIMELINE HELPERS ──────────────────────────────────────────────────────────
-let _itemCounter = 0;
-function addToTimeline(dotColour, html, animDelay = 0) {
-  const tl  = document.getElementById('timeline');
-  const div = document.createElement('div');
-  div.className = 'tl-item step-enter';
-  div.style.animationDelay = animDelay + 'ms';
-  div.innerHTML = `<div class="tl-dot tl-dot--${dotColour}"></div>${html}`;
-  tl.appendChild(div);
-  setTimeout(() => div.scrollIntoView({ behavior:'smooth', block:'nearest' }), 80);
-  return div;
-}
-
-function removeEl(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.style.transition = 'opacity .2s ease, transform .2s ease';
-  el.style.opacity = '0'; el.style.transform = 'translateY(-8px)';
-  setTimeout(() => {
-    const item = el.closest('.tl-item');
-    if (item) item.remove(); else el.remove();
-  }, 230);
-}
-
-// ── RESOLVED SEGMENTS ─────────────────────────────────────────────────────────
-function segFlight(label, from, to, flightCode, price, isReturn) {
-  return `
-    <div class="seg-resolved seg-resolved--flight">
-      <div class="seg-icon" style="background:${C.fGreenS};">✈</div>
-      <div>
-        <div class="seg-label" style="color:${C.fGreen};">${label}</div>
-        <div class="seg-detail" style="color:${C.fGreen};opacity:.7;">${from} → ${to} · ${flightCode}</div>
-      </div>
-      <div class="seg-price" style="color:${C.fGreen};">$${price}</div>
-    </div>`;
-}
-
-function segTrip(tour) {
-  return `
-    <div class="seg-resolved seg-resolved--trip">
-      <div class="seg-icon" style="background:rgba(255,255,255,.05);overflow:hidden;padding:0;">
-        <img src="${tour.image}" style="width:36px;height:36px;object-fit:cover;"
-          onerror="this.parentElement.textContent='🗺️'"/>
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div class="seg-label" style="color:white;">${tour.name}</div>
-        <div class="seg-detail" style="color:rgba(255,255,255,.5);">${fmtDate(tour.departure_date)} – ${fmtDate(tour.end_date)} · ${tour.duration_days} days · ends ${tour.end_city}</div>
-      </div>
-      <div class="seg-price" style="color:${C.go};">$${tour.from_price.toLocaleString()}</div>
-    </div>`;
-}
-
-// ── FLIGHT STEP (outbound / return) ───────────────────────────────────────────
-function renderFlightStep(type) {
-  const isRet = type === 'return';
-  const from  = isRet ? lastEndCity() : J.origin.city;
-  const to    = isRet ? J.origin.city : J.startLocation.city;
-  return `
-    <div id="fs-${type}" class="step-card">
-      <p class="step-heading">${isRet ? `Return flight back to ${to}` : `Outbound flight to ${to}`}</p>
-      <p class="step-sub">${from} → ${to} · Direct, feasibility-checked</p>
-      <div id="${type === 'outbound' ? 'ob' : 'ret'}-flights">
-        <div class="loading"><div class="dots"><span></span><span></span><span></span></div> Searching flights…</div>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button id="confirm-${type}-btn" class="btn-primary" style="display:none;"
-          onclick="confirmFlight('${type}')">Confirm flight</button>
-        <button class="btn-secondary" style="font-size:.8rem;padding:9px 16px;"
-          onclick="skipFlight('${type}')">Skip — I'll arrange my own</button>
-      </div>
-    </div>`;
-}
-
-async function loadFlights(type, origIata, destIata, date, tripBStart, listId) {
-  let data;
   try {
-    const r = await fetch('/api/flights', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ origin: origIata, destination: destIata, departure_date: date,
-        trip_b_start_iso: tripBStart, min_buffer_hours:4, city_transfer_minutes:120 }),
+    var res = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, trips: TOURS.map(function(t){
+        return { id:t.id, title:t.name, region:t.geography, days:t.duration_days, price:t.from_price,
+          route:t.destinations.join(' → '), vibe:t.vibe,
+          dates: t.departure_date + ' to ' + t.end_date };
+      })})
     });
-    if (!r.ok) throw 0;
-    data = await r.json();
-  } catch { data = mockFlights(); }
+    var data = await res.json();
 
-  const el = document.getElementById(listId);
-  if (!el) return;
+    document.getElementById('search-status').className = '';
+    aiSummary = data.summary || '';
+    document.getElementById('ai-understood-text').textContent = aiSummary;
+    document.getElementById('ai-understood').className = 'visible';
 
-  // Pre-select cheapest
-  if (data.length) {
-    J._pending[type] = data[0];
-    updateFooter();
+    // Use full trip objects from server directly (live TTC data).
+    // Fall back to local TOURS array only for mock/offline mode.
+    var matches = (data.matches || []).filter(Boolean).map(function(m){
+      if (m.title || m.name) {
+        return Object.assign({}, m, {
+          title:    m.title || m.name,
+          aiReason: m.aiReason || m.reason || '',
+          score:    m.score || 0,
+          photo:    m.photo || m.image || null,
+          bgColor:  m.bgColor || '#1C1C1C',
+          tags:     m.tags || [],
+        });
+      }
+      var local = TOURS.find(function(t){ return String(t.id)===String(m.id); });
+      return local ? Object.assign({}, local, { aiReason: m.reason || '', score: m.score || 0 }) : null;
+    }).filter(Boolean);
+
+    renderResults(matches);
+  } catch(e) {
+    document.getElementById('search-status').className = '';
+    // Fallback: show all tours
+    renderResults(TOURS);
   }
-
-  el.innerHTML = data.slice(0, 4).map((f, i) => `
-    <div class="flight-opt${i===0?' selected':''}" id="fo-${type}-${i}"
-      onclick="selectFlightOpt('${type}',${i},${JSON.stringify(f).replace(/"/g,'&quot;')})">
-      <div class="flight-opt-left">
-        <span class="airline-badge">${f.airline.length > 12 ? f.airline.slice(0,10)+'…' : f.airline}</span>
-        <div>
-          <span class="flight-code">${f.flight}</span>
-          <span class="flight-direct">Direct</span>
-          <div class="flight-times">${f.departing_at} → ${f.arriving_at}</div>
-        </div>
-      </div>
-      <span class="flight-price">$${f.price}</span>
-    </div>`).join('');
-
-  const btn = document.getElementById(`confirm-${type}-btn`);
-  if (btn) btn.style.display = 'block';
+  document.getElementById('search-go-btn').disabled = false;
 }
 
-function selectFlightOpt(type, idx, flight) {
-  document.querySelectorAll(`[id^="fo-${type}-"]`).forEach((el, i) => el.classList.toggle('selected', i === idx));
-  J._pending[type] = flight;
-  updateFooter();
+function renderResults(tours) {
+  document.getElementById('results-count').textContent = tours.length;
+  document.getElementById('results-grid').innerHTML = tours.map(resultCardHTML).join('');
+  document.getElementById('results-section').style.display = 'block';
+  updateBuildBtn();
 }
 
-function confirmFlight(type) {
-  const f = J._pending[type];
-  if (!f) return skipFlight(type);
-  const isRet = type === 'return';
-  const from  = isRet ? lastEndCity() : J.origin.city;
-  const to    = isRet ? J.origin.city : J.startLocation.city;
-  const offer = { ...f, from, to };
-
-  removeEl(`fs-${type}`);
-  setTimeout(() => {
-    if (isRet) {
-      J.returnFlight = offer;
-      addToTimeline('green', segFlight('Return flight', from, to, f.flight, f.price, true));
-      setTimeout(renderDone, 150);
-    } else {
-      J.outboundFlight = offer;
-      addToTimeline('green', segFlight('Outbound flight', from, to, f.flight, f.price, false));
-      setTimeout(() => addToTimeline('orange', renderTripStep(J.startLocation.city, 'first')), 150);
-    }
-    updateFooter();
-  }, 250);
-}
-
-function skipFlight(type) {
-  const isRet = type === 'return';
-  if (isRet) { J.returnFlight = { skipped:true }; removeEl(`fs-${type}`); setTimeout(renderDone, 300); }
-  else       { J.outboundFlight = { skipped:true }; removeEl(`fs-${type}`); setTimeout(() => addToTimeline('orange', renderTripStep(J.startLocation.city, 'first')), 300); }
-  updateFooter();
-}
-
-// ── TRIP SELECTION STEP ───────────────────────────────────────────────────────
-function renderTripStep(fromCity, role) {
-  const stepId = `ts-${Date.now()}`;
-  const trips  = role === 'first' ? tripsFromCity(fromCity) : reachableTrips(fromCity);
-  const heading = role === 'first'
-    ? `Contiki trips starting in ${fromCity}`
-    : `Trips you can reach from ${fromCity}`;
-
-  return `
-    <div id="${stepId}" class="step-card">
-      <p class="step-heading">${heading}</p>
-      <p class="step-sub">Select one tour to add to your adventure.</p>
-      <div class="trip-grid">
-        ${trips.map(t => renderTripPickCard(t, stepId)).join('')}
-      </div>
-      ${trips.length === 0 ? `<p style="color:var(--ui-grey80);font-size:.85rem;padding:8px 0;">No tours found departing from ${fromCity}. <button onclick="skipTripStep('${stepId}')" style="color:var(--go);background:none;border:none;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:underline;">End journey here →</button></p>` : ''}
-    </div>`;
-}
-
-function renderTripPickCard(trip, stepId) {
-  const added = J.segments.some(s => s.type==='trip' && s.tour.id === trip.id);
-  const words = trip.name.split(' ');
-  const bigWord = words[0].toLowerCase();
-  const restWord = words.slice(1).join(' ').toUpperCase();
-  const tagsHtml = trip.tags.map(t => {
-    if (t === 'sale' || t === 'hot') return `<span class="tag-sale">${t === 'sale' ? 'Sale' : 'Hot NR'}</span>`;
-    if (t === 'bestseller') return `<span class="tag-outline">Bestseller</span>`;
-    if (t === 'new') return `<span class="tag-outline">New</span>`;
-    return '';
+function resultCardHTML(t) {
+  var words = t.name.split(' ');
+  var line1 = words[0]; var line2 = words.slice(1).join(' ');
+  var wasPrice = Math.round(t.from_price * 1.105 / 25) * 25;
+  var tagsHTML = (t.tags||[]).map(function(tag){
+    return tag==='Black Friday Sale'
+      ? '<span style="background:#FFD600;color:#111;font-size:0.58rem;font-weight:800;padding:2px 6px;border-radius:4px">'+tag+'</span>'
+      : '<span style="border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:0.58rem;padding:2px 6px;border-radius:4px">'+tag+'</span>';
   }).join('');
 
-  return `
-    <div class="trip-pick-card${added?' unavailable':''}" onclick="pickTrip('${trip.id}','${stepId}')">
-      <div class="tpc-img">
-        <img src="${trip.image}" alt="${trip.name}" loading="lazy"
-          onerror="this.style.display='none';this.parentElement.style.background='#2a2a2a'"/>
-        <div class="tpc-img-overlay"></div>
-        ${trip.is_original ? `<div class="tpc-originals">originals</div>` : ''}
-        <div class="tpc-date-badge">${fmtDate(trip.departure_date)}</div>
-        <div class="tpc-title-overlay">
-          <div class="tpc-name-big">${bigWord}</div>
-          <div class="tpc-region">${restWord || trip.geography.toUpperCase()}</div>
-        </div>
-      </div>
-      <div class="tpc-body">
-        ${trip.tags.length ? `<div class="tpc-tags">${tagsHtml}</div>` : ''}
-        <div class="tpc-stats">
-          <span class="tpc-stat"><span class="icon">calendar_today</span>${trip.duration_days}d</span>
-          <span class="tpc-stat"><span class="icon">public</span>${trip.destinations.length} stops</span>
-        </div>
-        <div class="tpc-price">
-          <span class="tpc-from">From</span>
-          <span class="tpc-amount">$${trip.from_price.toLocaleString()}</span>
-          ${trip.was_price ? `<span class="tpc-was">$${trip.was_price.toLocaleString()}</span>` : ''}
-        </div>
-        <button class="tpc-select-btn">${added ? '✓ Added' : 'Select this trip →'}</button>
-      </div>
-    </div>`;
+  return '<div class="result-card" id="rc-'+t.id+'" onclick="toggleTour(\''+t.id+'\')">'+
+    '<div class="rc-img" style="background:'+t.bg+'">'+
+      '<img src="'+t.image+'" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0" onerror="imgErr(this)" />'+
+      '<div class="rc-badge">originals</div>'+
+      '<div class="rc-title-overlay">'+
+        '<div class="rc-title">'+line1.toLowerCase()+'</div>'+
+        (line2?'<div class="rc-region">'+line2.toUpperCase()+'</div>':'')+''+
+      '</div>'+
+    '</div>'+
+    '<div class="rc-body">'+
+      '<div class="rc-dates">'+
+        '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+
+        fmtDate(t.departure_date)+' – '+fmtDate(t.end_date)+
+      '</div>'+
+      '<div class="rc-stats">'+
+        '<span>'+t.duration_days+' days</span>'+
+        '<span>'+t.destinations.length+' destinations</span>'+
+      '</div>'+
+      (tagsHTML?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'+tagsHTML+'</div>':'')+
+      '<div class="rc-price">$'+t.from_price.toLocaleString()+'<span>pp · Was $'+wasPrice.toLocaleString()+'</span></div>'+
+      '<button class="rc-add-btn" id="btn-'+t.id+'">+ Add to package</button>'+
+    '</div>'+
+    (t.aiReason?'<div class="ai-match-reason"><span>✦</span><span>'+t.aiReason+'</span></div>':'')+
+  '</div>';
 }
 
-function pickTrip(tripId, stepId) {
-  const trip = TRIPS.find(t => t.id === tripId);
-  if (!trip) return;
-  const prev = lastTripSeg();
+function imgErr(el){ el.style.display='none'; }
 
-  removeEl(stepId);
+function toggleTour(id) {
+  var idx = selectedTours.findIndex(function(t){ return t.id===id; });
+  var tour = TOURS.find(function(t){ return t.id===id; });
+  if (!tour) return;
 
-  setTimeout(() => {
-    // If there's a prior trip, generate the gap first
-    if (prev) {
-      const gapId = `gap-${prev.tour.id}__${trip.id}`;
-      addToTimeline('green', renderGapCard(gapId, prev.tour, trip));
-      loadGapFlights(gapId, prev.tour, trip);
-      addToTimeline('blue', renderHotelsCard(gapId, trip));
-      loadGapHotels(gapId, trip);
-      // Store gap segment
-      J.segments.push({ type:'gap', gapId,
-        tourAId: prev.tour.id, tourBId: trip.id,
-        fromCity: prev.tour.end_city, toCity: trip.dep_city,
-        fromDate: prev.tour.end_date, toDate: trip.departure_date,
-        selectedFlight: null, selectedHotel: null });
-    }
-
-    // Add trip segment
-    J.segments.push({ type:'trip', tour: trip });
-    addToTimeline('orange', segTrip(trip));
-
-    // "Add another?" prompt
-    setTimeout(() => addToTimeline('orange', renderAddAnotherPrompt(trip)), 150);
-    updateFooter();
-    updateBuilderTitle();
-  }, 250);
+  if (idx >= 0) {
+    selectedTours.splice(idx, 1);
+    document.getElementById('rc-'+id).classList.remove('selected');
+    document.getElementById('btn-'+id).textContent = '+ Add to package';
+    document.getElementById('btn-'+id).classList.remove('added');
+  } else {
+    selectedTours.push(tour);
+    document.getElementById('rc-'+id).classList.add('selected');
+    document.getElementById('btn-'+id).textContent = '✓ Added';
+    document.getElementById('btn-'+id).classList.add('added');
+  }
+  // Keep sorted by departure date
+  selectedTours.sort(function(a,b){ return a.departure_date.localeCompare(b.departure_date); });
+  updateBuildBtn();
 }
 
-function skipTripStep(stepId) {
-  removeEl(stepId);
-  setTimeout(() => addToTimeline('orange', renderGoingHomePrompt()), 300);
+function updateBuildBtn() {
+  var btn = document.getElementById('build-pkg-btn');
+  btn.disabled = selectedTours.length < 2;
+  btn.textContent = selectedTours.length < 2
+    ? 'Select at least 2 tours'
+    : 'Build package with '+selectedTours.length+' tours →';
 }
 
-// ── GAP CARD (flight) ─────────────────────────────────────────────────────────
-function renderGapCard(gapId, tourA, tourB) {
-  const days = Math.max(1, Math.round((new Date(tourB.departure_date) - new Date(tourA.end_date)) / 86400000));
-  return `
-    <div class="gap-card" id="${gapId}-f">
-      <div class="gap-header">
-        <div class="gap-header-icon"><span class="icon" style="font-size:16px;color:${C.hBlue};">connecting_airports</span></div>
-        <div>
-          <div style="font-weight:700;font-size:.88rem;color:${C.hBlue};">Connecting · ${tourA.end_city} → ${tourB.dep_city}</div>
-          <div style="font-size:.72rem;color:#3B82F6;">${fmtDate(tourA.end_date)} – ${fmtDate(tourB.departure_date)} · ${days} day${days!==1?'s':''} gap</div>
-        </div>
-      </div>
-      <p class="gap-section-label">✈ Feasible flight</p>
-      <div id="${gapId}-fl-list">
-        <div class="loading"><div class="dots"><span></span><span></span><span></span></div> Checking flights…</div>
-      </div>
-    </div>`;
-}
+// ── BUILD PACKAGE ─────────────────────────────────────────────────────────────
+function buildPackage() {
+  if (selectedTours.length < 2) return;
+  document.getElementById('search-screen').style.display = 'none';
+  document.getElementById('builder-screen').style.display = 'block';
+  window._preGapLoaded = false;
 
-async function loadGapFlights(gapId, tourA, tourB) {
-  let data;
-  try {
-    const r = await fetch('/api/flights', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ origin: tourA.end_iata, destination: tourB.dep_iata,
-        departure_date: tourA.end_date,
-        trip_b_start_iso: tourB.departure_date + 'T00:00:00Z',
-        min_buffer_hours:4, city_transfer_minutes:120 }),
-    });
-    if (!r.ok) throw 0;
-    data = await r.json();
-  } catch { data = mockFlights(); }
-
-  const el = document.getElementById(`${gapId}-fl-list`);
-  if (!el) return;
-
-  const seg = J.segments.find(s => s.type==='gap' && s.gapId===gapId);
-
-  if (!data.length) {
-    el.innerHTML = `<p style="font-size:.8rem;color:var(--ui-grey80);">No feasible direct flight found — you may want to adjust your trip order.</p>`;
-    return;
+  // Build gap objects between consecutive tours
+  gaps = [];
+  for (var i=0; i<selectedTours.length-1; i++) {
+    var curr = selectedTours[i];
+    var next = selectedTours[i+1];
+    var gapDays = diffDays(curr.end_date, next.departure_date);
+    var gap = {
+      id: 'gap-'+i,
+      idx: i,
+      fromCity: curr.destinations[curr.destinations.length-1],
+      toCity: next.destinations[0],
+      fromDate: curr.end_date,
+      toDate: next.departure_date,
+      nextSegStart: next.departure_date,
+      days: gapDays,
+      stayCity: null, // user chooses: fromCity or toCity
+      flights: null, hotels: null,
+      loadingFlights: true, loadingHotels: false,
+      selectedFlight: null, selectedHotel: null,
+    };
+    gaps.push(gap);
+    loadGapFlights(gap);
   }
 
-  if (seg && !seg.selectedFlight) { seg.selectedFlight = data[0]; updateFooter(); }
-
-  el.innerHTML = data.slice(0, 3).map((f, i) => `
-    <div class="flight-opt${i===0?' selected':''}"
-      onclick="selectGapFlight('${gapId}',this,${JSON.stringify(f).replace(/"/g,'&quot;')})">
-      <div class="flight-opt-left">
-        <span class="airline-badge">${f.airline.length > 10 ? f.airline.slice(0,8)+'…' : f.airline}</span>
-        <div>
-          <span class="flight-code">${f.flight}</span>
-          <span class="flight-direct">Direct</span>
-          <div class="flight-times">${f.departing_at} → ${f.arriving_at}</div>
-        </div>
-      </div>
-      <span class="flight-price">$${f.price}</span>
-    </div>`).join('');
-
-  updateFooter();
+  updateBuilder();
+  renderTimeline();
 }
 
-function selectGapFlight(gapId, el, flight) {
-  el.parentElement.querySelectorAll('.flight-opt').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  const seg = J.segments.find(s => s.type==='gap' && s.gapId===gapId);
-  if (seg) { seg.selectedFlight = flight; updateFooter(); }
+function goBack() {
+  document.getElementById('builder-screen').style.display = 'none';
+  document.getElementById('search-screen').style.display = 'block';
 }
 
-// ── GAP HOTELS CARD ───────────────────────────────────────────────────────────
-function renderHotelsCard(gapId, tourB) {
-  return `
-    <div class="gap-card" id="${gapId}-h">
-      <p class="gap-section-label" style="margin-top:0;">🏨 Hotels near ${tourB.dep_city} (your next start)</p>
-      <div id="${gapId}-ht-list">
-        <div class="loading"><div class="dots"><span></span><span></span><span></span></div> Finding hotels near ${tourB.dep_city}…</div>
-      </div>
-    </div>`;
-}
-
-async function loadGapHotels(gapId, tourB) {
-  const city     = tourB.dep_city;
-  const cityData = resolveCity(city);
-  const checkIn  = tourB.departure_date;
-
-  let data;
+// ── GAP DATA ──────────────────────────────────────────────────────────────────
+async function loadGapFlights(gap) {
   try {
-    const body = { location: city, check_in: checkIn, check_out: checkIn };
-    if (cityData.lat) { body.lat = cityData.lat; body.lng = cityData.lng; body.radius_meters = 5000; }
-    const r = await fetch('/api/hotels', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body),
+    var res = await fetch('/api/flights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: toIATA(gap.fromCity),
+        destination: toIATA(gap.toCity),
+        departure_date: gap.fromDate,
+        trip_b_start_iso: gap.nextSegStart + 'T00:00:00Z',
+        min_buffer_hours: 4,
+        city_transfer_minutes: 120,
+      }),
     });
-    if (!r.ok) throw 0;
-    const d = await r.json();
-    data = d.hotels || d;
-  } catch { data = mockHotels(city); }
-
-  const el = document.getElementById(`${gapId}-ht-list`);
-  if (!el) return;
-
-  if (!data.length) { el.innerHTML = `<p style="font-size:.8rem;color:var(--ui-grey80);">No hotels found near ${city}.</p>`; return; }
-
-  const seg = J.segments.find(s => s.type==='gap' && s.gapId===gapId);
-  if (seg && !seg.selectedHotel) seg.selectedHotel = data[0];
-
-  el.innerHTML = data.slice(0, 3).map((h, i) => {
-    const stars  = h.rating ? '★'.repeat(Math.min(5, Math.round(h.rating))) : '';
-    const cancel = h.cancellation === 'FREE_CANCELLATION' ? '✓ Free cancel' : '';
-    const price  = h.price_per_night ? `$${h.price_per_night}/nt` : '';
-    return `
-      <div class="hotel-opt${i===0?' selected':''}"
-        onclick="selectGapHotel('${gapId}',this,'${h.id}')">
-        <div class="hotel-opt-left">
-          <div class="hotel-icon">🏨</div>
-          <div>
-            <div class="hotel-name">${h.name}</div>
-            <div class="hotel-meta">${[cancel, stars].filter(Boolean).join(' · ')}</div>
-          </div>
-        </div>
-        <span class="hotel-price">${price}</span>
-      </div>`;
-  }).join('');
+    var data = await res.json();
+    gap.flights = data.offers || [];
+    gap.direct_possible = data.direct_possible;
+    if (gap.flights.length) gap.selectedFlight = gap.flights[0];
+  } catch(e) { gap.flights = []; }
+  gap.loadingFlights = false;
+  renderTimeline();
+  updateBuilder();
 }
 
-function selectGapHotel(gapId, el, hotelId) {
-  el.parentElement.querySelectorAll('.hotel-opt').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  const seg = J.segments.find(s => s.type==='gap' && s.gapId===gapId);
-  if (seg) seg.selectedHotel = { id: hotelId };
+async function loadGapHotels(gap) {
+  if (!gap.stayCity) return;
+  gap.loadingHotels = true;
+  gap.hotels = null;
+  renderTimeline();
+
+  try {
+    var res = await fetch('/api/hotels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: gap.stayCity,
+        check_in: gap.fromDate,
+        check_out: gap.toDate,
+      }),
+    });
+    var data = await res.json();
+    gap.hotels = data.hotels || [];
+    if (gap.hotels.length) gap.selectedHotel = gap.hotels[0];
+  } catch(e) { gap.hotels = []; }
+  gap.loadingHotels = false;
+  renderTimeline();
+  updateBuilder();
 }
 
-// ── ADD ANOTHER / GOING HOME ──────────────────────────────────────────────────
-function renderAddAnotherPrompt(lastTour) {
-  const id = `add-${Date.now()}`;
-  return `
-    <div id="${id}" class="decision-card">
-      <p class="step-heading" style="margin-bottom:4px;">Add another trip?</p>
-      <p class="step-sub">Your last tour ends in <strong>${lastTour.end_city}</strong>. We'll find tours reachable from there.</p>
-      <div class="decision-actions">
-        <button class="btn-primary" onclick="addAnother('${lastTour.id}','${id}')">Yes, add another →</button>
-        <button class="btn-secondary" onclick="doneAdding('${id}')">No, I'm done</button>
-      </div>
-    </div>`;
-}
+// ── RENDER TIMELINE ───────────────────────────────────────────────────────────
+function renderTimeline() {
+  var track = document.getElementById('tl-track');
+  var html = '';
 
-function addAnother(lastTourId, promptId) {
-  const tour = TRIPS.find(t => t.id === lastTourId);
-  removeEl(promptId);
-  setTimeout(() => addToTimeline('orange', renderTripStep(tour.end_city, 'next')), 300);
-}
-
-function doneAdding(promptId) {
-  removeEl(promptId);
-  setTimeout(() => addToTimeline('green', renderGoingHomePrompt()), 300);
-}
-
-function renderGoingHomePrompt() {
-  const id   = `gh-${Date.now()}`;
-  const last = lastTripSeg();
-  return `
-    <div id="${id}" class="decision-card">
-      <p class="step-heading" style="margin-bottom:4px;">Are you heading home after?</p>
-      <p class="step-sub">We'll find a return flight from <strong>${last ? last.tour.end_city : '…'}</strong> back to <strong>${J.origin.city}</strong>.</p>
-      <div class="decision-actions">
-        <button class="btn-primary" onclick="goingHome('${id}')">Yes, find return flight</button>
-        <button class="btn-secondary" onclick="notGoingHome('${id}')">No, ending here</button>
-      </div>
-    </div>`;
-}
-
-function goingHome(promptId) {
-  removeEl(promptId);
-  const last    = lastTripSeg();
-  const endIata = last ? last.tour.end_iata : null;
-  setTimeout(() => {
-    addToTimeline('green', renderFlightStep('return'));
-    if (endIata && J.origin.iata) {
-      loadFlights('return', endIata, J.origin.iata,
-        last.tour.end_date, null, 'ret-flights');
+  for (var i=0; i<selectedTours.length; i++) {
+    var tour = selectedTours[i];
+    html += tourSegHTML(tour, i);
+    if (i < selectedTours.length-1 && gaps[i]) {
+      html += gapSegHTML(gaps[i]);
     }
-  }, 300);
+  }
+
+  track.innerHTML = html;
 }
 
-function notGoingHome(promptId) {
-  removeEl(promptId);
-  J.returnFlight = { skipped: true };
-  setTimeout(renderDone, 300);
+function tourSegHTML(t, i) {
+  return '<div class="tl-seg"><div class="tl-dot"></div>'+
+    '<div class="tl-tour">'+
+      '<div class="tl-tour-img" style="background:'+t.bg+'">'+
+        '<img src="'+t.image+'" alt="" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block" onerror="imgErr(this)" />'+
+        '<div class="tl-tour-badge">originals</div>'+
+      '</div>'+
+      '<div class="tl-tour-body">'+
+        '<div>'+
+          '<div class="tl-tour-label">Contiki Tour · '+t.geography+'</div>'+
+          '<div class="tl-tour-name">'+t.name+'</div>'+
+        '</div>'+
+        '<div class="tl-tour-meta">'+
+          '<span><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>'+fmtDate(t.departure_date)+' – '+fmtDate(t.end_date)+'</span>'+
+          '<span style="color:var(--orange);font-weight:700">$'+t.from_price.toLocaleString()+' pp</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="tl-tour-actions">'+
+        '<button class="tl-del" onclick="removeTour(\''+t.id+'\')">✕</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
 }
 
-// ── DONE STATE ────────────────────────────────────────────────────────────────
-function renderDone() {
-  addToTimeline('orange', `
-    <div class="done-card">
-      <div class="done-emoji">🎉</div>
-      <p class="done-title">Your adventure is ready!</p>
-      <p class="done-sub">Review, save, and share your full package.</p>
-      <button class="btn-primary" onclick="openPkgModal()"
-        style="font-size:.95rem;padding:13px 28px;">
-        View &amp; save package →
-      </button>
-    </div>`);
-  document.getElementById('bar-pkg-btn').style.display = 'flex';
-  updateFooter();
+function gapSegHTML(gap) {
+  var flightsHTML = '';
+  var hotelsHTML = '';
+  var staySelectorHTML = '';
+
+  // Flight section
+  if (gap.loadingFlights) {
+    flightsHTML = '<div class="loading-row"><div class="spin"></div>Searching flights '+gap.fromCity+' → '+gap.toCity+'…</div>';
+  } else if (gap.flights && gap.flights.length) {
+    flightsHTML = '<div class="gap-section-label">'+
+      '<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-7.73-7.73 2 2 0 011.72-2.18h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 8.91"/></svg>'+
+      'Available flights</div>'+
+      gap.flights.map(function(f, fi){
+        var sel = gap.selectedFlight && gap.selectedFlight.offer_id===f.offer_id;
+        var dep = f.departing_at ? f.departing_at.replace('T',' ').slice(0,16) : '';
+        var arr = f.arriving_at ? f.arriving_at.replace('T',' ').slice(0,16) : '';
+        return '<div class="flight-opt'+(sel?' sel':'')+'" onclick="selFlight('+gap.idx+','+fi+')">'+
+          '<div class="flight-logo">'+(f.flight||'FL').slice(0,2)+'</div>'+
+          '<div class="flight-info">'+
+            '<div class="flight-num">'+(f.flight||f.airline||'Flight')+'<span class="direct-badge">Direct</span></div>'+
+            '<div class="flight-times">'+dep+' → '+arr+'</div>'+
+          '</div>'+
+          '<div class="flight-price-tag">$'+Math.round(f.price||0)+'</div>'+
+        '</div>';
+      }).join('');
+  } else if (!gap.loadingFlights) {
+    flightsHTML = '<div class="gap-section-label">✈️ Flights</div><p class="no-results">No direct flights found for these dates.</p>';
+  }
+
+  // Stay city selector — user picks where to stay during gap
+  if (gap.days > 0) {
+    staySelectorHTML = '<div class="gap-section-label" style="margin-top:14px">🏨 Where would you like to stay during the gap?</div>'+
+      '<div class="stay-selector">'+
+        '<div class="stay-btn'+(gap.stayCity===gap.fromCity?' active':'')+'" onclick="setStayCity('+gap.idx+',\''+gap.fromCity+'\')">'+
+          '📍 '+gap.fromCity+'<br><span style="font-size:0.65rem;font-weight:400;opacity:0.7">End of Tour '+(gap.idx+1)+'</span>'+
+        '</div>'+
+        '<div class="stay-btn'+(gap.stayCity===gap.toCity?' active':'')+'" onclick="setStayCity('+gap.idx+',\''+gap.toCity+'\')">'+
+          '📍 '+gap.toCity+'<br><span style="font-size:0.65rem;font-weight:400;opacity:0.7">Start of Tour '+(gap.idx+2)+'</span>'+
+        '</div>'+
+      '</div>';
+  }
+
+  // Hotels section
+  if (gap.stayCity) {
+    if (gap.loadingHotels) {
+      hotelsHTML = '<div class="loading-row"><div class="spin"></div>Finding hotels near '+gap.stayCity+'…</div>';
+    } else if (gap.hotels && gap.hotels.length) {
+      hotelsHTML = '<div class="gap-section-label">Hotels near '+gap.stayCity+'</div>'+
+        gap.hotels.map(function(h, hi){
+          var sel = gap.selectedHotel && gap.selectedHotel.id===h.id;
+          var stars = h.price_level ? '£'.repeat(Math.min(h.price_level,4)) : '';
+          return '<div class="hotel-opt'+(sel?' sel':'')+'" onclick="selHotel('+gap.idx+','+hi+')">'+
+            '<div class="hotel-thumb">🏨</div>'+
+            '<div class="hotel-info">'+
+              '<div class="hotel-name">'+h.name+'</div>'+
+              '<div class="hotel-addr">'+(h.address||'')+'</div>'+
+              '<div class="hotel-rating">'+(h.rating ? h.rating+' ★' : '')+' '+stars+(h.reviews?' · '+(h.reviews>=1000?(h.reviews/1000).toFixed(1)+'k':h.reviews)+' reviews':'')+'</div>'+
+            '</div>'+
+            (h.maps_url && h.maps_url!=='#' ? '<a href="'+h.maps_url+'" target="_blank" class="maps-link" onclick="event.stopPropagation()">View →</a>' : '')+
+          '</div>';
+        }).join('');
+    } else if (!gap.loadingHotels) {
+      hotelsHTML = '<p class="no-results">No hotels found. Try the other city.</p>';
+    }
+  }
+
+  return '<div class="tl-seg" id="'+gap.id+'"><div class="tl-dot gap-d"></div>'+
+    '<div class="tl-gap">'+
+      '<div class="tl-gap-header">'+
+        '<div class="tl-gap-icon">✈</div>'+
+        '<div>'+
+          '<div class="tl-gap-title">'+gap.days+'-day gap · '+gap.fromCity+' → '+gap.toCity+'</div>'+
+          '<div class="tl-gap-sub">'+fmtDate(gap.fromDate)+' – '+fmtDate(gap.toDate)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="tl-gap-body">'+flightsHTML+staySelectorHTML+hotelsHTML+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────────────
+function selFlight(gapIdx, flightIdx) {
+  var gap = gaps[gapIdx];
+  if (gap && gap.flights) { gap.selectedFlight = gap.flights[flightIdx]; renderTimeline(); updateBuilder(); }
+}
+
+function selHotel(gapIdx, hotelIdx) {
+  var gap = gaps[gapIdx];
+  if (gap && gap.hotels) { gap.selectedHotel = gap.hotels[hotelIdx]; renderTimeline(); updateBuilder(); }
+}
+
+function setStayCity(gapIdx, city) {
+  var gap = gaps[gapIdx];
+  if (!gap) return;
+  gap.stayCity = city;
+  gap.hotels = null;
+  gap.selectedHotel = null;
+  renderTimeline();
+  loadGapHotels(gap);
+}
+
+function removeTour(id) {
+  selectedTours = selectedTours.filter(function(t){ return t.id!==id; });
+  if (selectedTours.length < 2) { goBack(); return; }
+  // Rebuild gaps
+  gaps = [];
+  for (var i=0; i<selectedTours.length-1; i++) {
+    var curr = selectedTours[i]; var next = selectedTours[i+1];
+    var gap = {
+      id:'gap-'+i, idx:i,
+      fromCity: curr.destinations[curr.destinations.length-1],
+      toCity: next.destinations[0],
+      fromDate: curr.end_date, toDate: next.departure_date,
+      nextSegStart: next.departure_date,
+      days: diffDays(curr.end_date, next.departure_date),
+      stayCity: null, flights:null, hotels:null,
+      loadingFlights:true, loadingHotels:false,
+      selectedFlight:null, selectedHotel:null,
+    };
+    gaps.push(gap);
+    loadGapFlights(gap);
+  }
+  updateBuilder();
+  renderTimeline();
+}
+
+// ── BUILDER HEADER + FOOTER ───────────────────────────────────────────────────
+function updateBuilder() {
+  var totalDays = selectedTours.reduce(function(n,t){ return n+t.duration_days; },0);
+  var tourCost = selectedTours.reduce(function(n,t){ return n+t.from_price; },0);
+  var flightCost = gaps.filter(function(g){ return g.selectedFlight; }).reduce(function(n,g){ return n+Math.round(g.selectedFlight.price||0); },0);
+
+  document.getElementById('stat-tours').textContent = selectedTours.length;
+  document.getElementById('stat-days').textContent = totalDays;
+  document.getElementById('stat-cost').textContent = '$'+(tourCost+flightCost).toLocaleString();
+  document.getElementById('pkg-footer').className = 'pkg-footer show';
+
+  var cities = selectedTours.map(function(t){ return t.geography; }).join(' + ');
+  document.getElementById('builder-title').textContent = cities;
+  document.getElementById('builder-sub').textContent =
+    selectedTours[0].departure_date.slice(0,7).replace('-','/') + ' – ' +
+    selectedTours[selectedTours.length-1].end_date.slice(0,7).replace('-','/');
 }
 
 // ── PACKAGE MODAL ─────────────────────────────────────────────────────────────
 function openPkgModal() {
-  const trips  = J.segments.filter(s => s.type==='trip').map(s => s.tour);
-  const gaps   = J.segments.filter(s => s.type==='gap');
-  const days   = trips.reduce((n, t) => n + t.duration_days, 0);
-  let   total  = trips.reduce((n, t) => n + t.from_price, 0);
-  let   fCount = 0;
+  var totalDays = selectedTours.reduce(function(n,t){ return n+t.duration_days; },0);
+  var tourCost = selectedTours.reduce(function(n,t){ return n+t.from_price; },0);
+  var flightCost = gaps.filter(function(g){ return g.selectedFlight; }).reduce(function(n,g){ return n+Math.round(g.selectedFlight.price||0); },0);
+  var total = tourCost + flightCost;
 
-  if (J.outboundFlight && !J.outboundFlight.skipped) { total += J.outboundFlight.price; fCount++; }
-  gaps.forEach(g => { if (g.selectedFlight?.price) { total += g.selectedFlight.price; fCount++; } });
-  if (J.returnFlight  && !J.returnFlight.skipped)  { total += J.returnFlight.price;  fCount++; }
+  var itemsHTML = '';
 
-  // Route string
-  const cities = [J.origin?.city];
-  trips.forEach(t => { if (t.dep_city !== cities.at(-1)) cities.push(t.dep_city); cities.push(t.end_city); });
-  if (J.returnFlight && !J.returnFlight.skipped) cities.push(J.origin?.city);
-  const route = [...new Set(cities.filter(Boolean))].join(' → ');
+  for (var i=0; i<selectedTours.length; i++) {
+    var t = selectedTours[i];
+    itemsHTML += '<div class="pkg-item">'+
+      '<div class="pkg-item-icon" style="background:#1E1E1E;color:white">🗺️</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="pkg-item-label">Contiki Tour · '+t.geography+'</div>'+
+        '<div class="pkg-item-name">'+t.name+'</div>'+
+        '<div class="pkg-item-detail">'+fmtDate(t.departure_date)+' – '+fmtDate(t.end_date)+' · '+t.duration_days+' days</div>'+
+      '</div>'+
+      '<div class="pkg-item-price">$'+t.from_price.toLocaleString()+'</div>'+
+    '</div>';
 
-  document.getElementById('pkg-route').textContent      = route;
-  document.getElementById('pkg-days').textContent       = days;
-  document.getElementById('pkg-tours').textContent      = trips.length;
-  document.getElementById('pkg-flights-n').textContent  = fCount;
-  document.getElementById('pkg-total-top').textContent  = `$${total.toLocaleString()}`;
-  document.getElementById('pkg-total').textContent      = `$${total.toLocaleString()} pp`;
-
-  let items = '';
-
-  // Outbound
-  if (J.outboundFlight && !J.outboundFlight.skipped) {
-    const f = J.outboundFlight;
-    items += pkgRow('✈️', C.hBlueS, `Outbound flight · ${f.from} → ${f.to}`, f.flight, `$${f.price}`);
-  }
-
-  // Trips + gaps in order
-  for (let i = 0; i < trips.length; i++) {
-    const t = trips[i];
-    items += pkgRow('🗺️', C.dark, t.name, `${fmtDate(t.departure_date)} – ${fmtDate(t.end_date)}`, `$${t.from_price.toLocaleString()}`);
-    if (i < trips.length - 1) {
-      const g = gaps.find(x => x.tourAId === t.id && x.tourBId === trips[i+1].id);
-      if (g?.selectedFlight?.price) items += pkgRow('✈️', C.hBlueS, `Connection flight · ${g.fromCity} → ${g.toCity}`, g.selectedFlight.flight || 'Direct', `$${g.selectedFlight.price}`);
-      if (g?.selectedHotel) {
-        const nights = Math.max(1, Math.round((new Date(g.toDate) - new Date(g.fromDate)) / 86400000));
-        items += pkgRow('🏨', '#FFF7ED', `Hotel near ${g.toCity}`, `${nights} night${nights!==1?'s':''} · indicative`, '—');
+    if (i < selectedTours.length-1 && gaps[i]) {
+      var g = gaps[i];
+      if (g.selectedFlight) {
+        itemsHTML += '<div class="pkg-item">'+
+          '<div class="pkg-item-icon" style="background:#EFF6FF;color:#2563EB">✈️</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div class="pkg-item-label">Flight · '+g.fromCity+' → '+g.toCity+'</div>'+
+            '<div class="pkg-item-name">'+(g.selectedFlight.flight||g.selectedFlight.airline||'Flight')+'</div>'+
+            '<div class="pkg-item-detail">'+fmtDate(g.fromDate)+(g.selectedFlight._mock?' · Subject to availability':'')+'</div>'+
+          '</div>'+
+          '<div class="pkg-item-price">$'+Math.round(g.selectedFlight.price)+'</div>'+
+        '</div>';
+      }
+      if (g.selectedHotel && g.stayCity) {
+        itemsHTML += '<div class="pkg-item">'+
+          '<div class="pkg-item-icon" style="background:var(--orange-soft);color:var(--orange)">🏨</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div class="pkg-item-label">Hotel · '+g.stayCity+'</div>'+
+            '<div class="pkg-item-name">'+g.selectedHotel.name+'</div>'+
+            '<div class="pkg-item-detail">'+fmtDate(g.fromDate)+' – '+fmtDate(g.toDate)+' · '+g.days+' nights</div>'+
+          '</div>'+
+          '<div class="pkg-item-price">—</div>'+
+        '</div>';
       }
     }
   }
 
-  // Return
-  if (J.returnFlight && !J.returnFlight.skipped) {
-    const f = J.returnFlight;
-    items += pkgRow('✈️', C.hBlueS, `Return flight · ${f.from} → ${f.to}`, f.flight, `$${f.price}`);
-  }
+  document.getElementById('pkg-box').innerHTML =
+    '<div class="pkg-hero">'+
+      '<div class="pkg-hero-title">Your package</div>'+
+      '<div class="pkg-hero-sub">'+selectedTours.length+' Contiki tours · '+gaps.filter(function(g){return g.selectedFlight;}).length+' flights included</div>'+
+      '<div class="pkg-hero-stats">'+
+        '<div><div class="pkg-hs-label">Total days</div><div class="pkg-hs-val">'+totalDays+'</div></div>'+
+        '<div><div class="pkg-hs-label">Tours</div><div class="pkg-hs-val">'+selectedTours.length+'</div></div>'+
+        '<div><div class="pkg-hs-label">Est. cost</div><div class="pkg-hs-val">$'+total.toLocaleString()+'</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="pkg-body">'+
+      itemsHTML+
+      '<div class="pkg-total-row"><span class="pkg-total-label">Estimated total per person</span><span class="pkg-total-val">$'+total.toLocaleString()+'</span></div>'+
+      '<p class="pkg-note">Tour prices are from prices and may vary by departure date. Flight prices are estimates from Duffel and subject to availability. Hotel pricing is indicative only.</p>'+
+      '<button class="pkg-book-btn">Enquire &amp; book →</button>'+
+      '<button class="pkg-close-btn" onclick="closePkgModal()">Back to editing</button>'+
+    '</div>';
 
-  document.getElementById('pkg-items').innerHTML = items;
-  document.getElementById('pkg-overlay').classList.add('open');
   document.getElementById('pkg-modal').classList.add('open');
 }
 
-function pkgRow(icon, iconBg, label, sub, price) {
-  return `
-    <div class="pkg-item">
-      <div class="pkg-item-icon" style="background:${iconBg};">${icon}</div>
-      <div style="flex:1;min-width:0;">
-        <div class="pkg-item-label">${label}</div>
-        <div class="pkg-item-sub">${sub}</div>
-      </div>
-      <div class="pkg-item-price" style="color:${price==='—'?'#9CA3AF':C.dusk};">${price}</div>
-    </div>`;
-}
-
-function closePkgModal() {
-  document.getElementById('pkg-overlay').classList.remove('open');
-  document.getElementById('pkg-modal').classList.remove('open');
-}
-
-function saveTrip() {
-  try { localStorage.setItem('ct-journey', JSON.stringify(J)); } catch {}
-  const btn = document.getElementById('save-btn');
-  btn.textContent = '✓ Saved!';
-  btn.style.background = C.wander;
-  setTimeout(() => { btn.textContent = 'Save my trip'; btn.style.background = C.go; }, 2800);
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closePkgModal(); });
-
-// ── FOOTER TOTALS ─────────────────────────────────────────────────────────────
-function updateFooter() {
-  const trips  = J.segments.filter(s => s.type==='trip').map(s => s.tour);
-  const gaps   = J.segments.filter(s => s.type==='gap');
-  const nights = gaps.reduce((n, g) => {
-    if (!g.fromDate || !g.toDate) return n;
-    return n + Math.max(1, Math.round((new Date(g.toDate) - new Date(g.fromDate)) / 86400000));
-  }, 0);
-  let total  = trips.reduce((n, t) => n + t.from_price, 0);
-  let fCount = 0;
-
-  const obf = J.outboundFlight || J._pending?.outbound;
-  if (obf && !obf.skipped) { total += obf.price || 0; fCount++; }
-  gaps.forEach(g => { if (g.selectedFlight?.price) { total += g.selectedFlight.price; fCount++; } });
-  const retf = J.returnFlight || J._pending?.['return'];
-  if (retf && !retf.skipped) { total += retf.price || 0; fCount++; }
-
-  document.getElementById('ft-tours').textContent   = trips.length;
-  document.getElementById('ft-flights').textContent = fCount;
-  document.getElementById('ft-nights').textContent  = nights;
-  document.getElementById('ft-cost').textContent    = `$${total.toLocaleString()}`;
-}
-
-function updateBuilderTitle() {
-  const trips = J.segments.filter(s => s.type==='trip').map(s => s.tour);
-  if (!trips.length) return;
-  const geos = [...new Set(trips.map(t => t.geography))];
-  document.getElementById('builder-title').textContent = geos.join(' + ');
-  document.getElementById('builder-sub').textContent   = `${trips.length} tour${trips.length!==1?'s':''} · adding…`;
-}
-
-// ── TRIP FILTERING ────────────────────────────────────────────────────────────
-function addedIds() { return new Set(J.segments.filter(s => s.type==='trip').map(s => s.tour.id)); }
-
-function tripsFromCity(city) {
-  const key   = city.toLowerCase();
-  const added = addedIds();
-  const exact = TRIPS.filter(t => !added.has(t.id) && t.dep_city.toLowerCase() === key);
-  if (exact.length) return exact;
-  return TRIPS.filter(t => !added.has(t.id)).slice(0, 6);
-}
-
-function reachableTrips(endCity) {
-  const key   = endCity.toLowerCase();
-  const added = addedIds();
-  const last  = lastTripSeg()?.tour;
-  return TRIPS
-    .filter(t => !added.has(t.id))
-    .sort((a, b) => {
-      const score = t => t.dep_city.toLowerCase() === key ? 3 : (last && t.geography === last.geography) ? 2 : 1;
-      return score(b) - score(a);
-    });
-}
+function closePkgModal() { document.getElementById('pkg-modal').classList.remove('open'); }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-function lastTripSeg() {
-  const trips = J.segments.filter(s => s.type==='trip');
-  return trips.length ? trips[trips.length-1] : null;
-}
-function lastEndCity() {
-  const last = lastTripSeg();
-  return last ? last.tour.end_city : J.startLocation?.city || '';
-}
-
-// ── MOCK DATA ─────────────────────────────────────────────────────────────────
-function mockFlights() {
-  const carriers = [['BA','British Airways'],['LH','Lufthansa'],['EK','Emirates'],['QR','Qatar Airways'],['TG','Thai Airways']];
-  return [0,1,2].map(i => {
-    const [code, name] = carriers[i];
-    const base = 280 + i * 90 + Math.floor(Math.random()*120);
-    return { offer_id:`mk-${i}`, flight:`${code}${200+Math.floor(Math.random()*400)}`, airline:name,
-      departing_at:`${8+i*3}:${i===0?'15':'00'}`, arriving_at:`${13+i*3}:${i===0?'30':'45'}`,
-      price: base, currency:'USD', _mock:true };
-  }).sort((a,b) => a.price - b.price);
-}
-
-function mockHotels(city) {
-  return [
-    { id:'h1', name:`Hotel Centrale ${city}`, address:`City Centre, ${city}`, rating:4, price_per_night:145, cancellation:'FREE_CANCELLATION' },
-    { id:'h2', name:`${city} Boutique Hotel`, address:`Old Town, ${city}`, rating:4, price_per_night:189, cancellation:'FREE_CANCELLATION' },
-    { id:'h3', name:`Budget Stay ${city}`, address:`Near Station, ${city}`, rating:3, price_per_night:89, cancellation:'NON_REFUNDABLE' },
-  ];
-}
+function fmtDate(d){ return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function diffDays(a,b){ return Math.round((new Date(b)-new Date(a))/864e5); }
 </script>
 </body>
 </html>

@@ -511,12 +511,12 @@ function buildMeta(t) {
 }
 
 function staticCardHTML(t) {
-  return '<a href="#" class="static-card" onclick="return false">' + buildCardImg(t) + buildMeta(t) + '</a>';
+  return '<a href="/trip/' + encodeURIComponent(t.id) + '" class="static-card">' + buildCardImg(t) + buildMeta(t) + '</a>';
 }
 
 function cardHTML(t, showReason) {
   var reasonHTML = showReason && t.aiReason ? '<div class="card-reason"><span>&#10022;</span><span>' + t.aiReason + '</span></div>' : '';
-  return '<a href="#" class="trip-card" onclick="return false">' + buildCardImg(t) + buildMeta(t) + reasonHTML + '</a>';
+  return '<a href="/trip/' + encodeURIComponent(t.id) + '" class="trip-card">' + buildCardImg(t) + buildMeta(t) + reasonHTML + '</a>';
 }
 
 function renderPopular() {

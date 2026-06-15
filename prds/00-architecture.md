@@ -5,7 +5,7 @@
 ## Product summary
 An AI-powered Contiki demo with two surfaces:
 1. **Homepage + Semantic Search** — free-text AI search that surfaces ranked Contiki trips with reasoning, inside the header search dropdown.
-2. **Multi-Trip Builder** — combine 2+ Contiki tours into one bookable package, with AI flight suggestions (Duffel) and geo-fenced hotel suggestions (Google Places) filling the gaps.
+2. **Multi-Trip Builder** — combine 2+ Contiki tours into one bookable package, with AI flight suggestions (Duffel) and geo-fenced hotel suggestions (LiteAPI) filling the gaps.
 
 Both are password-gated (`Go-Wander-2026`) and styled to the Contiki brand guide.
 
@@ -15,7 +15,7 @@ Both are password-gated (`Go-Wander-2026`) and styled to the Contiki brand guide
 - **Hosting:** Vercel. Static files at repo root, functions in `/api`.
 - **AI:** Anthropic Messages API (`claude-sonnet-4-20250514`) via `/api/search`.
 - **Flights:** Duffel API via `/api/flights`.
-- **Hotels:** Google Places (New) API via `/api/hotels`.
+- **Hotels:** LiteAPI via `/api/hotels`.
 
 ## File structure
 ```
@@ -25,7 +25,7 @@ Both are password-gated (`Go-Wander-2026`) and styled to the Contiki brand guide
 ├── api/
 │   ├── search.js           # Anthropic proxy (semantic search)
 │   ├── flights.js          # Duffel proxy
-│   └── hotels.js           # Google Places proxy
+│   └── hotels.js           # LiteAPI proxy
 ├── assets/
 │   └── (logos, fonts if self-hosted)
 ├── tailwind.config.js      # Token theme extension
@@ -39,7 +39,7 @@ Both are password-gated (`Go-Wander-2026`) and styled to the Contiki brand guide
 |-----|---------|----------|
 | `ANTHROPIC_API_KEY` | search.js | For live AI (falls back to keyword search) |
 | `DUFFEL_API_KEY` | flights.js | For live flights (falls back to mock) |
-| `GOOGLE_PLACES_API_KEY` | hotels.js | For live hotels (falls back to mock) |
+| `LITEAPI_KEY` | hotels.js | For live hotels (falls back to mock) |
 | `TTC_API_TOKEN` | search.js | For live Contiki tours (falls back to mock) |
 
 **Graceful degradation is mandatory:** every proxy returns realistic mock data when its key is absent, so the demo always works.

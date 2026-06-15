@@ -1,13 +1,8 @@
 {
-  "name": "contiki-build-a-trip",
+  "name": "contiki-ai-search",
   "version": "1.0.0",
-  "private": true,
-  "engines": { "node": ">=20" },
-  "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod"
-  },
-  "devDependencies": {
-    "vercel": "^39.0.0"
+  "description": "Contiki AI semantic search proof of concept",
+  "engines": {
+    "node": "18.x"
   }
 }

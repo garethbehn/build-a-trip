@@ -3,7 +3,7 @@
 > Claude Code auto-loads this file. It defines how this project is built. Follow the lifecycle. Use the skills. Respect the design system.
 
 ## What this project is
-An AI-powered Contiki demo: semantic trip search + a multi-trip package builder (Duffel flights, Google Places hotels). Static HTML + Tailwind + vanilla JS, deployed on Vercel with Edge Function proxies. Password-gated (`Go-Wander-2026`).
+An AI-powered Contiki demo: semantic trip search + a multi-trip package builder (Duffel flights, LiteAPI hotels). Static HTML + Tailwind + vanilla JS, deployed on Vercel with Edge Function proxies. Password-gated (`Go-Wander-2026`).
 
 ## Golden rules
 1. **Design system is law.** Read `prds/design-system.md` before writing any UI. Orange = `#FF5900`, green = `#1C4A3D`. Mencken for hero, Halyard for body (Playfair/Inter fallback in dev). Never invent hex values.

@@ -1,62 +1,42 @@
-# Contiki Demo — Build Package for Claude Code
+# Contiki AI Demo — Claude Code Handover
 
-Everything needed to rebuild the Contiki AI demo from scratch in Claude Code, with an opinionated, reusable development lifecycle.
+## What this is
+An AI-powered Contiki demo with semantic trip search and a guided multi-trip builder.
+Password-gated (`Go-Wander-2026`). Static HTML + Tailwind + vanilla JS on Vercel.
 
-## What's in here
+## What's built (working)
+- `index.html` — Homepage with hero, trip rails, and AI semantic search modal
+- `build-trip.html` — Multi-trip builder (needs guided flow rebuild per PRD 10)
+- `api/search.js` — Anthropic semantic search + live TTC tour data
+- `api/flights.js` — Duffel direct/feasibility-checked flights
+- `api/hotels.js` — LiteAPI geo-fenced hotel search with rates
+- `api/booking.js` — TTC booking proxy (iTravel-shaped)
 
-```
-CLAUDE.md                    ← Claude Code auto-loads this. Rules + lifecycle.
-tailwind.config.js           ← Contiki design tokens as Tailwind theme.
-prds/
-  design-system.md           ← SOURCE OF TRUTH: colours, type, opacity, shadows, icons.
-  00-architecture.md         ← Read first. Stack, structure, conventions.
-  01-nav-header.md
-  02-hero.md
-  03-trip-card.md            ← Most important component.
-  03b-buttons.md             ← Button system (3 tiers × sizes × states).
-  04-search-modal.md
-  05-search-results.md
-  06-region-explorer.md
-  07-footer.md
-  08-password-gate.md
-  09-build-trip-search.md
-  10-build-trip-timeline.md
-  11-gap-card.md             ← Signature feature (flights + hotels).
-  12-package-modal.md
-  13-api-proxies.md          ← Exact Duffel/Places/Anthropic/TTC logic.
-.claude/
-  commands/                  ← Slash commands: /spec /design-review /build /self-test /refine /ship
-  skills/                    ← Custom skills: contiki-fidelity, demo-credibility, api-proxy-safety
-lifecycle/
-  LIFECYCLE.md               ← How the dev lifecycle works.
-```
+## What needs building next (in order)
+1. **`trip.html`** — Individual trip detail page (PRD 14). Read `prds/14-trip-page.md`.
+2. **`booking.html`** — 5-step booking wizard (PRD 15). Read `prds/15-booking-journey.md`.
+3. **Rebuild `build-trip.html`** — Guided journey flow (PRDs 09+10+11+12). The current file has an old multi-select UI. The new flow is: origin → start location → outbound flight → first trips → chained trips by flight reachability → gap flights+hotels → return flight → package.
+4. **Wire trip card links** — `cardHTML()` in `index.html` currently has `href="#" onclick="return false"`. Update to `href="/trip/${t.id}"`.
 
-## Getting started in Claude Code
+## Vercel environment variables (all set)
+- `ANTHROPIC_API_KEY` — Claude semantic search
+- `TTC_API_TOKEN` — Live Contiki tour data
+- `DUFFEL_API_KEY` — Live flights
+- `LITEAPI_KEY` — Live hotels
 
-1. Drop these files into your repo root (keep the `.claude/`, `prds/`, `lifecycle/` structure).
-2. Open the repo in Claude Code — it auto-loads `CLAUDE.md`.
-3. Build a component:
-   ```
-   /spec build the trip card
-   /design-review
-   /build
-   /self-test
-   /refine
-   /ship
-   ```
-   Or just say "build the homepage following the PRDs" and Claude will work through them.
+## Key architectural decisions
+- All API keys server-side only — never in client HTML/JS
+- No mock/fallback data — all proxies return real errors if keys missing
+- TTC API v4 schema: content at `tour.tourOptions[0].seasons[0].content[0]`, prices at `departures[0].sellingRegions[0]`
+- LiteAPI rates require `includeHotelData: true` to return hotel names
+- Duffel: single call with `?return_offers=true`, direct-only (`segments.length===1`), feasibility-filtered
+- Booking contract is iTravel-shaped — ready for TTC booking API via `departure.links.book`
 
-## The design system
-`prds/design-system.md` is law. Key values:
+## Design system
+Read `prds/design-system.md` before touching any UI.
 - Orange `#FF5900` · Green `#1C4A3D` · Sale yellow `#FFE100` · Black `#0A0C0A` · Cream `#FFFAF2`
-- Hero font: Mencken Std Head Compressed · Body: Halyard (Playfair/Inter fallback in dev — production needs Adobe Typekit)
+- Hero font: Mencken Std Head Compressed (Playfair Display fallback in dev)
+- Body font: Halyard Display/Text (Inter fallback in dev)
 
-## Environment variables (Vercel)
-- `ANTHROPIC_API_KEY` · `DUFFEL_API_KEY` · `GOOGLE_PLACES_API_KEY` · `TTC_API_TOKEN`
-- All optional — each proxy falls back to realistic mock data if its key is absent.
-
-## Reusing the lifecycle for other demos
-Swap `prds/design-system.md` + the `*-fidelity` skill for the new brand; keep everything else. See `lifecycle/LIFECYCLE.md`.
-
----
-**Password:** `Go-Wander-2026`
+## Development lifecycle
+Read `CLAUDE.md`. Use `/spec → /design-review → /build → /self-test → /refine → /ship`.

@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trip · Contiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" rel="stylesheet"/>
+
+  <style>
+    /* ── DESIGN SYSTEM TOKENS ─────────────────────────────────────────────── */
+    :root {
+      --go:        #FF5900;
+      --go-alt:    #FF7300;
+      --wander:    #1C4A3D;
+      --wander-alt:#1C6348;
+      --burst:     #FFE100;
+      --dusk:      #0A0C0A;
+      --dawn:      #FFFAF2;
+      --ui-grey80: #6B6B6B;
+      --ui-border: #E5E0D8;
+      --card-dark: #1C1C1C;
+
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:  0 4px 6px rgba(0,0,0,0.07);
+      --shadow-lg:  0 10px 15px rgba(0,0,0,0.1);
+      --shadow-xl:  0 20px 25px rgba(0,0,0,0.1);
+      --shadow-2xl: 0 25px 50px rgba(0,0,0,0.25);
+
+      --r-sm:   6px;
+      --r-md:   12px;
+      --r-lg:   16px;
+      --r-pill: 100px;
+
+      --t-fast:  0.15s ease;
+      --t-base:  0.2s ease;
+      --t-modal: 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ── RESET ────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--dawn);
+      color: var(--dusk);
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+    .icon {
+      font-family: 'Material Symbols Outlined';
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px;
+      line-height: 1;
+      vertical-align: middle;
+      display: inline-block;
+    }
+
+    /* ── PASSWORD GATE ────────────────────────────────────────────────────── */
+    #gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--dusk);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gate-box { background: #1a1a1a; border-radius: var(--r-lg); padding: 48px 40px; width: 360px; max-width: 90vw; }
+    .gate-logo { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 2rem; color: var(--go); margin-bottom: 6px; }
+    .gate-sub { color: rgba(255,255,255,.4); font-size: .8rem; margin-bottom: 28px; }
+    .gate-input { width: 100%; background: #111; border: 1px solid #333; border-radius: var(--r-md); color: white; font-family: inherit; font-size: .9rem; padding: 14px 16px; outline: none; transition: border-color var(--t-fast); margin-bottom: 10px; }
+    .gate-input:focus { border-color: var(--go); }
+    .gate-error { color: #ff6b6b; font-size: .8rem; margin-bottom: 10px; display: none; }
+    .gate-btn { width: 100%; background: var(--go); color: white; border: none; border-radius: var(--r-md); padding: 14px; font-size: .95rem; font-weight: 700; transition: background var(--t-fast); }
+    .gate-btn:hover { background: var(--go-alt); }
+
+    /* ── NAV ──────────────────────────────────────────────────────────────── */
+    #nav {
+      position: sticky; top: 0; z-index: 200;
+      background: var(--dawn); border-bottom: 1px solid var(--ui-border);
+      height: 64px; padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background var(--t-base), box-shadow var(--t-base);
+    }
+    #nav.scrolled { background: rgba(255,250,242,.88); backdrop-filter: blur(14px); box-shadow: var(--shadow-sm); }
+    .nav-left { display: flex; align-items: center; gap: 4px; }
+    .nav-link { font-size: .85rem; font-weight: 600; color: var(--dusk); padding: 8px 12px; border-radius: var(--r-md); border: none; background: none; display: flex; align-items: center; gap: 4px; transition: background var(--t-fast); }
+    .nav-link:hover { background: rgba(0,0,0,.05); }
+    .nav-link.active { color: var(--go); }
+    .nav-logo { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 1.6rem; color: var(--go); transition: opacity var(--t-fast); }
+    .nav-logo:hover { opacity: .8; }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-pill { display: flex; align-items: center; gap: 6px; border: 1.5px solid var(--ui-border); border-radius: var(--r-pill); padding: 8px 14px; background: none; font-size: .85rem; font-weight: 600; color: var(--dusk); transition: background var(--t-fast); }
+    .nav-pill:hover { background: rgba(0,0,0,.04); }
+    .nav-pill.primary { background: var(--go); color: white; border-color: var(--go); }
+    .nav-pill.primary:hover { background: var(--go-alt); }
+
+    /* ── LOADING SKELETON ─────────────────────────────────────────────────── */
+    #loading-state { display: block; }
+    .sk { background: linear-gradient(90deg, #E8E3DB 25%, #F0EBE3 50%, #E8E3DB 75%); background-size: 200% 100%; animation: sk 1.4s ease infinite; border-radius: 6px; }
+    @keyframes sk { 0%{background-position:200%}100%{background-position:-200%} }
+    .sk-hero { height: 70vh; min-height: 480px; border-radius: 0; margin-bottom: 0; }
+    .sk-bar { height: 56px; margin: 0; border-radius: 0; }
+    .sk-body { max-width: 1200px; margin: 40px auto; padding: 0 32px; display: grid; grid-template-columns: 1fr 340px; gap: 40px; }
+    .sk-main { display: flex; flex-direction: column; gap: 16px; }
+    .sk-line { height: 16px; }
+    .sk-line.tall { height: 24px; }
+    .sk-panel { height: 480px; border-radius: var(--r-lg); }
+
+    /* ── ERROR STATE ──────────────────────────────────────────────────────── */
+    #error-state { display: none; padding: 80px 32px; text-align: center; }
+    .error-icon { font-size: 3rem; margin-bottom: 16px; }
+    .error-title { font-size: 1.4rem; font-weight: 700; color: var(--wander); margin-bottom: 8px; }
+    .error-sub { color: var(--ui-grey80); font-size: .9rem; margin-bottom: 28px; }
+
+    /* ── TOUR PAGE ────────────────────────────────────────────────────────── */
+    #tour-page { display: none; }
+
+    /* ── HERO CAROUSEL ────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 70vh;
+      overflow: hidden;
+      background: var(--dusk);
+    }
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      min-height: 70vh;
+      transition: transform .6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .carousel-slide {
+      min-width: 100%;
+      height: 70vh;
+      min-height: 480px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .carousel-img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+    .carousel-gradient {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.35) 45%, transparent 75%);
+    }
+
+    /* Hero back button */
+    .hero-back {
+      position: absolute; top: 20px; left: 24px; z-index: 10;
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
+      color: white; border: none; border-radius: var(--r-pill);
+      padding: 8px 16px; font-size: .82rem; font-weight: 600;
+      transition: background var(--t-fast);
+    }
+    .hero-back:hover { background: rgba(0,0,0,.65); }
+
+    /* Originals badge */
+    .hero-originals {
+      position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10;
+      background: var(--go); color: white;
+      font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700;
+      font-size: .7rem; padding: 4px 14px; border-radius: var(--r-sm);
+      text-transform: lowercase;
+    }
+
+    /* Carousel counter */
+    .carousel-counter {
+      position: absolute; top: 20px; right: 24px; z-index: 10;
+      background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
+      color: rgba(255,255,255,.8); border-radius: var(--r-pill);
+      padding: 6px 12px; font-size: .75rem; font-weight: 600;
+    }
+
+    /* Hero content bottom */
+    .hero-content {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 5;
+      padding: 0 48px 40px;
+    }
+    .hero-region-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.15); backdrop-filter: blur(6px);
+      color: white; border-radius: var(--r-pill);
+      padding: 5px 14px; font-size: .72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      margin-bottom: 12px;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic; font-weight: 900;
+      font-size: clamp(2.6rem, 6vw, 5rem);
+      color: var(--go);
+      text-transform: lowercase;
+      line-height: .9;
+      margin-bottom: 10px;
+    }
+    .hero-route {
+      color: rgba(255,255,255,.65);
+      font-size: .92rem; font-weight: 500;
+    }
+
+    /* Carousel controls */
+    .carousel-prev, .carousel-next {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
+      border: none; color: white;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--t-fast);
+    }
+    .carousel-prev:hover, .carousel-next:hover { background: rgba(0,0,0,.7); }
+    .carousel-prev { left: 20px; }
+    .carousel-next { right: 20px; }
+    .carousel-dots {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+      display: flex; gap: 6px;
+    }
+    .carousel-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,.4);
+      transition: background var(--t-fast), transform var(--t-fast);
+    }
+    .carousel-dot.active { background: white; transform: scale(1.4); }
+
+    /* ── FACTS BAR ────────────────────────────────────────────────────────── */
+    #facts-bar {
+      position: sticky; top: 64px; z-index: 100;
+      background: white; border-bottom: 1px solid var(--ui-border);
+      padding: 0 48px;
+      display: flex; align-items: center; gap: 0;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    #facts-bar::-webkit-scrollbar { display: none; }
+    .fact-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 20px; white-space: nowrap;
+      border-right: 1px solid var(--ui-border);
+      flex-shrink: 0;
+    }
+    .fact-item:last-child { border-right: none; }
+    .fact-icon { color: var(--go); font-size: 18px; }
+    .fact-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ui-grey80); margin-bottom: 1px; }
+    .fact-value { font-size: .88rem; font-weight: 600; color: var(--dusk); }
+
+    /* ── PAGE BODY ────────────────────────────────────────────────────────── */
+    .page-body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 32px 80px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 48px;
+      align-items: start;
+    }
+
+    /* ── SECTION COMMON ───────────────────────────────────────────────────── */
+    .content-section { margin-bottom: 52px; }
+    .section-heading {
+      font-size: 1.15rem; font-weight: 700;
+      color: var(--wander);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ui-border);
+    }
+
+    /* ── DEPARTURE SELECTOR ───────────────────────────────────────────────── */
+    .dep-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .dep-pill {
+      border: 1.5px solid var(--ui-border);
+      border-radius: var(--r-md);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+      background: white;
+    }
+    .dep-pill:hover:not(.unavailable) { border-color: var(--go); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .dep-pill.selected { border-color: var(--go); background: #FFF5F0; }
+    .dep-pill.unavailable { opacity: .45; cursor: not-allowed; }
+    .dep-dates { font-size: .8rem; font-weight: 700; color: var(--dusk); margin-bottom: 2px; }
+    .dep-year  { font-size: .7rem; color: var(--ui-grey80); margin-bottom: 6px; }
+    .dep-badge {
+      display: inline-block; font-size: .62rem; font-weight: 700;
+      padding: 2px 8px; border-radius: var(--r-sm); margin-bottom: 6px;
+    }
+    .dep-badge.available  { background: #DCFCE7; color: #16A34A; }
+    .dep-badge.onRequest  { background: #FEF9C3; color: #A16207; }
+    .dep-badge.unavailable{ background: #F3F4F6; color: #9CA3AF; }
+    .dep-price { font-size: 1rem; font-weight: 800; color: var(--dusk); }
+    .dep-currency { font-size: .72rem; color: var(--ui-grey80); font-weight: 500; }
+
+    /* ── DESCRIPTION ──────────────────────────────────────────────────────── */
+    .description-text {
+      font-size: .95rem; line-height: 1.75;
+      color: var(--dusk); max-width: 680px;
+    }
+
+    /* ── HIGHLIGHTS ───────────────────────────────────────────────────────── */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .highlight-group { }
+    .highlight-title {
+      font-size: .75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--ui-grey80); margin-bottom: 10px;
+    }
+    .highlight-list { list-style: none; }
+    .highlight-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: .88rem; color: var(--dusk); line-height: 1.5;
+      margin-bottom: 7px;
+    }
+    .highlight-icon { color: var(--go); font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+
+    /* ── ITINERARY ACCORDION ──────────────────────────────────────────────── */
+    .itin-list { border: 1px solid var(--ui-border); border-radius: var(--r-lg); overflow: hidden; }
+    .itin-item { border-bottom: 1px solid var(--ui-border); }
+    .itin-item:last-child { border-bottom: none; }
+    .itin-header {
+      width: 100%; display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px;
+      background: white; border: none; text-align: left;
+      cursor: pointer;
+      transition: background var(--t-fast);
+    }
+    .itin-header:hover { background: #FAFAF8; }
+    .itin-day-num {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--dawn); border: 1.5px solid var(--ui-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 800; color: var(--wander);
+      flex-shrink: 0;
+    }
+    .itin-header-main { flex: 1; min-width: 0; }
+    .itin-header-title { font-size: .9rem; font-weight: 700; color: var(--dusk); }
+    .itin-header-locs {
+      font-size: .75rem; color: var(--ui-grey80); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .itin-meal-icons { display: flex; gap: 4px; flex-shrink: 0; }
+    .meal-chip {
+      font-size: .62rem; font-weight: 700; padding: 2px 8px;
+      border-radius: var(--r-sm); background: #FFF5F0; color: var(--go);
+    }
+    .itin-toggle-icon { color: var(--ui-grey80); flex-shrink: 0; transition: transform var(--t-fast); }
+    .itin-item.open .itin-toggle-icon { transform: rotate(180deg); }
+    .itin-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height var(--t-modal);
+      background: #FAFAF8;
+    }
+    .itin-item.open .itin-body { max-height: 600px; }
+    .itin-body-inner { padding: 0 20px 20px 70px; }
+    .itin-desc { font-size: .88rem; line-height: 1.7; color: var(--dusk); margin-bottom: 12px; }
+    .itin-meta { display: flex; flex-wrap: wrap; gap: 12px; }
+    .itin-meta-item { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--ui-grey80); }
+    .itin-meta-item .icon { color: var(--go); font-size: 16px; }
+
+    /* ── WHAT'S INCLUDED ──────────────────────────────────────────────────── */
+    .included-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .included-group-title {
+      font-size: .75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--ui-grey80); margin-bottom: 10px;
+    }
+    .included-list { list-style: none; }
+    .included-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: .88rem; color: var(--dusk); line-height: 1.5;
+      margin-bottom: 7px;
+    }
+    .check-icon { color: var(--go); font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+
+    /* ── ACCOMMODATION ────────────────────────────────────────────────────── */
+    .acc-table { width: 100%; border-collapse: collapse; }
+    .acc-table th { text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ui-grey80); padding: 8px 12px; border-bottom: 2px solid var(--ui-border); }
+    .acc-table td { padding: 12px; border-bottom: 1px solid var(--ui-border); font-size: .85rem; color: var(--dusk); }
+    .acc-table tr:last-child td { border-bottom: none; }
+    .acc-table tr:hover td { background: #FAFAF8; }
+
+    /* ── MAP SECTION ──────────────────────────────────────────────────────── */
+    .map-placeholder {
+      background: linear-gradient(135deg, var(--wander) 0%, var(--wander-alt) 100%);
+      border-radius: var(--r-lg);
+      height: 260px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; color: rgba(255,255,255,.6);
+    }
+    .map-placeholder .icon { font-size: 40px; color: rgba(255,255,255,.3); margin-bottom: 4px; }
+    .map-route-text { font-size: 1.1rem; font-weight: 700; color: rgba(255,255,255,.85); }
+    .map-note { font-size: .78rem; }
+
+    /* ── PRICING PANEL ────────────────────────────────────────────────────── */
+    .pricing-panel {
+      background: white;
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-xl);
+      padding: 24px;
+      position: sticky;
+      top: 136px; /* 64px nav + 56px facts bar + 16px */
+    }
+    .panel-heading { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--ui-grey80); margin-bottom: 4px; }
+    .panel-selected-dep { font-size: 1rem; font-weight: 700; color: var(--dusk); margin-bottom: 16px; line-height: 1.3; }
+    .panel-selected-dep span { color: var(--ui-grey80); font-size: .8rem; font-weight: 500; }
+
+    .room-label { font-size: .78rem; font-weight: 700; color: var(--dusk); margin-bottom: 8px; }
+    .room-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+    .room-btn {
+      flex: 1; min-width: 60px;
+      border: 1.5px solid var(--ui-border); border-radius: var(--r-md);
+      padding: 8px 10px; background: white;
+      font-size: .78rem; font-weight: 600; color: var(--dusk);
+      transition: border-color var(--t-fast), background var(--t-fast);
+    }
+    .room-btn:hover { border-color: var(--go); }
+    .room-btn.selected { border-color: var(--go); background: #FFF5F0; color: var(--go); }
+
+    .price-breakdown { border-top: 1px solid var(--ui-border); border-bottom: 1px solid var(--ui-border); padding: 14px 0; margin-bottom: 16px; }
+    .pbd-row { display: flex; justify-content: space-between; font-size: .82rem; color: var(--ui-grey80); margin-bottom: 6px; }
+    .pbd-row.was .pbd-val { text-decoration: line-through; color: #BBA; }
+    .pbd-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ui-border); }
+    .pbd-total-label { font-size: .85rem; font-weight: 700; color: var(--dusk); }
+    .pbd-total-val { font-size: 1.6rem; font-weight: 800; color: var(--go); line-height: 1; }
+    .pbd-total-pp { font-size: .7rem; color: var(--ui-grey80); margin-left: 3px; }
+
+    .panel-discount {
+      background: #FFF9C4; border: 1px solid #F7E54D;
+      border-radius: var(--r-sm);
+      padding: 8px 12px; font-size: .78rem; font-weight: 600; color: #7A6000;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .btn-book {
+      display: block; width: 100%; text-align: center;
+      background: var(--go); color: white;
+      border: none; border-radius: var(--r-pill);
+      padding: 14px 20px; font-size: .95rem; font-weight: 700;
+      transition: background var(--t-fast);
+      margin-bottom: 10px;
+    }
+    .btn-book:hover { background: var(--go-alt); }
+    .btn-book.disabled { opacity: .5; pointer-events: none; }
+    .btn-add-builder {
+      display: block; width: 100%; text-align: center;
+      background: none; color: var(--dusk);
+      border: 1.5px solid var(--ui-border); border-radius: var(--r-pill);
+      padding: 13px 20px; font-size: .88rem; font-weight: 600;
+      transition: background var(--t-fast), border-color var(--t-fast);
+      margin-bottom: 16px;
+    }
+    .btn-add-builder:hover { background: var(--dawn); border-color: var(--wander); }
+
+    .panel-assurance { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .panel-assurance li { display: flex; align-items: flex-start; gap: 7px; font-size: .75rem; color: var(--ui-grey80); line-height: 1.4; }
+    .assure-icon { color: var(--wander); font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+    /* No departures state */
+    .no-deps { text-align: center; padding: 24px 0; color: var(--ui-grey80); font-size: .88rem; }
+    .no-deps strong { display: block; font-size: 1rem; color: var(--dusk); margin-bottom: 6px; }
+    .btn-contact { display: inline-block; background: var(--wander); color: white; border-radius: var(--r-pill); padding: 12px 24px; font-size: .88rem; font-weight: 700; margin-top: 12px; transition: background var(--t-fast); }
+    .btn-contact:hover { background: var(--wander-alt); }
+
+    /* ── MOBILE BOOKING BAR ───────────────────────────────────────────────── */
+    #mobile-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+      background: white; border-top: 1px solid var(--ui-border);
+      padding: 12px 20px;
+      align-items: center; justify-content: space-between; gap: 16px;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.1);
+    }
+    .mobile-bar-price { font-size: 1.25rem; font-weight: 800; color: var(--dusk); line-height: 1; }
+    .mobile-bar-from  { font-size: .7rem; color: var(--ui-grey80); margin-bottom: 2px; }
+    .btn-mobile-book { background: var(--go); color: white; border: none; border-radius: var(--r-pill); padding: 12px 28px; font-size: .9rem; font-weight: 700; transition: background var(--t-fast); }
+    .btn-mobile-book:hover { background: var(--go-alt); }
+
+    /* Mobile pricing sheet overlay */
+    #sheet-overlay { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity var(--t-modal); }
+    #sheet-overlay.open { opacity: 1; pointer-events: all; }
+    #price-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 310;
+      background: white; border-radius: 20px 20px 0 0;
+      padding: 20px 24px 40px;
+      max-height: 85vh; overflow-y: auto;
+      transform: translateY(100%); transition: transform var(--t-modal);
+    }
+    #price-sheet.open { transform: translateY(0); }
+    .sheet-handle { width: 36px; height: 4px; background: var(--ui-border); border-radius: 2px; margin: 0 auto 20px; }
+
+    /* ── FOOTER ───────────────────────────────────────────────────────────── */
+    footer {
+      background: var(--dusk); color: rgba(255,255,255,.5);
+      padding: 48px 60px 32px;
+    }
+    .footer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .footer-logo { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 900; font-size: 1.8rem; color: var(--go); margin-bottom: 10px; }
+    .footer-tagline { font-size: .82rem; line-height: 1.6; max-width: 200px; }
+    .footer-col-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: white; margin-bottom: 12px; }
+    .footer-link { display: block; color: rgba(255,255,255,.45); font-size: .82rem; margin-bottom: 8px; transition: color var(--t-fast); }
+    .footer-link:hover { color: white; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,.08); padding-top: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: .75rem; }
+    .footer-legal { display: flex; gap: 20px; }
+    .footer-legal a { color: rgba(255,255,255,.35); transition: color var(--t-fast); }
+    .footer-legal a:hover { color: white; }
+
+    /* ── BUTTONS SHARED ───────────────────────────────────────────────────── */
+    .btn-primary { background: var(--go); color: white; border: none; border-radius: var(--r-pill); padding: 12px 24px; font-size: .88rem; font-weight: 700; transition: background var(--t-fast); }
+    .btn-primary:hover { background: var(--go-alt); }
+    .btn-ghost { background: none; color: var(--dusk); border: 1.5px solid var(--ui-border); border-radius: var(--r-pill); padding: 11px 22px; font-size: .85rem; font-weight: 600; transition: background var(--t-fast); }
+    .btn-ghost:hover { background: rgba(0,0,0,.04); }
+
+    /* ── RESPONSIVE ───────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .page-body { grid-template-columns: 1fr; gap: 32px; }
+      .pricing-panel { display: none; }
+      #mobile-bar { display: flex; }
+      .hero-content { padding: 0 24px 36px; }
+      #facts-bar { padding: 0 24px; }
+      .highlights-grid { grid-template-columns: 1fr; }
+      .included-grid { grid-template-columns: 1fr; }
+      footer { padding: 40px 32px 24px; }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+    }
+    @media (max-width: 640px) {
+      .hero { min-height: 60vh; }
+      .carousel-slide { height: 60vh; }
+      .hero-title { font-size: 2.4rem; }
+      .dep-grid { grid-template-columns: 1fr 1fr; }
+      .page-body { padding: 24px 20px 80px; }
+      .sk-body { grid-template-columns: 1fr; padding: 0 20px; }
+      footer { padding: 32px 20px 20px; }
+      .footer-grid { grid-template-columns: 1fr; gap: 20px; }
+    }
+    @media (max-width: 480px) {
+      #facts-bar { padding: 0 16px; }
+      .fact-item { padding: 12px 14px; }
+      .hero-content { padding: 0 20px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── PASSWORD GATE ──────────────────────────────────────────────────────── -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">contiki</div>
+    <p class="gate-sub">Preview access only</p>
+    <input id="gate-input" class="gate-input" type="password" placeholder="Enter password"
+      onkeydown="if(event.key==='Enter')checkGate()"/>
+    <p id="gate-error" class="gate-error">Incorrect password. Try again.</p>
+    <button class="gate-btn" onclick="checkGate()">Enter</button>
+  </div>
+</div>
+
+<!-- ── NAV ────────────────────────────────────────────────────────────────── -->
+<nav id="nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-link">
+      Explore Trips <span class="icon" style="font-size:16px;opacity:.5;">expand_more</span>
+    </a>
+    <a href="build-trip.html" class="nav-link">
+      Build Trip <span class="icon" style="font-size:16px;opacity:.5;">expand_more</span>
+    </a>
+    <button class="nav-link">
+      About <span class="icon" style="font-size:16px;opacity:.5;">expand_more</span>
+    </button>
+  </div>
+  <a href="index.html" class="nav-logo">contiki</a>
+  <div class="nav-right">
+    <button id="nav-share-btn" onclick="shareTrip()" class="nav-pill" style="display:none;">
+      <span class="icon" style="font-size:18px;">share</span> Share
+    </button>
+    <button class="nav-pill">
+      <span class="icon" style="font-size:18px;opacity:.6;">person</span>
+      <span class="icon" style="font-size:16px;opacity:.4;">expand_more</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── LOADING SKELETON ───────────────────────────────────────────────────── -->
+<div id="loading-state">
+  <div class="sk sk-hero"></div>
+  <div class="sk sk-bar"></div>
+  <div class="sk-body">
+    <div class="sk-main">
+      <div class="sk sk-line tall" style="width:60%;"></div>
+      <div class="sk sk-line" style="width:100%;"></div>
+      <div class="sk sk-line" style="width:100%;"></div>
+      <div class="sk sk-line" style="width:80%;"></div>
+      <div class="sk sk-line tall" style="width:40%;margin-top:24px;"></div>
+      <div class="sk sk-line" style="width:100%;"></div>
+      <div class="sk sk-line" style="width:100%;"></div>
+      <div class="sk sk-line" style="width:70%;"></div>
+    </div>
+    <div class="sk sk-panel"></div>
+  </div>
+</div>
+
+<!-- ── ERROR STATE ────────────────────────────────────────────────────────── -->
+<div id="error-state">
+  <div class="error-icon">🗺️</div>
+  <h2 class="error-title">Tour not found</h2>
+  <p class="error-sub" id="error-message">We couldn't find that trip. It may have ended or moved.</p>
+  <a href="index.html" class="btn-primary">Back to all trips</a>
+</div>
+
+<!-- ── TOUR PAGE ──────────────────────────────────────────────────────────── -->
+<div id="tour-page">
+
+  <!-- Hero Carousel -->
+  <div class="hero">
+    <div class="carousel-track" id="carousel-track"></div>
+
+    <button class="hero-back" onclick="goBack()">
+      <span class="icon" style="font-size:16px;">arrow_back</span> Trips
+    </button>
+    <div class="hero-originals" id="hero-originals" style="display:none;">originals</div>
+    <div class="carousel-counter" id="carousel-counter">1 / 1</div>
+
+    <div class="hero-content">
+      <div class="hero-region-pill" id="hero-region-pill">
+        <span class="icon" style="font-size:14px;">public</span>
+        <span id="hero-region-text"></span>
+      </div>
+      <h1 class="hero-title" id="hero-title"></h1>
+      <p class="hero-route" id="hero-route"></p>
+    </div>
+
+    <button class="carousel-prev" onclick="carouselPrev()" id="carousel-prev" style="display:none;">
+      <span class="icon">chevron_left</span>
+    </button>
+    <button class="carousel-next" onclick="carouselNext()" id="carousel-next" style="display:none;">
+      <span class="icon">chevron_right</span>
+    </button>
+    <div class="carousel-dots" id="carousel-dots"></div>
+  </div>
+
+  <!-- Facts Bar -->
+  <div id="facts-bar">
+    <div class="fact-item">
+      <span class="icon fact-icon">flight_takeoff</span>
+      <div>
+        <div class="fact-label">Start</div>
+        <div class="fact-value" id="fact-start">—</div>
+      </div>
+    </div>
+    <div class="fact-item">
+      <span class="icon fact-icon">flight_land</span>
+      <div>
+        <div class="fact-label">End</div>
+        <div class="fact-value" id="fact-end">—</div>
+      </div>
+    </div>
+    <div class="fact-item">
+      <span class="icon fact-icon">calendar_today</span>
+      <div>
+        <div class="fact-label">Duration</div>
+        <div class="fact-value" id="fact-days">—</div>
+      </div>
+    </div>
+    <div class="fact-item">
+      <span class="icon fact-icon">public</span>
+      <div>
+        <div class="fact-label">Countries</div>
+        <div class="fact-value" id="fact-countries">—</div>
+      </div>
+    </div>
+    <div class="fact-item">
+      <span class="icon fact-icon">explore</span>
+      <div>
+        <div class="fact-label">Style</div>
+        <div class="fact-value" id="fact-style">—</div>
+      </div>
+    </div>
+    <div class="fact-item" id="fact-departs-wrap" style="display:none;">
+      <span class="icon fact-icon">event_available</span>
+      <div>
+        <div class="fact-label">Next departure</div>
+        <div class="fact-value" id="fact-departs">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page body -->
+  <div class="page-body">
+
+    <!-- Main content -->
+    <main>
+
+      <!-- 1. Departure selector -->
+      <section class="content-section" id="departures-section">
+        <h2 class="section-heading">Choose your departure</h2>
+        <div class="dep-grid" id="dep-grid">
+          <p style="color:var(--ui-grey80);font-size:.88rem;">Loading departures…</p>
+        </div>
+      </section>
+
+      <!-- 2. Description -->
+      <section class="content-section" id="description-section">
+        <h2 class="section-heading">About this trip</h2>
+        <p class="description-text" id="desc-text"></p>
+      </section>
+
+      <!-- 3. Highlights -->
+      <section class="content-section" id="highlights-section" style="display:none;">
+        <h2 class="section-heading">Highlights</h2>
+        <div class="highlights-grid" id="highlights-grid"></div>
+      </section>
+
+      <!-- 4. Itinerary -->
+      <section class="content-section" id="itinerary-section" style="display:none;">
+        <h2 class="section-heading">Day by day</h2>
+        <div class="itin-list" id="itin-list"></div>
+      </section>
+
+      <!-- 5. What's included -->
+      <section class="content-section" id="included-section" style="display:none;">
+        <h2 class="section-heading">What's included</h2>
+        <div class="included-grid" id="included-grid"></div>
+      </section>
+
+      <!-- 6. Accommodation -->
+      <section class="content-section" id="accommodation-section" style="display:none;">
+        <h2 class="section-heading">Accommodation</h2>
+        <table class="acc-table">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Occupancy</th>
+            </tr>
+          </thead>
+          <tbody id="acc-tbody"></tbody>
+        </table>
+      </section>
+
+      <!-- 7. Map -->
+      <section class="content-section">
+        <h2 class="section-heading">Route</h2>
+        <div class="map-placeholder">
+          <span class="icon">map</span>
+          <div class="map-route-text" id="map-route-text"></div>
+          <div class="map-note">Interactive map coming soon</div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Sidebar: Pricing panel -->
+    <aside>
+      <div class="pricing-panel" id="pricing-panel">
+        <p class="panel-heading">Book your spot</p>
+        <div class="panel-selected-dep" id="panel-dep-label">Select a departure above</div>
+
+        <div id="panel-room-wrap" style="display:none;">
+          <p class="room-label">Room type</p>
+          <div class="room-btns" id="room-btns"></div>
+        </div>
+
+        <div class="price-breakdown" id="price-breakdown" style="display:none;">
+          <div class="pbd-row"><span>Base price</span><span id="pbd-base">—</span></div>
+          <div class="pbd-row" id="pbd-supp-row" style="display:none;"><span id="pbd-supp-label">Supplement</span><span id="pbd-supp">—</span></div>
+          <div class="pbd-row was" id="pbd-was-row" style="display:none;"><span>Was</span><span class="pbd-val" id="pbd-was">—</span></div>
+          <div class="pbd-total">
+            <div>
+              <span class="pbd-total-label" id="panel-price">—</span>
+              <span class="pbd-total-pp">pp</span>
+            </div>
+            <div class="pbd-total-val" id="panel-price-big">—</div>
+          </div>
+        </div>
+
+        <div class="panel-discount" id="panel-discount"></div>
+
+        <a id="book-btn" href="#" class="btn-book disabled">Book now →</a>
+        <button id="add-builder-btn" class="btn-add-builder" onclick="addToBuilder()">
+          <span class="icon" style="font-size:18px;color:var(--wander);">add_circle</span>
+          Add to trip builder
+        </button>
+
+        <ul class="panel-assurance">
+          <li><span class="icon assure-icon">check_circle</span>Free cancellation up to 60 days prior</li>
+          <li><span class="icon assure-icon">payments</span>Pay in installments — from $250 deposit</li>
+          <li><span class="icon assure-icon">support_agent</span>24/7 traveller support</li>
+        </ul>
+      </div>
+    </aside>
+
+  </div><!-- /page-body -->
+
+</div><!-- /tour-page -->
+
+<!-- ── MOBILE BOOKING BAR ─────────────────────────────────────────────────── -->
+<div id="mobile-bar">
+  <div>
+    <div class="mobile-bar-from">From</div>
+    <div class="mobile-bar-price" id="mobile-price">—</div>
+  </div>
+  <button class="btn-mobile-book" onclick="openSheet()">Book now →</button>
+</div>
+
+<!-- Mobile pricing sheet -->
+<div id="sheet-overlay" onclick="closeSheet()"></div>
+<div id="price-sheet" id="price-sheet">
+  <div class="sheet-handle"></div>
+  <div id="sheet-content"></div>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <a href="index.html" class="footer-logo">contiki</a>
+      <p class="footer-tagline">The world's leading travel company for 18–35s.</p>
+    </div>
+    <div>
+      <p class="footer-col-title">About Contiki</p>
+      <a href="#" class="footer-link">Who We Are</a>
+      <a href="#" class="footer-link">Reviews</a>
+      <a href="#" class="footer-link">Sustainability</a>
+      <a href="#" class="footer-link">Careers</a>
+    </div>
+    <div>
+      <p class="footer-col-title">Travelling with us</p>
+      <a href="#" class="footer-link">My Contiki</a>
+      <a href="#" class="footer-link">FAQs</a>
+      <a href="#" class="footer-link">Payment Plans</a>
+      <a href="#" class="footer-link">Travel Insurance</a>
+    </div>
+    <div>
+      <p class="footer-col-title">Destinations</p>
+      <a href="#" class="footer-link">Europe</a>
+      <a href="#" class="footer-link">Asia</a>
+      <a href="#" class="footer-link">Americas</a>
+      <a href="#" class="footer-link">Australasia</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Contiki Holidays Ltd. All rights reserved.</span>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms &amp; Conditions</a>
+      <a href="#">Cookie Settings</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+'use strict';
+
+// ── GATE ──────────────────────────────────────────────────────────────────────
+function checkGate() {
+  if (document.getElementById('gate-input').value === 'Go-Wander-2026') {
+    document.getElementById('gate').style.display = 'none';
+    localStorage.setItem('ct-auth', '1');
+  } else {
+    document.getElementById('gate-error').style.display = 'block';
+    document.getElementById('gate-input').value = '';
+  }
+}
+if (localStorage.getItem('ct-auth') === '1') document.getElementById('gate').style.display = 'none';
+
+// ── NAV SCROLL ────────────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', scrollY > 8);
+}, { passive: true });
+
+// ── TOUR STATE ────────────────────────────────────────────────────────────────
+let TOUR = null;
+let selectedDep  = null;
+let selectedRoom = null;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+const tourId = (location.pathname.split('/').pop() || location.search.split('id=')[1] || '').split('?')[0];
+
+(async () => {
+  try {
+    const url = tourId ? `/api/tour?id=${encodeURIComponent(tourId)}` : '/api/tour?id=mock-1';
+    const res = await fetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showError(err.error || `Error ${res.status}`);
+      return;
+    }
+    TOUR = await res.json();
+    renderPage(TOUR);
+  } catch (e) {
+    showError('Failed to load trip data. Please try again.');
+  }
+})();
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderPage(t) {
+  document.title = `${t.title} · Contiki`;
+
+  // Hero
+  renderCarousel(t.images, t.title);
+  if (t.isOriginal) document.getElementById('hero-originals').style.display = 'block';
+  document.getElementById('hero-region-text').textContent = [t.region, t.tourStyle].filter(Boolean).join(' · ');
+  document.getElementById('hero-title').textContent = t.title.toLowerCase();
+  document.getElementById('hero-route').textContent = [t.startCity, t.endCity].filter(Boolean).join(' → ');
+
+  // Facts bar
+  setText('fact-start',     t.startCity     || '—');
+  setText('fact-end',       t.endCity       || '—');
+  setText('fact-days',      t.days ? `${t.days} days` : '—');
+  setText('fact-countries', t.countriesVisited?.length ? `${t.countriesVisited.length} countries` : '—');
+  setText('fact-style',     t.tourStyle     || '—');
+
+  const firstAvail = t.departures?.find(d => d.availability !== 'unavailable');
+  if (firstAvail) {
+    setText('fact-departs', fmtDateShort(firstAvail.startDate));
+    document.getElementById('fact-departs-wrap').style.display = 'flex';
+  }
+
+  // Departures
+  renderDepartures(t.departures || []);
+
+  // Description
+  setText('desc-text', t.description || 'No description available.');
+
+  // Highlights
+  if (t.highlights?.length) {
+    renderHighlights(t.highlights);
+    document.getElementById('highlights-section').style.display = 'block';
+  }
+
+  // Itinerary
+  if (t.itinerary?.length) {
+    renderItinerary(t.itinerary);
+    document.getElementById('itinerary-section').style.display = 'block';
+  }
+
+  // What's included
+  if (t.whatsIncluded?.length) {
+    renderIncluded(t.whatsIncluded);
+    document.getElementById('included-section').style.display = 'block';
+  }
+
+  // Accommodation
+  if (t.accommodation?.length) {
+    renderAccommodation(t.accommodation);
+    document.getElementById('accommodation-section').style.display = 'block';
+  }
+
+  // Map placeholder
+  const mapRoute = [t.startCity, ...(t.countriesVisited || []).slice(1, 3), t.endCity]
+    .filter(Boolean).join(' → ');
+  setText('map-route-text', mapRoute);
+
+  // Show share button + nav
+  document.getElementById('nav-share-btn').style.display = 'flex';
+
+  // Transition
+  document.getElementById('loading-state').style.display  = 'none';
+  document.getElementById('tour-page').style.display      = 'block';
+
+  // Select first available departure
+  const firstDep = t.departures?.find(d => d.availability === 'available') || t.departures?.[0];
+  if (firstDep) selectDep(firstDep.id);
+}
+
+// ── CAROUSEL ──────────────────────────────────────────────────────────────────
+let carouselIdx = 0;
+let carouselImages = [];
+let carouselTimer  = null;
+
+function renderCarousel(images, title) {
+  carouselImages = images?.length ? images : [{ url: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1400&q=80', alt: title }];
+  const track = document.getElementById('carousel-track');
+  track.innerHTML = carouselImages.map(img => `
+    <div class="carousel-slide">
+      <img class="carousel-img" src="${img.url}" alt="${esc(img.alt)}" loading="eager"/>
+      <div class="carousel-gradient"></div>
+    </div>`).join('');
+
+  if (carouselImages.length > 1) {
+    document.getElementById('carousel-prev').style.display = 'flex';
+    document.getElementById('carousel-next').style.display = 'flex';
+    const dots = document.getElementById('carousel-dots');
+    dots.innerHTML = carouselImages.map((_, i) =>
+      `<div class="carousel-dot${i===0?' active':''}" onclick="goToSlide(${i})"></div>`).join('');
+  }
+
+  updateCounter();
+  carouselTimer = setInterval(() => carouselNext(), 5500);
+}
+
+function carouselPrev() {
+  resetTimer();
+  carouselIdx = (carouselIdx - 1 + carouselImages.length) % carouselImages.length;
+  updateCarousel();
+}
+function carouselNext() {
+  carouselIdx = (carouselIdx + 1) % carouselImages.length;
+  updateCarousel();
+}
+function goToSlide(i) {
+  resetTimer();
+  carouselIdx = i;
+  updateCarousel();
+}
+function resetTimer() {
+  if (carouselTimer) clearInterval(carouselTimer);
+  carouselTimer = setInterval(() => carouselNext(), 5500);
+}
+function updateCarousel() {
+  document.getElementById('carousel-track').style.transform = `translateX(-${carouselIdx * 100}%)`;
+  updateCounter();
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === carouselIdx));
+}
+function updateCounter() {
+  document.getElementById('carousel-counter').textContent = `${carouselIdx + 1} / ${carouselImages.length}`;
+}
+
+// ── DEPARTURES ────────────────────────────────────────────────────────────────
+function renderDepartures(deps) {
+  const el = document.getElementById('dep-grid');
+  if (!deps.length) {
+    el.innerHTML = `
+      <div class="no-deps">
+        <strong>No departures available</strong>
+        This tour has no scheduled dates right now. Check back soon or contact us.
+        <br><a href="mailto:hello@contiki.com" class="btn-contact">Contact us</a>
+      </div>`;
+    return;
+  }
+  el.innerHTML = deps.map(d => {
+    const avail = d.availability;
+    const label = avail === 'available' ? 'Available' : avail === 'onRequest' ? 'On request' : 'Sold out';
+    const price = d.adultPrice ? `${d.currency || 'USD'} ${d.adultPrice.toLocaleString()}` : '—';
+    return `
+      <div class="dep-pill ${avail}" id="dep-${esc(d.id)}"
+        onclick="${avail !== 'unavailable' ? `selectDep('${esc(d.id)}')` : 'void(0)'}">
+        <div class="dep-dates">${fmtRange(d.startDate, d.endDate)}</div>
+        <div class="dep-year">${fmtYear(d.startDate)}</div>
+        <span class="dep-badge ${avail}">${label}</span>
+        <div class="dep-price">${price.split(' ')[1] || price}<span class="dep-currency"> ${price.split(' ')[0] || ''}</span></div>
+      </div>`;
+  }).join('');
+}
+
+function selectDep(depId) {
+  const dep = TOUR.departures.find(d => d.id === depId);
+  if (!dep || dep.availability === 'unavailable') return;
+
+  selectedDep = dep;
+
+  document.querySelectorAll('.dep-pill').forEach(el => el.classList.remove('selected'));
+  const pill = document.getElementById(`dep-${dep.id}`);
+  if (pill) pill.classList.add('selected');
+
+  // Default room to twin (supplement 0) or first
+  selectedRoom = dep.roomTypes?.find(r => r.supplement === 0) || dep.roomTypes?.[0] || { type: 'Twin', supplement: 0 };
+
+  updatePricingPanel();
+  updateMobileBar();
+}
+
+// ── PRICING PANEL ─────────────────────────────────────────────────────────────
+function updatePricingPanel() {
+  if (!selectedDep) return;
+
+  const dep  = selectedDep;
+  const room = selectedRoom || dep.roomTypes?.[0] || { supplement: 0 };
+  const base  = dep.adultPrice || 0;
+  const supp  = room.supplement || 0;
+  const total = base + supp;
+  const was   = dep.wasPrice;
+
+  // Dep label
+  const dateLabel = `${fmtDateFull(dep.startDate)} – ${fmtDateFull(dep.endDate)}`;
+  const availTxt  = dep.availability === 'onRequest' ? ' · On request' : '';
+  document.getElementById('panel-dep-label').innerHTML =
+    `${dateLabel}<span>${availTxt}</span>`;
+
+  // Room buttons
+  const roomWrap = document.getElementById('panel-room-wrap');
+  if (dep.roomTypes?.length > 1) {
+    roomWrap.style.display = 'block';
+    document.getElementById('room-btns').innerHTML = dep.roomTypes.map(r => {
+      const label = r.supplement > 0 ? `${r.type} +$${r.supplement}` :
+                    r.supplement < 0 ? `${r.type} -$${Math.abs(r.supplement)}` : r.type;
+      const sel   = selectedRoom?.type === r.type ? ' selected' : '';
+      return `<button class="room-btn${sel}" id="room-${esc(r.type)}" onclick="selectRoom('${esc(r.type)}')">${label}</button>`;
+    }).join('');
+  } else {
+    roomWrap.style.display = 'none';
+  }
+
+  // Breakdown
+  document.getElementById('price-breakdown').style.display = 'block';
+  setText('pbd-base', `$${base.toLocaleString()}`);
+
+  const suppRow = document.getElementById('pbd-supp-row');
+  if (supp !== 0) {
+    suppRow.style.display = 'flex';
+    setText('pbd-supp-label', supp > 0 ? `${room.type} supplement` : `${room.type} discount`);
+    setText('pbd-supp', (supp > 0 ? '+' : '') + `$${supp.toLocaleString()}`);
+  } else {
+    suppRow.style.display = 'none';
+  }
+
+  const wasRow = document.getElementById('pbd-was-row');
+  if (was) {
+    wasRow.style.display = 'flex';
+    setText('pbd-was', `$${was.toLocaleString()}`);
+  } else {
+    wasRow.style.display = 'none';
+  }
+
+  setText('panel-price',     `$${total.toLocaleString()}`);
+  setText('panel-price-big', `$${total.toLocaleString()}`);
+
+  // Discount callout
+  const discountEl = document.getElementById('panel-discount');
+  if (dep.discounts?.length) {
+    const d = dep.discounts[0];
+    discountEl.style.display = 'block';
+    discountEl.textContent = `🏷 ${d.type}: saving $${(d.amount || 0).toLocaleString()}`;
+  } else {
+    discountEl.style.display = 'none';
+  }
+
+  // Book button
+  const bookBtn = document.getElementById('book-btn');
+  bookBtn.href = `/booking.html?tourId=${encodeURIComponent(TOUR.id)}&departureId=${encodeURIComponent(dep.id)}`;
+  bookBtn.classList.remove('disabled');
+
+  // Rebuild sheet too
+  renderSheet();
+}
+
+function selectRoom(type) {
+  if (!selectedDep) return;
+  selectedRoom = selectedDep.roomTypes.find(r => r.type === type) || selectedRoom;
+  updatePricingPanel();
+  updateMobileBar();
+}
+
+// ── HIGHLIGHTS ────────────────────────────────────────────────────────────────
+function renderHighlights(highlights) {
+  document.getElementById('highlights-grid').innerHTML = highlights.map(group => `
+    <div class="highlight-group">
+      <p class="highlight-title">${esc(group.title)}</p>
+      <ul class="highlight-list">
+        ${(group.items || []).map(item => `
+          <li class="highlight-item">
+            <span class="icon highlight-icon">check_circle</span>
+            ${esc(item)}
+          </li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+
+// ── ITINERARY ─────────────────────────────────────────────────────────────────
+function renderItinerary(days) {
+  document.getElementById('itin-list').innerHTML = days.map((day, i) => {
+    const locs  = day.locationsVisited?.map(l => l.name).join(' → ') || '';
+    const meals = day.meals?.filter(Boolean) || [];
+    const mealHtml = meals.map(m => `<span class="meal-chip">${esc(m)}</span>`).join('');
+    const accHtml  = day.accommodation
+      ? `<span class="itin-meta-item"><span class="icon">hotel</span>${esc(day.accommodation)}</span>`
+      : '';
+    return `
+      <div class="itin-item" id="itin-item-${i}">
+        <button class="itin-header" onclick="toggleDay(${i})">
+          <div class="itin-day-num">${day.startDay}</div>
+          <div class="itin-header-main">
+            <div class="itin-header-title">${esc(day.title)}</div>
+            ${locs ? `<div class="itin-header-locs">${esc(locs)}</div>` : ''}
+          </div>
+          ${mealHtml ? `<div class="itin-meal-icons">${mealHtml}</div>` : ''}
+          <span class="icon itin-toggle-icon">keyboard_arrow_down</span>
+        </button>
+        <div class="itin-body" id="itin-body-${i}">
+          <div class="itin-body-inner">
+            <p class="itin-desc">${esc(day.description)}</p>
+            ${accHtml || mealHtml ? `<div class="itin-meta">${accHtml}${meals.map(m => `<span class="itin-meta-item"><span class="icon">restaurant</span>${esc(m)}</span>`).join('')}</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleDay(i) {
+  const item = document.getElementById(`itin-item-${i}`);
+  item.classList.toggle('open');
+}
+
+// ── WHAT'S INCLUDED ───────────────────────────────────────────────────────────
+function renderIncluded(sections) {
+  document.getElementById('included-grid').innerHTML = sections.map(s => `
+    <div>
+      <p class="included-group-title">${esc(s.title)}</p>
+      <ul class="included-list">
+        ${(s.items || []).map(item => `
+          <li class="included-item">
+            <span class="icon check-icon">check_circle</span>
+            ${esc(item)}
+          </li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+
+// ── ACCOMMODATION ─────────────────────────────────────────────────────────────
+function renderAccommodation(acc) {
+  document.getElementById('acc-tbody').innerHTML = acc.map(a => `
+    <tr>
+      <td>${esc(a.name)}</td>
+      <td>${esc(a.type)}</td>
+      <td>${esc(a.occupancy)}</td>
+    </tr>`).join('');
+}
+
+// ── MOBILE BAR + SHEET ────────────────────────────────────────────────────────
+function updateMobileBar() {
+  if (!selectedDep) return;
+  const total = (selectedDep.adultPrice || 0) + (selectedRoom?.supplement || 0);
+  setText('mobile-price', `$${total.toLocaleString()}`);
+}
+
+function openSheet()  { document.getElementById('sheet-overlay').classList.add('open'); document.getElementById('price-sheet').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeSheet() { document.getElementById('sheet-overlay').classList.remove('open'); document.getElementById('price-sheet').classList.remove('open'); document.body.style.overflow = ''; }
+
+function renderSheet() {
+  if (!selectedDep) return;
+  const dep  = selectedDep;
+  const room = selectedRoom || { supplement: 0 };
+  const total = (dep.adultPrice || 0) + (room.supplement || 0);
+
+  document.getElementById('sheet-content').innerHTML = `
+    <h3 style="font-size:1rem;font-weight:700;color:var(--wander);margin-bottom:16px;">Book your spot</h3>
+    <p style="font-size:.85rem;font-weight:700;color:var(--dusk);margin-bottom:16px;">
+      ${fmtDateFull(dep.startDate)} – ${fmtDateFull(dep.endDate)}
+    </p>
+    ${dep.roomTypes?.length > 1 ? `
+      <p style="font-size:.78rem;font-weight:700;color:var(--dusk);margin-bottom:8px;">Room type</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;">
+        ${dep.roomTypes.map(r => {
+          const sel = selectedRoom?.type === r.type;
+          const label = r.supplement > 0 ? `${r.type} +$${r.supplement}` : r.supplement < 0 ? `${r.type} -$${Math.abs(r.supplement)}` : r.type;
+          return `<button onclick="selectRoom('${esc(r.type)}');renderSheet();" style="flex:1;min-width:60px;border:1.5px solid ${sel?'var(--go)':'var(--ui-border)'};background:${sel?'#FFF5F0':'white'};border-radius:var(--r-md);padding:8px;font-size:.78rem;font-weight:600;color:${sel?'var(--go)':'var(--dusk)'};">${label}</button>`;
+        }).join('')}
+      </div>` : ''}
+    <div style="background:#F9F8F5;border-radius:var(--r-md);padding:14px 16px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:.85rem;color:var(--ui-grey80);margin-bottom:6px;"><span>Base price</span><span>$${dep.adultPrice.toLocaleString()}</span></div>
+      ${room.supplement ? `<div style="display:flex;justify-content:space-between;font-size:.85rem;color:var(--ui-grey80);margin-bottom:6px;"><span>Supplement</span><span>${room.supplement > 0 ? '+' : ''}$${room.supplement.toLocaleString()}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-size:1rem;font-weight:800;color:var(--dusk);border-top:1px solid var(--ui-border);padding-top:10px;margin-top:6px;"><span>Total pp</span><span style="color:var(--go);">$${total.toLocaleString()}</span></div>
+    </div>
+    ${dep.discounts?.length ? `<div style="background:#FFF9C4;border:1px solid #F7E54D;border-radius:var(--r-sm);padding:8px 12px;font-size:.78rem;font-weight:600;color:#7A6000;margin-bottom:14px;">🏷 ${esc(dep.discounts[0].type)}: save $${(dep.discounts[0].amount||0).toLocaleString()}</div>` : ''}
+    <a href="/booking.html?tourId=${encodeURIComponent(TOUR.id)}&departureId=${encodeURIComponent(dep.id)}" style="display:block;text-align:center;background:var(--go);color:white;border-radius:var(--r-pill);padding:14px;font-size:.95rem;font-weight:700;margin-bottom:10px;">Book now →</a>
+    <button onclick="closeSheet()" style="width:100%;background:none;border:1.5px solid var(--ui-border);border-radius:var(--r-pill);padding:12px;font-size:.88rem;font-weight:600;color:var(--dusk);">Back</button>`;
+}
+
+// ── ADD TO BUILDER ────────────────────────────────────────────────────────────
+function addToBuilder() {
+  if (!TOUR) return;
+  const btn = document.getElementById('add-builder-btn');
+  try {
+    const queue = JSON.parse(sessionStorage.getItem('ct-builder-queue') || '[]');
+    queue.push({ tour: TOUR, departureId: selectedDep?.id || null });
+    sessionStorage.setItem('ct-builder-queue', JSON.stringify(queue));
+  } catch {}
+  btn.innerHTML = '<span class="icon" style="font-size:18px;color:var(--wander);">check_circle</span> Added to builder';
+  btn.disabled = true;
+  setTimeout(() => { window.location.href = '/build-trip.html'; }, 900);
+}
+
+// ── SHARE ─────────────────────────────────────────────────────────────────────
+function shareTrip() {
+  if (navigator.share && TOUR) {
+    navigator.share({ title: TOUR.title + ' · Contiki', url: location.href }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(location.href).then(() => {
+      const btn = document.getElementById('nav-share-btn');
+      btn.innerHTML = '<span class="icon" style="font-size:18px;">check</span> Copied';
+      setTimeout(() => { btn.innerHTML = '<span class="icon" style="font-size:18px;">share</span> Share'; }, 2000);
+    }).catch(() => {});
+  }
+}
+
+// ── BACK NAVIGATION ───────────────────────────────────────────────────────────
+function goBack() {
+  if (document.referrer && document.referrer.includes(location.hostname)) history.back();
+  else window.location.href = '/index.html';
+}
+
+// ── SHOW ERROR ────────────────────────────────────────────────────────────────
+function showError(msg) {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('error-state').style.display = 'block';
+  if (msg) setText('error-message', msg);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function fmtRange(start, end) {
+  if (!start) return '—';
+  const s = new Date(start);
+  const e = end ? new Date(end) : null;
+  const mo = s.toLocaleDateString('en-US', { month: 'short' });
+  const de = e ? e.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : null;
+  return `${mo} ${s.getDate()}${de ? ' – ' + de : ''}`;
+}
+
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function fmtDateFull(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function fmtYear(iso) {
+  if (!iso) return '';
+  return new Date(iso).getFullYear();
+}
+</script>
+</body>
+</html>

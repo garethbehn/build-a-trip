@@ -162,7 +162,7 @@ export default async function handler(req) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const ttcToken = process.env.TTC_API_TOKEN;
 
-  // Use live TTC data if token available, else fall back to client-supplied mock trips
+  // Use live TTC data
   let trips = clientTrips;
   let ttcError = null;
   if (ttcToken) {
@@ -171,16 +171,15 @@ export default async function handler(req) {
     } catch (e) {
       ttcError = e.message;
       console.error('TTC fetch failed:', ttcError);
-      trips = clientTrips; // fall back to mock
+      trips = clientTrips || [];
+      return new Response(JSON.stringify({ error: "TTC fetch failed", detail: ttcError }), { status: 502, headers: { "Content-Type": "application/json", ...cors() } });
     }
   }
 
-  // No AI key — keyword fallback
+  // No AI key
   if (!anthropicKey) {
-    const kwResult = keywordSearch(query, trips);
-    if (ttcError) kwResult._ttcError = ttcError;
-    return new Response(JSON.stringify(kwResult), {
-      status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
+      status: 503, headers: { 'Content-Type': 'application/json', ...cors() },
     });
   }
 
@@ -208,10 +207,9 @@ Respond ONLY with valid JSON, no markdown, no preamble:
   });
 
   if (!anthropicRes.ok) {
-    const kwResult = keywordSearch(query, trips);
-    if (ttcError) kwResult._ttcError = ttcError;
-    return new Response(JSON.stringify(kwResult), {
-      status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+    const err = await anthropicRes.json().catch(() => ({}));
+    return new Response(JSON.stringify({ error: err?.error?.message || `Anthropic error ${anthropicRes.status}` }), {
+      status: anthropicRes.status, headers: { 'Content-Type': 'application/json', ...cors() },
     });
   }
 
@@ -230,35 +228,6 @@ Respond ONLY with valid JSON, no markdown, no preamble:
   });
 }
 
-function keywordSearch(query, trips) {
-  const q = query.toLowerCase();
-  const words = q.split(/\s+/).filter(w => w.length > 2);
-  const reasons = {
-    'eu-highlights': "Covers Europe's most iconic cities across 7 countries in one trip.",
-    'greek-islands': 'Island-hopping between Athens, Mykonos and Santorini.',
-    'south-america': 'Adventure-packed route through Machu Picchu, the Andes and Uyuni.',
-    'southeast-asia': 'Immerses you in temples, street food and beaches across 4 countries.',
-    'safari': "Face-to-face with the Big Five across Kenya and Tanzania's greatest parks.",
-    'japan': 'Balances ancient temples and neon cities across Tokyo, Kyoto and Osaka.',
-    'budget-europe': 'Four iconic European cities in one week at an unbeatable price.',
-    'costa-rica': 'Pure adventure through rainforests, volcanoes and Pacific coastline.',
-    'morocco': 'Ancient medinas, Saharan desert camps and vibrant souks across 9 days.',
-    'scandinavia': 'Fjords, Viking history and Nordic cities across three countries.',
-    'aus-nz': 'The ultimate antipodean bucket list — bungee jumping, reef snorkelling and more.',
-    'usa-parks': "America's most jaw-dropping canyon landscapes on an epic road trip.",
-  };
-  const scored = trips.map(t => {
-    const corpus = [t.title, t.region, t.route, t.vibe, (t.tags||[]).join(' ')].join(' ').toLowerCase();
-    let score = words.reduce((s, w) => s + (corpus.includes(w) ? 1 : 0), 0);
-    if (corpus.includes(q)) score += 3;
-    return { ...t, score: score / Math.max(words.length, 1), aiReason: reasons[t.id] || 'A strong match for your travel style.' };
-  }).filter(t => t.score > 0).sort((a, b) => b.score - a.score).slice(0, 6);
-
-  return {
-    summary: `Here are the best trips matching "${query}" — keyword matching active. Add an API key for full AI-powered search.`,
-    matches: scored,
-  };
-}
 
 function cors() {
   return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
